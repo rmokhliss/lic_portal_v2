@@ -1,0 +1,1272 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<title>SELECT-PX · Gallery</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=Poppins:wght@200;300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --c1:#74ECFF; --c5:#00CAFF; --b6:#0066D6; --b9:#0006A5;
+    --g50:#fafafa; --g100:#f4f4f4; --g200:#e5e5e5; --g300:#d4d4d4;
+    --g400:#a3a3a3; --g500:#6b6b6b; --g700:#3F3F3E; --g900:#1a1a1a;
+    --d0:#0B0D12; --d1:#11141B; --d2:#1A1F2B; --dbd:#242A38; --dth:#F4F5F8; --dtl:#8A8FA0;
+    --ok:#10B981; --warn:#F59E0B; --err:#EF4444; --info:#3B82F6;
+    --grad:linear-gradient(90deg,#74ECFF 0%,#00CAFF 55%,#0006A5 100%);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--g100);color:var(--g700);font-family:'Poppins',system-ui,sans-serif;font-weight:300;font-size:14px}
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+  .display{font-family:'Montserrat';font-weight:800;letter-spacing:-0.01em}
+  .caps{font-family:'Poppins';font-weight:500;letter-spacing:0.12em;text-transform:uppercase;font-size:10px;color:var(--g500)}
+
+  /* Top bar */
+  .topbar{background:var(--d0);color:#fff;padding:14px 28px;display:flex;align-items:center;gap:18px;border-bottom:1px solid var(--dbd);position:sticky;top:0;z-index:50}
+  .topbar a{color:var(--dtl);text-decoration:none;font-size:12px;padding:6px 12px;border-radius:6px}
+  .topbar a:hover{color:#fff;background:var(--d2)}
+  .topbar a.active{color:#fff;background:var(--d2);border:1px solid var(--dbd)}
+
+  /* Page wrapper */
+  .wrap{max-width:1280px;margin:0 auto;padding:32px 28px}
+  .page-stage{background:#fff;border:1px solid var(--g200);border-radius:14px;overflow:hidden;margin-bottom:32px;box-shadow:0 1px 0 rgba(15,17,22,0.02),0 8px 24px rgba(15,17,22,0.04)}
+  .page-stage > .stage-head{padding:14px 18px;background:var(--g50);border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between}
+  .page-stage > .stage-head .label{display:flex;align-items:center;gap:10px}
+  .page-stage > .stage-head .label .dot{width:8px;height:8px;border-radius:50%;background:var(--c5)}
+  .page-stage > .stage-head .num{font-family:'JetBrains Mono';font-size:11px;color:var(--g500)}
+
+  /* === Reusable shell pieces === */
+  .shell{display:grid;grid-template-columns:220px 1fr;min-height:680px}
+  .side{background:var(--d0);color:var(--dth);padding:14px 10px;display:flex;flex-direction:column;gap:1px}
+  .side .logo{display:flex;align-items:center;gap:10px;padding:6px 8px 14px}
+  .side .logo .tile{width:32px;height:32px;border-radius:7px;background:#fff;display:grid;place-items:center}
+  .side .logo .word{display:flex;flex-direction:column;line-height:1.05}
+  .side .logo .word .p{font-family:'JetBrains Mono';font-size:8px;letter-spacing:0.18em;color:var(--dtl)}
+  .side .logo .word .n{font-family:'Montserrat';font-weight:800;font-size:13px;color:#fff;margin-top:3px}
+  .side .grp{font-size:9px;color:var(--dtl);letter-spacing:0.14em;text-transform:uppercase;padding:12px 10px 4px;font-weight:500}
+  .side .item{padding:7px 10px;border-radius:6px;font-size:12px;color:var(--dtl);display:flex;align-items:center;gap:10px;cursor:pointer}
+  .side .item .ic{width:14px;font-family:'JetBrains Mono';font-size:13px;text-align:center;opacity:0.7}
+  .side .item.act{color:#fff;background:var(--d2);border-left:2px solid var(--c5);padding-left:8px}
+  .side .item:hover:not(.act){color:#fff;background:rgba(255,255,255,0.04)}
+  .side .item .badge{margin-left:auto;font-family:'JetBrains Mono';font-size:9px;padding:1px 5px;border-radius:3px;background:var(--err);color:#fff}
+  .side .footer{margin-top:auto;padding:8px 10px;font-family:'JetBrains Mono';font-size:10px;color:var(--dtl)}
+
+  .main{display:flex;flex-direction:column;background:var(--g50);min-width:0}
+  .main .top{height:56px;background:#fff;border-bottom:1px solid var(--g200);display:flex;align-items:center;padding:0 22px;gap:14px}
+  .main .top .crumbs{font-size:12px;color:var(--g500);display:flex;align-items:center;gap:6px}
+  .main .top .crumbs .sep{color:var(--g300)}
+  .main .top .crumbs .cur{color:var(--g900);font-weight:500}
+  .main .top .search{height:32px;padding:0 12px;border:1px solid var(--g200);border-radius:7px;display:flex;align-items:center;gap:8px;background:var(--g50);font-size:12px;color:var(--g500);width:280px}
+  .main .top .search .kbd{margin-left:auto;font-family:'JetBrains Mono';font-size:9px;border:1px solid var(--g200);padding:1px 5px;border-radius:3px;background:#fff}
+  .main .top .actions{display:flex;align-items:center;gap:10px;margin-left:auto}
+  .main .top .ic-btn{width:32px;height:32px;border-radius:7px;border:1px solid var(--g200);display:grid;place-items:center;color:var(--g500);background:#fff;font-family:'JetBrains Mono';font-size:14px;position:relative}
+  .main .top .ic-btn .nb{position:absolute;top:-3px;right:-3px;background:var(--err);color:#fff;font-family:'JetBrains Mono';font-size:8px;padding:1px 4px;border-radius:8px}
+  .main .top .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--c5),var(--b9));color:#fff;display:grid;place-items:center;font-weight:600;font-size:11px}
+
+  .content{flex:1;padding:24px 28px;overflow:hidden}
+
+  /* Buttons / chips */
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:0 14px;height:34px;border-radius:7px;border:1px solid;font-size:12px;font-weight:500;cursor:pointer;font-family:'Poppins';white-space:nowrap}
+  .btn.sm{height:28px;padding:0 10px;font-size:11px}
+  .btn.lg{height:40px;padding:0 18px;font-size:13px}
+  .btn.primary{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 1px 2px rgba(0,6,165,0.15),0 6px 14px rgba(0,6,165,0.12)}
+  .btn.solid{background:var(--g900);border-color:var(--g900);color:#fff}
+  .btn.outline{background:#fff;border-color:var(--g300);color:var(--g900)}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--g700)}
+  .btn.danger{background:var(--err);border-color:var(--err);color:#fff}
+  .btn.success{background:var(--ok);border-color:var(--ok);color:#fff}
+
+  .chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:13px;border:1px solid var(--g200);background:#fff;font-size:11px;color:var(--g700)}
+  .chip.act{background:var(--g900);color:#fff;border-color:var(--g900)}
+  .chip .x{color:var(--g400);cursor:pointer;margin-left:2px}
+
+  .bdg{font-family:'JetBrains Mono';font-size:10px;font-weight:500;letter-spacing:0.06em;padding:3px 7px;border-radius:4px;border:1px solid;display:inline-block;line-height:1.4}
+  .bdg.ok{color:var(--ok);background:rgba(16,185,129,0.10);border-color:rgba(16,185,129,0.35)}
+  .bdg.warn{color:var(--warn);background:rgba(245,158,11,0.10);border-color:rgba(245,158,11,0.35)}
+  .bdg.err{color:var(--err);background:rgba(239,68,68,0.10);border-color:rgba(239,68,68,0.35)}
+  .bdg.info{color:var(--info);background:rgba(59,130,246,0.10);border-color:rgba(59,130,246,0.35)}
+  .bdg.muted{color:var(--g500);background:rgba(107,107,107,0.10);border-color:rgba(107,107,107,0.30)}
+  .bdg.brand{color:var(--b9);background:rgba(0,202,255,0.10);border-color:rgba(0,202,255,0.35)}
+
+  /* Inputs */
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:11px;color:var(--g500);font-family:'Poppins';font-weight:500;letter-spacing:0.06em}
+  .input,.select,.textarea{height:36px;border:1px solid var(--g200);border-radius:7px;padding:0 12px;font-size:13px;background:#fff;color:var(--g900);outline:none;width:100%;font-family:'Poppins'}
+  .textarea{height:auto;padding:10px 12px;min-height:80px}
+  .input:focus,.select:focus,.textarea:focus{border-color:var(--c5);box-shadow:0 0 0 3px rgba(0,202,255,0.15)}
+  .input.err{border-color:var(--err)}
+  .help{font-size:11px;color:var(--g500)}
+  .help.err{color:var(--err)}
+
+  /* Cards */
+  .card{background:#fff;border:1px solid var(--g200);border-radius:10px;padding:18px}
+
+  /* Page nav */
+  .page-nav{display:flex;align-items:center;gap:6px}
+  .page-nav .pn{width:30px;height:30px;border:1px solid var(--g200);background:#fff;border-radius:6px;display:grid;place-items:center;font-size:12px;color:var(--g700);cursor:pointer;font-family:'JetBrains Mono'}
+  .page-nav .pn.act{background:var(--g900);color:#fff;border-color:var(--g900)}
+  .page-nav .pn.dis{color:var(--g300);cursor:not-allowed}
+
+  /* Tabs */
+  .tabs{display:flex;border-bottom:1px solid var(--g200);gap:0}
+  .tabs .tab{padding:10px 16px;font-size:12px;color:var(--g500);font-weight:400;border-bottom:2px solid transparent;cursor:pointer;display:flex;align-items:center;gap:8px}
+  .tabs .tab .ct{font-family:'JetBrains Mono';font-size:10px;background:var(--g100);padding:1px 6px;border-radius:8px;color:var(--g500)}
+  .tabs .tab.act{color:var(--g900);font-weight:500;border-bottom-color:var(--c5)}
+  .tabs .tab.act .ct{background:var(--g900);color:#fff}
+
+  /* Filter bar */
+  .filterbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;background:#fff;border:1px solid var(--g200);border-radius:10px;margin-bottom:14px}
+
+  /* Tables */
+  .table{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
+  .table th{font-family:'Poppins';font-weight:500;text-transform:uppercase;letter-spacing:0.08em;font-size:10px;color:var(--g500);padding:11px 14px;text-align:left;border-bottom:1px solid var(--g200);background:var(--g50);white-space:nowrap}
+  .table th .sort{margin-left:4px;color:var(--g400);font-family:'JetBrains Mono';font-size:9px}
+  .table td{padding:13px 14px;border-bottom:1px solid var(--g100);color:var(--g700);vertical-align:middle}
+  .table tr:last-child td{border-bottom:none}
+  .table tr:hover td{background:var(--g50)}
+  .table .id{font-family:'JetBrains Mono';font-size:12px;color:var(--g900);font-weight:500}
+  .table .ck{width:14px;height:14px;border:1px solid var(--g300);border-radius:3px;display:inline-block;cursor:pointer;vertical-align:middle}
+  .table .ck.on{background:var(--g900);border-color:var(--g900);position:relative}
+  .table .ck.on::after{content:"✓";color:#fff;font-size:10px;position:absolute;top:-2px;left:2px}
+
+  /* KPI */
+  .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+  .kpi .k{background:#fff;border:1px solid var(--g200);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+  .kpi .k.acc::before{content:"";position:absolute;top:0;left:0;width:100%;height:2px;background:var(--grad)}
+  .kpi .k .lbl{font-size:10px;color:var(--g500);letter-spacing:0.12em;text-transform:uppercase;font-weight:500}
+  .kpi .k .val{font-family:'Montserrat';font-weight:800;font-size:26px;color:var(--g900);margin-top:6px;letter-spacing:-0.01em}
+  .kpi .k .delta{font-family:'JetBrains Mono';font-size:11px;margin-top:4px;display:flex;align-items:center;gap:4px}
+  .kpi .k .delta.up{color:var(--ok)}
+  .kpi .k .delta.down{color:var(--err)}
+  .kpi .k .delta.warn{color:var(--warn)}
+  .kpi .k .spark{position:absolute;bottom:8px;right:10px;width:60px;height:24px}
+
+  /* Avatars / list rows */
+  .avatar-sm{width:28px;height:28px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-weight:600;font-size:11px;font-family:'Poppins'}
+  .avatar-sm.a1{background:linear-gradient(135deg,#00CAFF,#0006A5)}
+  .avatar-sm.a2{background:linear-gradient(135deg,#10B981,#0B7A5C)}
+  .avatar-sm.a3{background:linear-gradient(135deg,#F59E0B,#B45309)}
+  .avatar-sm.a4{background:linear-gradient(135deg,#3B82F6,#1E3A8A)}
+  .avatar-sm.a5{background:linear-gradient(135deg,#EF4444,#7F1D1D)}
+
+  /* Charts (CSS bars + SVG) */
+  .bar-chart{display:grid;grid-template-columns:repeat(12,1fr);gap:8px;align-items:end;height:160px;padding:8px 0}
+  .bar-chart .bar{background:linear-gradient(180deg,var(--c5),var(--b9));border-radius:4px 4px 0 0;position:relative}
+  .bar-chart .bar .l{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono';font-size:9px;color:var(--g500)}
+
+  /* Empty / states */
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center;background:#fff;border:1px dashed var(--g300);border-radius:12px}
+  .empty .ic{width:56px;height:56px;border-radius:14px;background:var(--g100);display:grid;place-items:center;font-family:'JetBrains Mono';font-size:24px;color:var(--g400);margin-bottom:14px}
+
+  /* Wizard stepper */
+  .stepper{display:flex;align-items:center;gap:0;margin-bottom:24px}
+  .stepper .step{display:flex;align-items:center;gap:10px;flex:1}
+  .stepper .step .num{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--g300);display:grid;place-items:center;font-family:'JetBrains Mono';font-size:11px;font-weight:600;color:var(--g500);background:#fff}
+  .stepper .step.done .num{border-color:var(--ok);background:var(--ok);color:#fff}
+  .stepper .step.act .num{border-color:var(--g900);background:var(--g900);color:#fff}
+  .stepper .step .lbl{display:flex;flex-direction:column;line-height:1.1}
+  .stepper .step .lbl .t{font-size:12px;color:var(--g900);font-weight:500}
+  .stepper .step .lbl .s{font-size:10px;color:var(--g500);margin-top:2px}
+  .stepper .step:not(:last-child)::after{content:"";flex:1;height:1px;background:var(--g200);margin:0 12px}
+  .stepper .step.done:not(:last-child)::after{background:var(--ok)}
+
+  /* Toast */
+  .toast{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid;background:#fff;font-size:13px;max-width:380px}
+  .toast .ic{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;flex-shrink:0;font-family:'JetBrains Mono';font-size:14px}
+  .toast.ok{border-color:rgba(16,185,129,0.30);background:rgba(16,185,129,0.04)}
+  .toast.ok .ic{background:rgba(16,185,129,0.12);color:var(--ok)}
+  .toast.err{border-color:rgba(239,68,68,0.30);background:rgba(239,68,68,0.04)}
+  .toast.err .ic{background:rgba(239,68,68,0.12);color:var(--err)}
+  .toast.info{border-color:rgba(59,130,246,0.30);background:rgba(59,130,246,0.04)}
+  .toast.info .ic{background:rgba(59,130,246,0.12);color:var(--info)}
+  .toast .body .t{font-weight:500;color:var(--g900)}
+  .toast .body .d{font-size:12px;color:var(--g500);margin-top:2px}
+
+  /* Banner */
+  .banner{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:10px;font-size:13px}
+  .banner.warn{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.30);color:#92400e}
+  .banner.info{background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.25);color:#1e40af}
+  .banner .ic{font-family:'JetBrains Mono';font-weight:600}
+
+  /* Drawer (right side) */
+  .drawer{position:absolute;top:0;right:0;height:100%;width:380px;background:#fff;border-left:1px solid var(--g200);box-shadow:-12px 0 32px rgba(15,17,22,0.08);display:flex;flex-direction:column}
+  .drawer .h{padding:18px 22px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between}
+  .drawer .b{flex:1;padding:18px 22px;overflow:auto}
+  .drawer .f{padding:14px 22px;border-top:1px solid var(--g200);display:flex;gap:8px;justify-content:flex-end}
+
+  /* Modal */
+  .modal-back{position:absolute;inset:0;background:rgba(11,13,18,0.45);backdrop-filter:blur(2px);display:grid;place-items:center}
+  .modal{background:#fff;border-radius:14px;width:440px;box-shadow:0 24px 60px rgba(0,0,0,0.25);overflow:hidden}
+  .modal .h{padding:20px 22px;border-bottom:1px solid var(--g200);display:flex;align-items:flex-start;gap:14px}
+  .modal .h .ic{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;flex-shrink:0;font-family:'JetBrains Mono';font-weight:600}
+  .modal .h.danger .ic{background:rgba(239,68,68,0.10);color:var(--err)}
+  .modal .h .t{font-family:'Montserrat';font-weight:700;font-size:15px;color:var(--g900)}
+  .modal .h .d{font-size:13px;color:var(--g500);margin-top:4px;line-height:1.5}
+  .modal .b{padding:18px 22px;font-size:13px;color:var(--g700)}
+  .modal .f{padding:14px 22px;border-top:1px solid var(--g200);display:flex;gap:8px;justify-content:flex-end;background:var(--g50)}
+
+  /* Detail page bits */
+  .detail-grid{display:grid;grid-template-columns:1fr 320px;gap:18px}
+  .detail-grid .meta-row{display:grid;grid-template-columns:140px 1fr;padding:10px 0;border-bottom:1px solid var(--g100);font-size:13px}
+  .detail-grid .meta-row:last-child{border-bottom:none}
+  .detail-grid .meta-row .k{color:var(--g500);font-size:11px;text-transform:uppercase;letter-spacing:0.08em}
+  .detail-grid .meta-row .v{color:var(--g900)}
+
+  /* Timeline */
+  .timeline{display:flex;flex-direction:column;gap:0}
+  .timeline .ev{display:grid;grid-template-columns:90px 24px 1fr;gap:14px;padding:10px 0;align-items:flex-start}
+  .timeline .ev .when{font-family:'JetBrains Mono';font-size:11px;color:var(--g500);padding-top:2px}
+  .timeline .ev .dotcol{display:flex;flex-direction:column;align-items:center;height:100%}
+  .timeline .ev .dotcol .dot{width:9px;height:9px;border-radius:50%;background:var(--g300);margin-top:5px;border:2px solid #fff;box-shadow:0 0 0 1px var(--g300)}
+  .timeline .ev .dotcol .dot.ok{background:var(--ok);box-shadow:0 0 0 1px var(--ok)}
+  .timeline .ev .dotcol .dot.warn{background:var(--warn);box-shadow:0 0 0 1px var(--warn)}
+  .timeline .ev .dotcol .dot.brand{background:var(--c5);box-shadow:0 0 0 1px var(--c5)}
+  .timeline .ev .dotcol .ln{flex:1;width:1px;background:var(--g200);margin-top:2px;min-height:14px}
+  .timeline .ev:last-child .dotcol .ln{display:none}
+  .timeline .ev .body .t{font-size:13px;color:var(--g900);font-weight:500}
+  .timeline .ev .body .d{font-size:12px;color:var(--g500);margin-top:2px;line-height:1.5}
+
+  /* Section title */
+  h2.section-h{font-family:'Montserrat';font-weight:800;font-size:22px;color:var(--g900);letter-spacing:-0.015em;margin:0}
+  h3.sub-h{font-family:'Montserrat';font-weight:700;font-size:14px;color:var(--g900);margin:0}
+
+  /* Layout grids inside pages */
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+
+  /* Settings sidebar */
+  .settings-side{display:flex;flex-direction:column;gap:2px}
+  .settings-side .it{padding:10px 12px;border-radius:7px;font-size:13px;color:var(--g700);cursor:pointer;display:flex;align-items:center;gap:10px}
+  .settings-side .it.act{background:var(--g100);color:var(--g900);font-weight:500}
+
+  /* Toggle */
+  .toggle{width:36px;height:20px;border-radius:10px;background:var(--g300);position:relative;cursor:pointer;transition:0.2s}
+  .toggle.on{background:var(--c5)}
+  .toggle::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+  .toggle.on::after{left:18px}
+
+  /* Helpers */
+  .row{display:flex;align-items:center;gap:10px}
+  .between{display:flex;align-items:center;justify-content:space-between}
+  .grow{flex:1}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div style="width:28px;height:28px;border-radius:6px;background:#fff;display:grid;place-items:center">
+      <svg viewBox="0 0 120 120" width="20" height="20">
+        <defs><linearGradient id="tg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#74ECFF"/><stop offset="55%" stop-color="#00CAFF"/><stop offset="100%" stop-color="#0006A5"/></linearGradient></defs>
+        <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#3F3F3E"/>
+        <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#tg)"/>
+      </svg>
+    </div>
+    <div style="display:flex;flex-direction:column;line-height:1.05">
+      <span class="mono" style="font-size:9px;letter-spacing:0.18em;color:var(--dtl)">SELECT-PX</span>
+      <span class="display" style="font-size:13px;color:#fff">Gallery</span>
+    </div>
+  </div>
+  <span style="flex:1"></span>
+  <a href="index.html">← Doc</a>
+  <a href="#dashboard" class="active">Pages</a>
+  <a href="#components">Components</a>
+  <a href="#states">États</a>
+</div>
+
+<div class="wrap">
+
+  <!-- ===== INTRO ===== -->
+  <div style="margin-bottom:32px">
+    <span class="mono" style="font-size:11px;color:var(--c5);letter-spacing:0.14em">SELECT-PX · GALLERY</span>
+    <h1 class="display" style="font-size:36px;color:var(--g900);margin:6px 0 0;letter-spacing:-0.02em">Pages, patterns &amp; éléments à piocher.</h1>
+    <p style="color:var(--g500);font-size:14px;line-height:1.6;max-width:760px;margin-top:10px">
+      Une bibliothèque visuelle pour démarrer un nouveau produit SPX sans repartir de zéro :
+      pages complètes, variations de listes, composants supplémentaires, états (vide, erreur, chargement).
+      Chaque mockup est encadré comme un cadre de design — copie ce qui te plaît dans ton projet.
+    </p>
+  </div>
+
+  <!-- ============================== -->
+  <!-- PAGE 1 · DASHBOARD -->
+  <!-- ============================== -->
+  <div class="page-stage" id="dashboard">
+    <div class="stage-head">
+      <div class="label"><div class="dot"></div><span class="display" style="font-size:13px;color:var(--g900)">Page · Dashboard</span><span style="color:var(--g500);font-size:12px">— vue d'ensemble, KPI, activité</span></div>
+      <div class="num">01 / 08</div>
+    </div>
+    <div class="shell">
+      <aside class="side">
+        <div class="logo">
+          <div class="tile">
+            <svg viewBox="0 0 120 120" width="22" height="22">
+              <defs><linearGradient id="sg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#74ECFF"/><stop offset="55%" stop-color="#00CAFF"/><stop offset="100%" stop-color="#0006A5"/></linearGradient></defs>
+              <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#3F3F3E"/>
+              <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#sg1)"/>
+            </svg>
+          </div>
+          <div class="word"><span class="p">SELECT-PX</span><span class="n">LIC<span style="color:rgba(255,255,255,0.45)">_</span>PORTAL</span></div>
+        </div>
+        <div class="grp">Pilotage</div>
+        <div class="item act"><span class="ic">▦</span>Dashboard</div>
+        <div class="item"><span class="ic">▢</span>Contrats <span class="badge">3</span></div>
+        <div class="item"><span class="ic">⟋</span>Licences</div>
+        <div class="item"><span class="ic">▤</span>Quotas</div>
+        <div class="item"><span class="ic">!</span>Alertes <span class="badge">12</span></div>
+        <div class="grp">Référentiels</div>
+        <div class="item"><span class="ic">⌂</span>Banques</div>
+        <div class="item"><span class="ic">⊙</span>Pays</div>
+        <div class="item"><span class="ic">≡</span>Produits</div>
+        <div class="grp">Système</div>
+        <div class="item"><span class="ic">◐</span>Audit</div>
+        <div class="item"><span class="ic">⚙</span>Paramètres</div>
+        <div class="footer">v1.0.0 · prod-eu</div>
+      </aside>
+      <div class="main">
+        <div class="top">
+          <div class="crumbs"><span>Pilotage</span><span class="sep">/</span><span class="cur">Dashboard</span></div>
+          <span style="flex:1"></span>
+          <div class="search"><span class="mono">⌕</span><span>Rechercher contrat, banque…</span><span class="kbd">⌘K</span></div>
+          <div class="actions">
+            <div class="ic-btn">⟳</div>
+            <div class="ic-btn">⌬<span class="nb">3</span></div>
+            <div class="avatar">AB</div>
+          </div>
+        </div>
+        <div class="content">
+          <div class="between" style="margin-bottom:18px">
+            <div>
+              <h2 class="section-h">Vue d'ensemble</h2>
+              <div style="font-size:12px;color:var(--g500);margin-top:4px">Mise à jour il y a 2 min · prod-eu</div>
+            </div>
+            <div class="row">
+              <button class="btn outline sm">Cette semaine ▾</button>
+              <button class="btn outline sm">Exporter</button>
+              <button class="btn primary sm">Nouveau contrat</button>
+            </div>
+          </div>
+
+          <div class="kpi">
+            <div class="k acc">
+              <div class="lbl">Contrats actifs</div>
+              <div class="val">247</div>
+              <div class="delta up">▲ 4 ce mois</div>
+              <svg class="spark" viewBox="0 0 60 24"><polyline fill="none" stroke="#00CAFF" stroke-width="1.5" points="0,18 8,16 16,17 24,12 32,14 40,8 48,10 60,4"/></svg>
+            </div>
+            <div class="k">
+              <div class="lbl">Alertes</div>
+              <div class="val" style="color:var(--warn)">18</div>
+              <div class="delta warn">▲ 3 / 7j</div>
+              <svg class="spark" viewBox="0 0 60 24"><polyline fill="none" stroke="#F59E0B" stroke-width="1.5" points="0,20 10,18 20,16 30,18 40,12 50,14 60,8"/></svg>
+            </div>
+            <div class="k">
+              <div class="lbl">Dépassements</div>
+              <div class="val" style="color:var(--err)">5</div>
+              <div class="delta down">⚠ action requise</div>
+            </div>
+            <div class="k">
+              <div class="lbl">Revenu MRR</div>
+              <div class="val">2.4M €</div>
+              <div class="delta up">▲ 6.2%</div>
+              <svg class="spark" viewBox="0 0 60 24"><polyline fill="none" stroke="#10B981" stroke-width="1.5" points="0,20 8,18 16,17 24,15 32,12 40,9 48,8 60,4"/></svg>
+            </div>
+          </div>
+
+          <div class="g2">
+            <div class="card">
+              <div class="between" style="margin-bottom:14px">
+                <div><h3 class="sub-h">Consommation par mois</h3><div style="font-size:11px;color:var(--g500);margin-top:2px">12 derniers mois</div></div>
+                <div class="row" style="gap:6px">
+                  <span class="chip">Tx réalisées</span>
+                  <span class="chip">Quota</span>
+                </div>
+              </div>
+              <div class="bar-chart" style="margin-bottom:24px">
+                <div class="bar" style="height:42%"><div class="l">J</div></div>
+                <div class="bar" style="height:55%"><div class="l">F</div></div>
+                <div class="bar" style="height:48%"><div class="l">M</div></div>
+                <div class="bar" style="height:62%"><div class="l">A</div></div>
+                <div class="bar" style="height:71%"><div class="l">M</div></div>
+                <div class="bar" style="height:65%"><div class="l">J</div></div>
+                <div class="bar" style="height:78%"><div class="l">J</div></div>
+                <div class="bar" style="height:82%"><div class="l">A</div></div>
+                <div class="bar" style="height:74%"><div class="l">S</div></div>
+                <div class="bar" style="height:88%"><div class="l">O</div></div>
+                <div class="bar" style="height:92%"><div class="l">N</div></div>
+                <div class="bar" style="height:95%;background:var(--grad)"><div class="l" style="color:var(--g900);font-weight:600">D</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="between" style="margin-bottom:14px">
+                <h3 class="sub-h">Répartition par pays</h3>
+                <span class="bdg muted">12 pays</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <div>
+                  <div class="between" style="font-size:12px"><span>🇲🇦 Maroc</span><span class="mono" style="color:var(--g900);font-weight:500">98 contrats</span></div>
+                  <div style="height:6px;background:var(--g100);border-radius:3px;margin-top:4px;overflow:hidden"><div style="width:78%;height:100%;background:var(--grad)"></div></div>
+                </div>
+                <div>
+                  <div class="between" style="font-size:12px"><span>🇨🇮 Côte d'Ivoire</span><span class="mono" style="color:var(--g900);font-weight:500">42 contrats</span></div>
+                  <div style="height:6px;background:var(--g100);border-radius:3px;margin-top:4px;overflow:hidden"><div style="width:42%;height:100%;background:var(--c5)"></div></div>
+                </div>
+                <div>
+                  <div class="between" style="font-size:12px"><span>🇹🇳 Tunisie</span><span class="mono" style="color:var(--g900);font-weight:500">36 contrats</span></div>
+                  <div style="height:6px;background:var(--g100);border-radius:3px;margin-top:4px;overflow:hidden"><div style="width:36%;height:100%;background:var(--c5)"></div></div>
+                </div>
+                <div>
+                  <div class="between" style="font-size:12px"><span>🇸🇳 Sénégal</span><span class="mono" style="color:var(--g900);font-weight:500">28 contrats</span></div>
+                  <div style="height:6px;background:var(--g100);border-radius:3px;margin-top:4px;overflow:hidden"><div style="width:28%;height:100%;background:var(--c5)"></div></div>
+                </div>
+                <div>
+                  <div class="between" style="font-size:12px"><span>🇪🇬 Égypte</span><span class="mono" style="color:var(--g900);font-weight:500">21 contrats</span></div>
+                  <div style="height:6px;background:var(--g100);border-radius:3px;margin-top:4px;overflow:hidden"><div style="width:21%;height:100%;background:var(--c5)"></div></div>
+                </div>
+                <div>
+                  <div class="between" style="font-size:12px"><span style="color:var(--g500)">Autres (7)</span><span class="mono" style="color:var(--g500)">22</span></div>
+                  <div style="height:6px;background:var(--g100);border-radius:3px;margin-top:4px;overflow:hidden"><div style="width:22%;height:100%;background:var(--g300)"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:14px" class="card">
+            <div class="between" style="margin-bottom:12px">
+              <h3 class="sub-h">Activité récente</h3>
+              <a href="#" style="font-size:12px;color:var(--info);text-decoration:none">Voir tout →</a>
+            </div>
+            <div class="timeline">
+              <div class="ev">
+                <div class="when">il y a 4 min</div>
+                <div class="dotcol"><div class="dot ok"></div><div class="ln"></div></div>
+                <div class="body"><div class="t">Clé générée pour <span class="mono">SPX-2024-0203</span></div><div class="d">UBA Côte d'Ivoire · clé d'activation envoyée par email à r.kone@uba.ci</div></div>
+              </div>
+              <div class="ev">
+                <div class="when">il y a 22 min</div>
+                <div class="dotcol"><div class="dot warn"></div><div class="ln"></div></div>
+                <div class="body"><div class="t">Quota 90% atteint sur <span class="mono">SPX-2024-0156</span></div><div class="d">Attijariwafa Bank · 1 824 670 / 2 000 000 transactions ce mois.</div></div>
+              </div>
+              <div class="ev">
+                <div class="when">il y a 1h</div>
+                <div class="dotcol"><div class="dot brand"></div><div class="ln"></div></div>
+                <div class="body"><div class="t">Nouveau contrat créé · <span class="mono">SPX-2024-0249</span></div><div class="d">Banque Misr Égypte · plan Enterprise · prend effet le 01/05/2026.</div></div>
+              </div>
+              <div class="ev">
+                <div class="when">il y a 3h</div>
+                <div class="dotcol"><div class="dot"></div></div>
+                <div class="body"><div class="t">Renouvellement de 4 contrats programmé</div><div class="d">Échéance dans 30 jours · notification envoyée aux account managers.</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- PAGE 2 · LIST WITH FILTERS -->
+  <!-- ============================== -->
+  <div class="page-stage" id="list">
+    <div class="stage-head">
+      <div class="label"><div class="dot"></div><span class="display" style="font-size:13px;color:var(--g900)">Page · Liste</span><span style="color:var(--g500);font-size:12px">— filtres, bulk actions, tri, pagination</span></div>
+      <div class="num">02 / 08</div>
+    </div>
+    <div class="shell">
+      <aside class="side">
+        <div class="logo">
+          <div class="tile">
+            <svg viewBox="0 0 120 120" width="22" height="22">
+              <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#3F3F3E"/>
+              <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#sg1)"/>
+            </svg>
+          </div>
+          <div class="word"><span class="p">SELECT-PX</span><span class="n">LIC<span style="color:rgba(255,255,255,0.45)">_</span>PORTAL</span></div>
+        </div>
+        <div class="grp">Pilotage</div>
+        <div class="item"><span class="ic">▦</span>Dashboard</div>
+        <div class="item act"><span class="ic">▢</span>Contrats <span class="badge">3</span></div>
+        <div class="item"><span class="ic">⟋</span>Licences</div>
+        <div class="item"><span class="ic">▤</span>Quotas</div>
+        <div class="item"><span class="ic">!</span>Alertes <span class="badge">12</span></div>
+        <div class="grp">Référentiels</div>
+        <div class="item"><span class="ic">⌂</span>Banques</div>
+        <div class="item"><span class="ic">⊙</span>Pays</div>
+      </aside>
+      <div class="main">
+        <div class="top">
+          <div class="crumbs"><span>Pilotage</span><span class="sep">/</span><span class="cur">Contrats</span></div>
+          <span style="flex:1"></span>
+          <div class="search"><span class="mono">⌕</span><span>Rechercher contrat, banque…</span><span class="kbd">⌘K</span></div>
+          <div class="actions"><div class="avatar">AB</div></div>
+        </div>
+        <div class="content">
+          <div class="between" style="margin-bottom:18px">
+            <div>
+              <h2 class="section-h">Contrats</h2>
+              <div style="font-size:12px;color:var(--g500);margin-top:4px">247 contrats · 18 en alerte · 5 dépassements</div>
+            </div>
+            <div class="row">
+              <button class="btn outline sm">↓ Importer CSV</button>
+              <button class="btn outline sm">Exporter</button>
+              <button class="btn primary sm">+ Nouveau contrat</button>
+            </div>
+          </div>
+
+          <div class="tabs" style="margin-bottom:14px">
+            <div class="tab act">Tous <span class="ct">247</span></div>
+            <div class="tab">Actifs <span class="ct">221</span></div>
+            <div class="tab">En alerte <span class="ct">18</span></div>
+            <div class="tab">Dépassés <span class="ct">5</span></div>
+            <div class="tab">Suspendus <span class="ct">3</span></div>
+          </div>
+
+          <div class="filterbar">
+            <div style="display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border:1px solid var(--g200);background:#fff;border-radius:7px;font-size:12px;color:var(--g700);min-width:240px">
+              <span class="mono" style="color:var(--g400)">⌕</span>
+              <input style="border:none;outline:none;flex:1;font-family:inherit;font-size:12px" placeholder="Filtrer par n°, banque…" value="bmce"/>
+            </div>
+            <span class="chip">Pays: Maroc <span class="x">×</span></span>
+            <span class="chip">Plan: Enterprise <span class="x">×</span></span>
+            <span class="chip act">Statut: Actif <span class="x" style="color:rgba(255,255,255,0.7)">×</span></span>
+            <button class="btn ghost sm" style="color:var(--info);padding:0">+ Ajouter un filtre</button>
+            <span class="grow"></span>
+            <span style="font-size:12px;color:var(--g500)">3 résultats</span>
+          </div>
+
+          <!-- Bulk actions bar (when items selected) -->
+          <div style="background:var(--d0);color:#fff;padding:10px 14px;border-radius:9px;display:flex;align-items:center;gap:14px;margin-bottom:10px">
+            <span style="font-size:12px"><span class="mono" style="font-weight:600">2 sélectionnés</span></span>
+            <span style="width:1px;height:18px;background:var(--dbd)"></span>
+            <button class="btn ghost sm" style="color:#fff">Suspendre</button>
+            <button class="btn ghost sm" style="color:#fff">Renouveler</button>
+            <button class="btn ghost sm" style="color:#fff">Exporter</button>
+            <span class="grow"></span>
+            <button class="btn ghost sm" style="color:var(--err)">Supprimer</button>
+            <button class="btn ghost sm" style="color:var(--dtl)">×</button>
+          </div>
+
+          <div style="background:#fff;border:1px solid var(--g200);border-radius:10px;overflow:hidden">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width:32px"><span class="ck on"></span></th>
+                  <th>N° contrat <span class="sort">↕</span></th>
+                  <th>Banque <span class="sort">↕</span></th>
+                  <th>Pays</th>
+                  <th>Plan</th>
+                  <th>Statut</th>
+                  <th>Conso.</th>
+                  <th>Échéance</th>
+                  <th style="width:40px"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="ck on"></span></td>
+                  <td class="id">SPX-2024-0142</td>
+                  <td><div class="row" style="gap:8px"><span class="avatar-sm a4">BB</span><div><div style="color:var(--g900);font-weight:500;font-size:13px">BMCE Bank of Africa</div><div style="font-size:11px;color:var(--g500)">contact@bmce.ma</div></div></div></td>
+                  <td>🇲🇦 Maroc</td>
+                  <td><span class="bdg brand">ENTERPRISE</span></td>
+                  <td><span class="bdg ok">ACTIF</span></td>
+                  <td><div style="display:flex;align-items:center;gap:8px"><div style="width:60px;height:5px;background:var(--g100);border-radius:3px;overflow:hidden"><div style="width:72%;height:100%;background:var(--ok)"></div></div><span class="mono" style="font-size:11px;color:var(--ok)">72%</span></div></td>
+                  <td class="mono" style="font-size:12px">12/05/2026</td>
+                  <td><span style="color:var(--g400);font-family:'JetBrains Mono';cursor:pointer">⋯</span></td>
+                </tr>
+                <tr>
+                  <td><span class="ck on"></span></td>
+                  <td class="id">SPX-2024-0156</td>
+                  <td><div class="row" style="gap:8px"><span class="avatar-sm a3">AW</span><div><div style="color:var(--g900);font-weight:500;font-size:13px">Attijariwafa Bank</div><div style="font-size:11px;color:var(--g500)">support@attijari.ma</div></div></div></td>
+                  <td>🇲🇦 Maroc</td>
+                  <td><span class="bdg brand">ENTERPRISE</span></td>
+                  <td><span class="bdg warn">ALERTE</span></td>
+                  <td><div style="display:flex;align-items:center;gap:8px"><div style="width:60px;height:5px;background:var(--g100);border-radius:3px;overflow:hidden"><div style="width:91%;height:100%;background:var(--warn)"></div></div><span class="mono" style="font-size:11px;color:var(--warn)">91%</span></div></td>
+                  <td class="mono" style="font-size:12px">28/06/2026</td>
+                  <td><span style="color:var(--g400);font-family:'JetBrains Mono';cursor:pointer">⋯</span></td>
+                </tr>
+                <tr>
+                  <td><span class="ck"></span></td>
+                  <td class="id">SPX-2024-0203</td>
+                  <td><div class="row" style="gap:8px"><span class="avatar-sm a2">UB</span><div><div style="color:var(--g900);font-weight:500;font-size:13px">UBA Côte d'Ivoire</div><div style="font-size:11px;color:var(--g500)">r.kone@uba.ci</div></div></div></td>
+                  <td>🇨🇮 Côte d'Ivoire</td>
+                  <td><span class="bdg muted">PROFESSIONAL</span></td>
+                  <td><span class="bdg err">DÉPASSÉ</span></td>
+                  <td><div style="display:flex;align-items:center;gap:8px"><div style="width:60px;height:5px;background:var(--g100);border-radius:3px;overflow:hidden"><div style="width:100%;height:100%;background:var(--err)"></div></div><span class="mono" style="font-size:11px;color:var(--err)">112%</span></div></td>
+                  <td class="mono" style="font-size:12px">15/03/2026</td>
+                  <td><span style="color:var(--g400);font-family:'JetBrains Mono';cursor:pointer">⋯</span></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="between" style="padding:12px 16px;border-top:1px solid var(--g200);background:var(--g50)">
+              <div style="font-size:12px;color:var(--g500)">Affichage <span class="mono" style="color:var(--g900);font-weight:500">1–3</span> sur <span class="mono" style="color:var(--g900);font-weight:500">247</span></div>
+              <div class="page-nav">
+                <div class="pn dis">‹</div>
+                <div class="pn act">1</div>
+                <div class="pn">2</div>
+                <div class="pn">3</div>
+                <div class="pn">4</div>
+                <div class="pn">…</div>
+                <div class="pn">83</div>
+                <div class="pn">›</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- PAGE 3 · DETAIL -->
+  <!-- ============================== -->
+  <div class="page-stage" id="detail">
+    <div class="stage-head">
+      <div class="label"><div class="dot"></div><span class="display" style="font-size:13px;color:var(--g900)">Page · Détail</span><span style="color:var(--g500);font-size:12px">— vue contrat avec métadonnées, timeline, actions</span></div>
+      <div class="num">03 / 08</div>
+    </div>
+    <div class="shell">
+      <aside class="side">
+        <div class="logo">
+          <div class="tile">
+            <svg viewBox="0 0 120 120" width="22" height="22">
+              <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#3F3F3E"/>
+              <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#sg1)"/>
+            </svg>
+          </div>
+          <div class="word"><span class="p">SELECT-PX</span><span class="n">LIC<span style="color:rgba(255,255,255,0.45)">_</span>PORTAL</span></div>
+        </div>
+        <div class="grp">Pilotage</div>
+        <div class="item"><span class="ic">▦</span>Dashboard</div>
+        <div class="item act"><span class="ic">▢</span>Contrats</div>
+        <div class="item"><span class="ic">⟋</span>Licences</div>
+      </aside>
+      <div class="main">
+        <div class="top">
+          <div class="crumbs"><span>Pilotage</span><span class="sep">/</span><a href="#" style="color:var(--info);text-decoration:none">Contrats</a><span class="sep">/</span><span class="cur mono">SPX-2024-0156</span></div>
+          <span style="flex:1"></span>
+          <div class="actions"><div class="avatar">AB</div></div>
+        </div>
+        <div class="content">
+          <!-- Banner alerte -->
+          <div class="banner warn" style="margin-bottom:16px">
+            <span class="ic">⚠</span>
+            <div style="flex:1">
+              <span style="font-weight:500">Quota à 91%</span> · 1 824 670 / 2 000 000 transactions ce mois. Renouvellement automatique dans 47 jours.
+            </div>
+            <button class="btn outline sm">Augmenter le quota</button>
+          </div>
+
+          <div class="between" style="margin-bottom:18px">
+            <div>
+              <div class="row" style="gap:10px">
+                <span class="bdg warn">ALERTE</span>
+                <span class="bdg brand">ENTERPRISE</span>
+                <span class="mono" style="font-size:11px;color:var(--g500)">SPX-2024-0156</span>
+              </div>
+              <h2 class="section-h" style="margin-top:6px">Attijariwafa Bank</h2>
+              <div style="font-size:13px;color:var(--g500);margin-top:4px">🇲🇦 Maroc · Renouvellement le 28/06/2026</div>
+            </div>
+            <div class="row">
+              <button class="btn outline sm">Suspendre</button>
+              <button class="btn outline sm">Générer une clé</button>
+              <button class="btn primary sm">Modifier</button>
+            </div>
+          </div>
+
+          <div class="tabs" style="margin-bottom:18px">
+            <div class="tab act">Vue d'ensemble</div>
+            <div class="tab">Quotas <span class="ct">3</span></div>
+            <div class="tab">Clés <span class="ct">14</span></div>
+            <div class="tab">Facturation</div>
+            <div class="tab">Audit</div>
+          </div>
+
+          <div class="detail-grid">
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div class="card">
+                <h3 class="sub-h" style="margin-bottom:10px">Informations contrat</h3>
+                <div class="meta-row"><div class="k">N° contrat</div><div class="v mono">SPX-2024-0156</div></div>
+                <div class="meta-row"><div class="k">Plan</div><div class="v">Enterprise · 2M tx/mois</div></div>
+                <div class="meta-row"><div class="k">Date d'effet</div><div class="v mono">01/01/2024</div></div>
+                <div class="meta-row"><div class="k">Renouvellement</div><div class="v mono">28/06/2026 <span style="color:var(--warn);font-family:'Poppins';font-size:11px;margin-left:6px">dans 47j</span></div></div>
+                <div class="meta-row"><div class="k">Account Manager</div><div class="v"><div class="row" style="gap:8px"><span class="avatar-sm a1">AB</span>Aïcha Bennani</div></div></div>
+                <div class="meta-row"><div class="k">Tags</div><div class="v"><span class="chip">tier-1</span> <span class="chip">core-banking</span></div></div>
+              </div>
+
+              <div class="card">
+                <div class="between" style="margin-bottom:14px"><h3 class="sub-h">Consommation 12 mois</h3><span class="bdg muted">moy. 1.4M / mois</span></div>
+                <div class="bar-chart">
+                  <div class="bar" style="height:48%"><div class="l">J</div></div>
+                  <div class="bar" style="height:55%"><div class="l">F</div></div>
+                  <div class="bar" style="height:52%"><div class="l">M</div></div>
+                  <div class="bar" style="height:60%"><div class="l">A</div></div>
+                  <div class="bar" style="height:68%"><div class="l">M</div></div>
+                  <div class="bar" style="height:62%"><div class="l">J</div></div>
+                  <div class="bar" style="height:74%"><div class="l">J</div></div>
+                  <div class="bar" style="height:70%"><div class="l">A</div></div>
+                  <div class="bar" style="height:78%"><div class="l">S</div></div>
+                  <div class="bar" style="height:84%"><div class="l">O</div></div>
+                  <div class="bar" style="height:88%"><div class="l">N</div></div>
+                  <div class="bar" style="height:91%;background:linear-gradient(180deg,var(--warn),#92400e)"><div class="l" style="color:var(--warn);font-weight:600">D</div></div>
+                </div>
+              </div>
+
+              <div class="card">
+                <h3 class="sub-h" style="margin-bottom:14px">Timeline</h3>
+                <div class="timeline">
+                  <div class="ev">
+                    <div class="when">il y a 22 min</div>
+                    <div class="dotcol"><div class="dot warn"></div><div class="ln"></div></div>
+                    <div class="body"><div class="t">Quota 90% franchi</div><div class="d">Notification envoyée à l'Account Manager.</div></div>
+                  </div>
+                  <div class="ev">
+                    <div class="when">12 mars</div>
+                    <div class="dotcol"><div class="dot brand"></div><div class="ln"></div></div>
+                    <div class="body"><div class="t">Clé d'activation régénérée</div><div class="d">Par Karim Idrissi · raison : rotation annuelle.</div></div>
+                  </div>
+                  <div class="ev">
+                    <div class="when">28 fév</div>
+                    <div class="dotcol"><div class="dot ok"></div><div class="ln"></div></div>
+                    <div class="body"><div class="t">Plan upgrade Pro → Enterprise</div><div class="d">Quota mensuel passé de 500K à 2M transactions.</div></div>
+                  </div>
+                  <div class="ev">
+                    <div class="when">01 jan 2024</div>
+                    <div class="dotcol"><div class="dot"></div></div>
+                    <div class="body"><div class="t">Contrat signé</div><div class="d">Date d'effet · plan initial Pro.</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div class="card">
+                <h3 class="sub-h" style="margin-bottom:14px">Quotas actifs</h3>
+                <div style="display:flex;flex-direction:column;gap:14px">
+                  <div>
+                    <div class="between" style="font-size:12px;margin-bottom:4px"><span style="color:var(--g700)">Transactions / mois</span><span class="mono" style="color:var(--warn);font-weight:500">91%</span></div>
+                    <div style="height:6px;background:var(--g100);border-radius:3px;overflow:hidden"><div style="width:91%;height:100%;background:var(--warn)"></div></div>
+                    <div class="mono" style="font-size:10px;color:var(--g500);margin-top:4px">1 824 670 / 2 000 000</div>
+                  </div>
+                  <div>
+                    <div class="between" style="font-size:12px;margin-bottom:4px"><span style="color:var(--g700)">API calls / jour</span><span class="mono" style="color:var(--ok);font-weight:500">42%</span></div>
+                    <div style="height:6px;background:var(--g100);border-radius:3px;overflow:hidden"><div style="width:42%;height:100%;background:var(--ok)"></div></div>
+                    <div class="mono" style="font-size:10px;color:var(--g500);margin-top:4px">421 K / 1 M</div>
+                  </div>
+                  <div>
+                    <div class="between" style="font-size:12px;margin-bottom:4px"><span style="color:var(--g700)">Utilisateurs actifs</span><span class="mono" style="color:var(--ok);font-weight:500">68%</span></div>
+                    <div style="height:6px;background:var(--g100);border-radius:3px;overflow:hidden"><div style="width:68%;height:100%;background:var(--ok)"></div></div>
+                    <div class="mono" style="font-size:10px;color:var(--g500);margin-top:4px">340 / 500</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <h3 class="sub-h" style="margin-bottom:10px">Contacts</h3>
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <div class="row" style="gap:10px"><span class="avatar-sm a3">KI</span><div><div style="font-size:13px;color:var(--g900)">Karim Idrissi</div><div style="font-size:11px;color:var(--g500)">CTO · k.idrissi@attijari.ma</div></div></div>
+                  <div class="row" style="gap:10px"><span class="avatar-sm a4">SE</span><div><div style="font-size:13px;color:var(--g900)">Salma El Amrani</div><div style="font-size:11px;color:var(--g500)">Procurement · s.elamrani@attijari.ma</div></div></div>
+                </div>
+              </div>
+
+              <div class="card" style="background:var(--d0);color:#fff;border-color:var(--dbd)">
+                <h3 class="sub-h" style="color:#fff;margin-bottom:8px">Clé active</h3>
+                <div class="mono" style="font-size:11px;color:var(--c5);background:var(--d1);padding:10px 12px;border-radius:6px;letter-spacing:0.05em;border:1px solid var(--dbd)">SPX-A1F4-9C81-22E0-8F7B-HJ4K</div>
+                <div style="font-size:11px;color:var(--dtl);margin-top:8px">Rotée le 12 mars 2026 · expire dans 280 jours</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- PAGE 4 · WIZARD / FORM MULTI-STEP -->
+  <!-- ============================== -->
+  <div class="page-stage" id="wizard">
+    <div class="stage-head">
+      <div class="label"><div class="dot"></div><span class="display" style="font-size:13px;color:var(--g900)">Page · Création (wizard)</span><span style="color:var(--g500);font-size:12px">— formulaire multi-étapes</span></div>
+      <div class="num">04 / 08</div>
+    </div>
+    <div class="shell">
+      <aside class="side">
+        <div class="logo">
+          <div class="tile">
+            <svg viewBox="0 0 120 120" width="22" height="22">
+              <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#3F3F3E"/>
+              <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#sg1)"/>
+            </svg>
+          </div>
+          <div class="word"><span class="p">SELECT-PX</span><span class="n">LIC<span style="color:rgba(255,255,255,0.45)">_</span>PORTAL</span></div>
+        </div>
+        <div class="grp">Pilotage</div>
+        <div class="item"><span class="ic">▦</span>Dashboard</div>
+        <div class="item act"><span class="ic">▢</span>Contrats</div>
+      </aside>
+      <div class="main">
+        <div class="top">
+          <div class="crumbs"><a href="#" style="color:var(--info);text-decoration:none">Contrats</a><span class="sep">/</span><span class="cur">Nouveau contrat</span></div>
+          <span style="flex:1"></span>
+          <button class="btn ghost sm">Annuler</button>
+        </div>
+        <div class="content" style="max-width:840px;margin:0 auto;padding:32px 28px">
+          <h2 class="section-h">Nouveau contrat</h2>
+          <div style="font-size:13px;color:var(--g500);margin-top:4px;margin-bottom:24px">Étape 2 sur 4 · estimé 3 min restantes</div>
+
+          <div class="stepper">
+            <div class="step done"><div class="num">✓</div><div class="lbl"><span class="t">Banque</span><span class="s">BMCE Bank</span></div></div>
+            <div class="step act"><div class="num">2</div><div class="lbl"><span class="t">Plan &amp; quotas</span><span class="s">en cours</span></div></div>
+            <div class="step"><div class="num">3</div><div class="lbl"><span class="t">Contacts</span><span class="s">à venir</span></div></div>
+            <div class="step"><div class="num">4</div><div class="lbl"><span class="t">Récap</span><span class="s">à venir</span></div></div>
+          </div>
+
+          <div class="card">
+            <h3 class="sub-h" style="margin-bottom:16px">Plan et quotas</h3>
+            <div class="g3" style="margin-bottom:18px">
+              <div style="border:2px solid var(--g200);border-radius:10px;padding:16px;cursor:pointer">
+                <div class="caps">Starter</div>
+                <div class="display" style="font-size:22px;color:var(--g900);margin-top:4px">490 €<span style="font-size:11px;color:var(--g500);font-weight:300;font-family:'Poppins';margin-left:4px">/ mois</span></div>
+                <div style="font-size:11px;color:var(--g500);margin-top:8px;line-height:1.5">100 K transactions<br/>5 utilisateurs<br/>Support email</div>
+              </div>
+              <div style="border:2px solid var(--c5);border-radius:10px;padding:16px;cursor:pointer;position:relative;background:rgba(0,202,255,0.03)">
+                <div style="position:absolute;top:-8px;right:12px;background:var(--c5);color:#fff;font-family:'JetBrains Mono';font-size:9px;padding:2px 7px;border-radius:3px;letter-spacing:0.06em">SÉLECTIONNÉ</div>
+                <div class="caps" style="color:var(--c5)">Professional</div>
+                <div class="display" style="font-size:22px;color:var(--g900);margin-top:4px">1 990 €<span style="font-size:11px;color:var(--g500);font-weight:300;font-family:'Poppins';margin-left:4px">/ mois</span></div>
+                <div style="font-size:11px;color:var(--g500);margin-top:8px;line-height:1.5">500 K transactions<br/>50 utilisateurs<br/>Support 24/5 · SLA 99.9%</div>
+              </div>
+              <div style="border:2px solid var(--g200);border-radius:10px;padding:16px;cursor:pointer">
+                <div class="caps">Enterprise</div>
+                <div class="display" style="font-size:22px;color:var(--g900);margin-top:4px">Sur devis</div>
+                <div style="font-size:11px;color:var(--g500);margin-top:8px;line-height:1.5">Quota personnalisé<br/>Utilisateurs illimités<br/>Support 24/7 · SLA 99.99%</div>
+              </div>
+            </div>
+
+            <div class="g2" style="gap:14px">
+              <div class="field">
+                <label>Quota mensuel (transactions)</label>
+                <input class="input mono" value="500 000"/>
+                <span class="help">Modifiable à tout moment via la console.</span>
+              </div>
+              <div class="field">
+                <label>Date d'effet</label>
+                <input class="input mono" value="01/05/2026"/>
+                <span class="help">Effective le 1er du mois suivant signature.</span>
+              </div>
+              <div class="field">
+                <label>Devise de facturation</label>
+                <select class="select"><option>EUR · Euro</option><option>USD · Dollar</option><option>MAD · Dirham</option></select>
+              </div>
+              <div class="field">
+                <label>Renouvellement automatique</label>
+                <div class="row" style="gap:10px;height:36px"><div class="toggle on"></div><span style="font-size:13px;color:var(--g700)">Activé · 12 mois</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row" style="justify-content:space-between;margin-top:24px">
+            <button class="btn outline">← Précédent</button>
+            <div class="row">
+              <button class="btn ghost">Enregistrer comme brouillon</button>
+              <button class="btn primary">Continuer →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- PAGE 5 · SETTINGS -->
+  <!-- ============================== -->
+  <div class="page-stage" id="settings">
+    <div class="stage-head">
+      <div class="label"><div class="dot"></div><span class="display" style="font-size:13px;color:var(--g900)">Page · Paramètres</span><span style="color:var(--g500);font-size:12px">— sidebar interne, sections, formulaire</span></div>
+      <div class="num">05 / 08</div>
+    </div>
+    <div class="shell">
+      <aside class="side">
+        <div class="logo">
+          <div class="tile">
+            <svg viewBox="0 0 120 120" width="22" height="22">
+              <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#3F3F3E"/>
+              <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#sg1)"/>
+            </svg>
+          </div>
+          <div class="word"><span class="p">SELECT-PX</span><span class="n">LIC<span style="color:rgba(255,255,255,0.45)">_</span>PORTAL</span></div>
+        </div>
+        <div class="grp">Système</div>
+        <div class="item act"><span class="ic">⚙</span>Paramètres</div>
+      </aside>
+      <div class="main">
+        <div class="top">
+          <div class="crumbs"><span class="cur">Paramètres</span></div>
+          <span style="flex:1"></span>
+          <div class="actions"><div class="avatar">AB</div></div>
+        </div>
+        <div class="content">
+          <h2 class="section-h" style="margin-bottom:18px">Paramètres</h2>
+          <div style="display:grid;grid-template-columns:220px 1fr;gap:32px">
+            <div class="settings-side">
+              <div style="font-size:10px;color:var(--g500);letter-spacing:0.14em;text-transform:uppercase;padding:6px 12px;font-weight:500">Compte</div>
+              <div class="it">Profil</div>
+              <div class="it">Sécurité</div>
+              <div class="it">Préférences</div>
+              <div style="font-size:10px;color:var(--g500);letter-spacing:0.14em;text-transform:uppercase;padding:14px 12px 6px;font-weight:500">Organisation</div>
+              <div class="it act">Branding</div>
+              <div class="it">Membres <span style="margin-left:auto;font-family:'JetBrains Mono';font-size:10px;color:var(--g500)">12</span></div>
+              <div class="it">Permissions</div>
+              <div class="it">Facturation</div>
+              <div style="font-size:10px;color:var(--g500);letter-spacing:0.14em;text-transform:uppercase;padding:14px 12px 6px;font-weight:500">Système</div>
+              <div class="it">API &amp; webhooks</div>
+              <div class="it">Audit log</div>
+              <div class="it">Intégrations</div>
+            </div>
+            <div>
+              <h3 class="sub-h" style="margin-bottom:6px">Branding produit</h3>
+              <div style="font-size:13px;color:var(--g500);margin-bottom:18px;line-height:1.6;max-width:560px">Configurez le slot produit affiché dans le header et les emails. Ces valeurs sont lues depuis <span class="mono" style="color:var(--g700)">NEXT_PUBLIC_PRODUCT_*</span>.</div>
+              <div class="card">
+                <div class="g2" style="gap:14px">
+                  <div class="field">
+                    <label>Sigle produit (3–4 lettres)</label>
+                    <input class="input mono" value="LIC" style="text-transform:uppercase"/>
+                    <span class="help">Affiché dans la wordmark et les favicons.</span>
+                  </div>
+                  <div class="field">
+                    <label>Suffixe métier</label>
+                    <select class="select"><option>PORTAL</option><option>CONSOLE</option><option>OPS</option><option>DASH</option><option>STUDIO</option></select>
+                  </div>
+                  <div class="field" style="grid-column:span 2">
+                    <label>Nom complet du produit</label>
+                    <input class="input" value="Licensing Portal"/>
+                  </div>
+                  <div class="field" style="grid-column:span 2">
+                    <label>Description (meta tag)</label>
+                    <textarea class="textarea">Outil interne S2M de gestion des licences et des quotas contractuels SELECT-PX.</textarea>
+                  </div>
+                </div>
+                <div style="margin-top:16px">
+                  <div class="caps" style="margin-bottom:6px">Aperçu</div>
+                  <div style="background:var(--d0);padding:18px;border-radius:8px;display:flex;align-items:center;gap:14px">
+                    <div style="width:42px;height:42px;border-radius:9px;background:#fff;display:grid;place-items:center">
+                      <svg viewBox="0 0 120 120" width="28" height="28">
+                        <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#3F3F3E"/>
+                        <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#sg1)"/>
+                      </svg>
+                    </div>
+                    <div style="display:flex;flex-direction:column;line-height:1.05">
+                      <span class="mono" style="font-size:10px;letter-spacing:0.18em;color:var(--dtl)">SELECT-PX</span>
+                      <span class="display" style="font-size:18px;color:#fff;margin-top:4px">LIC<span style="color:rgba(255,255,255,0.45);margin:0 1px">_</span>PORTAL</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row" style="justify-content:flex-end;margin-top:18px;gap:8px">
+                <button class="btn outline">Annuler</button>
+                <button class="btn primary">Enregistrer</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- PAGE 6 · EMPTY / ERROR / LOADING -->
+  <!-- ============================== -->
+  <div class="page-stage" id="states">
+    <div class="stage-head">
+      <div class="label"><div class="dot"></div><span class="display" style="font-size:13px;color:var(--g900)">États · Vide / Erreur / Chargement</span><span style="color:var(--g500);font-size:12px">— les états critiques d'une page</span></div>
+      <div class="num">06 / 08</div>
+    </div>
+    <div style="padding:24px;background:var(--g50)">
+      <div class="g3">
+        <!-- Empty -->
+        <div class="empty">
+          <div class="ic">▦</div>
+          <h3 class="sub-h" style="margin:0">Aucun contrat trouvé</h3>
+          <div style="font-size:12px;color:var(--g500);margin-top:6px;max-width:240px;line-height:1.5">Aucun résultat pour les filtres actuels. Essayez de réinitialiser ou créez votre premier contrat.</div>
+          <div class="row" style="margin-top:16px;gap:8px">
+            <button class="btn outline sm">Réinitialiser</button>
+            <button class="btn primary sm">+ Créer</button>
+          </div>
+        </div>
+        <!-- Error -->
+        <div class="empty" style="border-color:rgba(239,68,68,0.30);background:rgba(239,68,68,0.02)">
+          <div class="ic" style="background:rgba(239,68,68,0.10);color:var(--err)">×</div>
+          <h3 class="sub-h" style="margin:0;color:var(--err)">Erreur de chargement</h3>
+          <div style="font-size:12px;color:var(--g500);margin-top:6px;max-width:240px;line-height:1.5">Impossible d'atteindre l'API. Vérifiez votre connexion ou réessayez.</div>
+          <div class="row" style="margin-top:16px;gap:8px">
+            <button class="btn outline sm">Réessayer</button>
+            <button class="btn ghost sm">Voir le statut</button>
+          </div>
+          <div class="mono" style="font-size:10px;color:var(--g400);margin-top:14px">trace: 4f7a-9c81-22e0</div>
+        </div>
+        <!-- Loading skeleton -->
+        <div style="background:#fff;border:1px solid var(--g200);border-radius:12px;padding:18px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="height:14px;width:60%;background:linear-gradient(90deg,var(--g100) 0%,var(--g200) 50%,var(--g100) 100%);background-size:200% 100%;animation:sk 1.5s infinite;border-radius:4px"></div>
+            <div style="height:10px;width:90%;background:linear-gradient(90deg,var(--g100) 0%,var(--g200) 50%,var(--g100) 100%);background-size:200% 100%;animation:sk 1.5s infinite;border-radius:4px"></div>
+            <div style="height:10px;width:80%;background:linear-gradient(90deg,var(--g100) 0%,var(--g200) 50%,var(--g100) 100%);background-size:200% 100%;animation:sk 1.5s infinite;border-radius:4px"></div>
+            <div style="height:1px;background:var(--g100);margin:6px 0"></div>
+            <div style="display:flex;gap:8px"><div style="width:32px;height:32px;background:var(--g100);border-radius:6px"></div><div style="flex:1;display:flex;flex-direction:column;gap:6px;justify-content:center"><div style="height:8px;width:50%;background:var(--g100);border-radius:4px"></div><div style="height:8px;width:80%;background:var(--g100);border-radius:4px"></div></div></div>
+            <div style="display:flex;gap:8px"><div style="width:32px;height:32px;background:var(--g100);border-radius:6px"></div><div style="flex:1;display:flex;flex-direction:column;gap:6px;justify-content:center"><div style="height:8px;width:60%;background:var(--g100);border-radius:4px"></div><div style="height:8px;width:70%;background:var(--g100);border-radius:4px"></div></div></div>
+            <div class="caps" style="text-align:center;color:var(--g400);margin-top:8px">Chargement…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="g2" style="margin-top:14px">
+        <!-- 404 -->
+        <div class="card" style="text-align:center;padding:48px 24px">
+          <div class="display" style="font-size:72px;color:var(--g200);letter-spacing:-0.04em;line-height:1">404</div>
+          <h3 class="sub-h" style="margin-top:6px">Page introuvable</h3>
+          <div style="font-size:13px;color:var(--g500);margin-top:6px">Le contrat ou la ressource n'existe pas (ou a été supprimé).</div>
+          <button class="btn outline sm" style="margin-top:14px">← Retour au dashboard</button>
+        </div>
+        <!-- Onboarding empty -->
+        <div class="card" style="background:var(--d0);color:#fff;border-color:var(--dbd);padding:32px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden">
+          <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);background-size:24px 24px;opacity:0.7"></div>
+          <div style="position:relative">
+            <div class="caps" style="color:var(--c5)">Premier pas</div>
+            <h3 class="display" style="font-size:22px;color:#fff;margin:6px 0 8px">Créez votre premier contrat</h3>
+            <div style="font-size:13px;color:var(--dtl);max-width:320px;line-height:1.6">L'environnement est prêt. Importez un contrat existant ou démarrez avec un modèle.</div>
+            <div class="row" style="margin-top:18px;gap:8px">
+              <button class="btn primary sm">+ Créer un contrat</button>
+              <button class="btn ghost sm" style="color:#fff;border-color:var(--dbd);background:var(--d2)">Importer CSV</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- PAGE 7 · MODAL & DRAWER OVERLAYS -->
+  <!-- ============================== -->
+  <div class="page-stage" id="overlays">
+    <div class="stage-head">
+      <div class="label"><div class="dot"></div><span class="display" style="font-size:13px;color:var(--g900)">Overlays · Modal &amp; Drawer</span><span style="color:var(--g500);font-size:12px">— actions critiques et panneau latéral</span></div>
+      <div class="num">07 / 08</div>
+    </div>
+    <div class="g2" style="padding:24px;background:var(--g50);gap:24px">
+      <!-- Modal demo -->
+      <div style="position:relative;height:380px;background:#fff;border:1px solid var(--g200);border-radius:12px;overflow:hidden">
+        <div style="padding:18px;color:var(--g400);font-size:12px">Page sous-jacente…</div>
+        <div class="modal-back">
+          <div class="modal">
+            <div class="h danger">
+              <div class="ic">⚠</div>
+              <div>
+                <div class="t">Supprimer le contrat ?</div>
+                <div class="d">Cette action est irréversible. Toutes les clés associées seront révoquées immédiatement.</div>
+              </div>
+            </div>
+            <div class="b">
+              <div class="caps" style="margin-bottom:6px">Tapez <span class="mono" style="color:var(--g900)">SPX-2024-0156</span> pour confirmer</div>
+              <input class="input mono" placeholder="SPX-2024-XXXX"/>
+            </div>
+            <div class="f">
+              <button class="btn outline sm">Annuler</button>
+              <button class="btn danger sm">Supprimer définitivement</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drawer demo -->
+      <div style="position:relative;height:380px;background:#fff;border:1px solid var(--g200);border-radius:12px;overflow:hidden">
+        <div style="padding:18px;color:var(--g400);font-size:12px">Liste des contrats…</div>
+        <div class="drawer">
+          <div class="h">
+            <div>
+              <div class="caps" style="color:var(--g500)">Aperçu rapide</div>
+              <div class="display" style="font-size:15px;color:var(--g900);margin-top:2px">SPX-2024-0156</div>
+            </div>
+            <span style="color:var(--g400);cursor:pointer;font-family:'JetBrains Mono'">×</span>
+          </div>
+          <div class="b">
+            <div class="row" style="gap:10px;margin-bottom:14px">
+              <span class="bdg warn">ALERTE</span>
+              <span class="bdg brand">ENTERPRISE</span>
+            </div>
+            <div style="font-size:14px;color:var(--g900);font-weight:500">Attijariwafa Bank</div>
+            <div style="font-size:12px;color:var(--g500);margin-top:2px">🇲🇦 Maroc</div>
+            <div style="margin-top:14px"><div class="caps">Quota mensuel</div>
+              <div class="between" style="font-size:12px;margin-top:8px"><span>1 824 670 / 2 000 000</span><span class="mono" style="color:var(--warn);font-weight:500">91%</span></div>
+              <div style="height:6px;background:var(--g100);border-radius:3px;margin-top:4px;overflow:hidden"><div style="width:91%;height:100%;background:var(--warn)"></div></div>
+            </div>
+            <div style="margin-top:14px"><div class="caps">Renouvellement</div><div class="mono" style="font-size:13px;color:var(--g900);margin-top:4px">28 / 06 / 2026</div></div>
+            <div style="margin-top:14px"><div class="caps">Account Manager</div><div class="row" style="gap:8px;margin-top:6px"><span class="avatar-sm a1">AB</span><div><div style="font-size:13px;color:var(--g900)">Aïcha Bennani</div></div></div></div>
+          </div>
+          <div class="f">
+            <button class="btn outline sm">Fermer</button>
+            <button class="btn primary sm">Ouvrir →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- PAGE 8 · TOASTS / BANNERS / NOTIFS -->
+  <!-- ============================== -->
+  <div class="page-stage" id="notifs">
+    <div class="stage-head">
+      <div class="label"><div class="dot"></div><span class="display" style="font-size:13px;color:var(--g900)">Notifications · Toasts &amp; bannières</span><span style="color:var(--g500);font-size:12px">— feedback temporaire et persistant</span></div>
+      <div class="num">08 / 08</div>
+    </div>
+    <div style="padding:24px;background:var(--g50);display:flex;flex-direction:column;gap:14px">
+      <div class="banner info"><span class="ic">ℹ</span><div style="flex:1"><span style="font-weight:500">Maintenance planifiée</span> · le portail sera indisponible le 03/05 de 02:00 à 04:00 UTC.</div><a href="#" style="color:var(--info);font-size:12px;text-decoration:none">Détails →</a></div>
+      <div class="banner warn"><span class="ic">⚠</span><div style="flex:1"><span style="font-weight:500">3 contrats en alerte</span> · quota &gt; 90%. Action recommandée avant le 15/05.</div><button class="btn ghost sm" style="color:#92400e">Voir →</button></div>
+      <div class="g3" style="margin-top:8px">
+        <div class="toast ok"><div class="ic">✓</div><div class="body"><div class="t">Clé générée</div><div class="d">Envoyée à r.kone@uba.ci.</div></div></div>
+        <div class="toast err"><div class="ic">×</div><div class="body"><div class="t">Échec de l'export</div><div class="d">Réessayez dans quelques minutes.</div></div></div>
+        <div class="toast info"><div class="ic">↑</div><div class="body"><div class="t">Mise à jour disponible</div><div class="d">v1.0.1 — recharger pour appliquer.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================== -->
+  <!-- COMPONENTS GALLERY -->
+  <!-- ============================== -->
+  <h2 class="display" id="components" style="font-size:24px;color:var(--g900);margin:24px 0 18px;letter-spacing:-0.015em">Composants supplémentaires</h2>
+
+  <div class="g2" style="gap:14px">
+    <div class="card">
+      <div class="caps" style="margin-bottom:12px">Buttons · variantes &amp; tailles</div>
+      <div class="row" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <button class="btn primary lg">Primary lg</button>
+        <button class="btn primary">Primary</button>
+        <button class="btn primary sm">Primary sm</button>
+      </div>
+      <div class="row" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <button class="btn solid">Solid</button>
+        <button class="btn outline">Outline</button>
+        <button class="btn ghost">Ghost</button>
+        <button class="btn success">Success</button>
+        <button class="btn danger">Danger</button>
+      </div>
+      <div class="row" style="flex-wrap:wrap;gap:8px">
+        <button class="btn outline sm" disabled style="opacity:0.5;cursor:not-allowed">Disabled</button>
+        <button class="btn outline sm">↓ Avec icône</button>
+        <button class="btn outline sm">Avec icône →</button>
+        <button class="btn solid sm" style="padding:0;width:30px;height:30px;justify-content:center">+</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="caps" style="margin-bottom:12px">Badges &amp; chips</div>
+      <div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:12px">
+        <span class="bdg ok">ACTIF</span><span class="bdg warn">ALERTE</span><span class="bdg err">EXPIRÉ</span>
+        <span class="bdg info">INFO</span><span class="bdg muted">DRAFT</span><span class="bdg brand">BRAND</span>
+      </div>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        <span class="chip">Maroc <span class="x">×</span></span>
+        <span class="chip">tier-1</span>
+        <span class="chip act">Sélectionné</span>
+        <span class="chip">+ tag</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="caps" style="margin-bottom:12px">Tabs · 3 styles</div>
+      <div class="tabs" style="margin-bottom:10px">
+        <div class="tab act">Actif <span class="ct">12</span></div>
+        <div class="tab">Inactif <span class="ct">3</span></div>
+        <div class="tab">Archivé</div>
+      </div>
+      <!-- pill tabs -->
+      <div class="row" style="background:var(--g100);padding:3px;border-radius:8px;width:fit-content;margin-bottom:10px">
+        <div style="padding:6px 14px;background:#fff;border-radius:6px;font-size:12px;color:var(--g900);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,0.05)">Mensuel</div>
+        <div style="padding:6px 14px;font-size:12px;color:var(--g500)">Trimestriel</div>
+        <div style="padding:6px 14px;font-size:12px;color:var(--g500)">Annuel</div>
+      </div>
+      <!-- vertical -->
+      <div class="row" style="gap:0;border-left:2px solid var(--g200);padding-left:14px;display:flex;flex-direction:column">
+        <div style="padding:6px 0;font-size:12px;color:var(--g500)">Compte</div>
+        <div style="padding:6px 0;font-size:12px;color:var(--g900);font-weight:500;border-left:2px solid var(--c5);margin-left:-16px;padding-left:14px">Branding</div>
+        <div style="padding:6px 0;font-size:12px;color:var(--g500)">Membres</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="caps" style="margin-bottom:12px">Inputs &amp; états</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="field"><label>Standard</label><input class="input" placeholder="Tapez ici…"/></div>
+        <div class="field"><label>Avec valeur</label><input class="input" value="a.bennani@s2m.ma"/></div>
+        <div class="field"><label>Erreur</label><input class="input err" value="invalide"/><span class="help err">⚠ Format email invalide.</span></div>
+        <div class="field"><label>Désactivé</label><input class="input" value="—" disabled style="background:var(--g100);color:var(--g400);cursor:not-allowed"/></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="caps" style="margin-bottom:12px">Toggle &amp; checkbox</div>
+      <div class="row" style="gap:14px;margin-bottom:14px">
+        <div class="row" style="gap:8px"><div class="toggle on"></div><span style="font-size:13px">Activé</span></div>
+        <div class="row" style="gap:8px"><div class="toggle"></div><span style="font-size:13px;color:var(--g500)">Désactivé</span></div>
+      </div>
+      <div class="row" style="gap:14px">
+        <div class="row" style="gap:8px"><span class="ck on" style="display:inline-block;width:14px;height:14px;border:1px solid var(--g900);border-radius:3px;background:var(--g900);position:relative"><span style="color:#fff;font-size:10px;position:absolute;top:-3px;left:1px">✓</span></span><span style="font-size:13px">Coché</span></div>
+        <div class="row" style="gap:8px"><span style="display:inline-block;width:14px;height:14px;border:1px solid var(--g300);border-radius:3px;background:#fff"></span><span style="font-size:13px;color:var(--g500)">Décoché</span></div>
+        <div class="row" style="gap:8px"><span style="display:inline-block;width:14px;height:14px;border:1px solid var(--g900);border-radius:50%;background:#fff;position:relative"><span style="position:absolute;top:3px;left:3px;width:6px;height:6px;border-radius:50%;background:var(--g900)"></span></span><span style="font-size:13px">Radio sél.</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="caps" style="margin-bottom:12px">Avatars · sizes</div>
+      <div class="row" style="gap:10px;align-items:center">
+        <span class="avatar-sm a1" style="width:24px;height:24px;font-size:9px">AB</span>
+        <span class="avatar-sm a2" style="width:32px;height:32px">SE</span>
+        <span class="avatar-sm a3" style="width:40px;height:40px;font-size:13px">KI</span>
+        <span class="avatar-sm a4" style="width:48px;height:48px;font-size:15px">RK</span>
+        <span style="display:flex;margin-left:14px"><span class="avatar-sm a1" style="width:28px;height:28px;border:2px solid #fff">AB</span><span class="avatar-sm a2" style="width:28px;height:28px;border:2px solid #fff;margin-left:-8px">SE</span><span class="avatar-sm a3" style="width:28px;height:28px;border:2px solid #fff;margin-left:-8px">KI</span><span style="width:28px;height:28px;border-radius:50%;border:2px solid #fff;margin-left:-8px;background:var(--g100);display:grid;place-items:center;font-family:'JetBrains Mono';font-size:9px;color:var(--g500);font-weight:600">+9</span></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="caps" style="margin-bottom:12px">Progress &amp; loading</div>
+      <div style="margin-bottom:14px">
+        <div class="between" style="font-size:11px;color:var(--g500);margin-bottom:4px"><span>Téléversement</span><span class="mono" style="color:var(--g900)">68%</span></div>
+        <div style="height:6px;background:var(--g100);border-radius:3px;overflow:hidden"><div style="width:68%;height:100%;background:var(--grad)"></div></div>
+      </div>
+      <div class="row" style="gap:10px">
+        <div style="width:36px;height:36px;border:3px solid var(--g100);border-top-color:var(--c5);border-radius:50%;animation:spin 0.8s linear infinite"></div>
+        <div class="row" style="gap:5px">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--c5);animation:bounce 1.4s ease-in-out infinite"></span>
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--c5);animation:bounce 1.4s ease-in-out 0.2s infinite"></span>
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--c5);animation:bounce 1.4s ease-in-out 0.4s infinite"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="caps" style="margin-bottom:12px">Pagination styles</div>
+      <div class="page-nav" style="margin-bottom:12px">
+        <div class="pn dis">‹</div><div class="pn act">1</div><div class="pn">2</div><div class="pn">3</div><div class="pn">…</div><div class="pn">83</div><div class="pn">›</div>
+      </div>
+      <!-- compact -->
+      <div class="row" style="gap:8px;margin-bottom:12px">
+        <button class="btn outline sm">← Précédent</button>
+        <span style="font-size:12px;color:var(--g500)">Page <span class="mono" style="color:var(--g900);font-weight:500">3</span> / 83</span>
+        <button class="btn outline sm">Suivant →</button>
+      </div>
+      <!-- load more -->
+      <button class="btn outline sm" style="width:100%">Charger 20 de plus…</button>
+    </div>
+  </div>
+
+  <footer style="margin-top:40px;padding:20px 0;border-top:1px solid var(--g200);display:flex;justify-content:space-between;font-size:11px;color:var(--g500);font-family:'JetBrains Mono'">
+    <span>SELECT-PX · Gallery v1.0</span>
+    <span>© 2026 S2M · Confidentiel interne</span>
+  </footer>
+</div>
+
+<style>
+  @keyframes sk { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  @keyframes spin { to { transform: rotate(360deg) } }
+  @keyframes bounce { 0%,80%,100%{ transform: translateY(0); opacity:0.4 } 40%{ transform: translateY(-6px); opacity:1 } }
+</style>
+
+</body>
+</html>

@@ -1,0 +1,933 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<title>SELECT-PX · Design System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=Poppins:wght@200;300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --cyan-100:#74ECFF; --cyan-500:#00CAFF; --blue-600:#0066D6; --blue-900:#0006A5;
+    --g50:#fafafa; --g100:#f4f4f4; --g200:#e5e5e5; --g300:#d4d4d4;
+    --g400:#a3a3a3; --g500:#6b6b6b; --g700:#3F3F3E; --g900:#1a1a1a;
+    --d0:#0B0D12; --d1:#11141B; --d2:#1A1F2B; --dbd:#242A38; --dth:#F4F5F8; --dtl:#8A8FA0;
+    --ok:#10B981; --warn:#F59E0B; --err:#EF4444; --info:#3B82F6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--g50);color:var(--g700);font-family:'Poppins',system-ui,sans-serif;font-weight:300;}
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+  .display{font-family:'Montserrat',sans-serif;font-weight:800;letter-spacing:-0.01em}
+  .caps{font-family:'Poppins';font-weight:500;letter-spacing:0.12em;text-transform:uppercase;font-size:11px}
+  a{color:inherit}
+
+  /* App shell */
+  .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+  aside.nav{background:var(--d0);color:var(--dth);border-right:1px solid var(--dbd);padding:22px 18px;position:sticky;top:0;height:100vh;overflow:auto}
+  aside.nav h1{font-family:'Montserrat';font-weight:800;font-size:14px;color:#fff;margin:0;letter-spacing:-0.01em}
+  aside.nav .sub{color:var(--dtl);font-size:11px;margin-top:2px;font-family:'JetBrains Mono'}
+  aside.nav .group{margin-top:24px}
+  aside.nav .group .lbl{color:var(--dtl);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;padding:4px 8px;font-weight:500}
+  aside.nav a.item{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:6px;color:var(--dtl);font-size:13px;text-decoration:none;border-left:2px solid transparent;margin-left:-2px}
+  aside.nav a.item.active{color:#fff;background:var(--d2);border-left-color:var(--cyan-500)}
+  aside.nav a.item:hover{color:#fff}
+  aside.nav .num{font-family:'JetBrains Mono';font-size:10px;color:var(--dtl);width:18px}
+
+  main{min-width:0;padding:48px 56px 80px}
+  section{margin-bottom:64px;scroll-margin-top:24px}
+  section h2{font-family:'Montserrat';font-weight:800;font-size:30px;color:var(--g900);letter-spacing:-0.02em;margin:0}
+  section .lead{color:var(--g500);font-size:14px;line-height:1.6;max-width:720px;margin-top:10px}
+  .secid{font-family:'JetBrains Mono';font-size:11px;color:var(--cyan-500);letter-spacing:0.14em}
+
+  .card{background:#fff;border:1px solid var(--g200);border-radius:14px;padding:22px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+
+  /* Product slot input panel */
+  .slot{background:linear-gradient(135deg,#0B0D12 0%,#11141B 100%);color:#fff;border-radius:16px;padding:28px 30px;border:1px solid var(--dbd);position:relative;overflow:hidden}
+  .slot::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);background-size:32px 32px;-webkit-mask-image:radial-gradient(ellipse at 90% 0%,black 20%,transparent 70%);mask-image:radial-gradient(ellipse at 90% 0%,black 20%,transparent 70%);pointer-events:none}
+  .slot > *{position:relative;z-index:1}
+  .slot input.code{
+    width:120px;padding:8px 12px;border-radius:8px;border:1px solid var(--dbd);background:var(--d2);
+    color:#fff;font-family:'JetBrains Mono';font-size:14px;letter-spacing:0.06em;text-transform:uppercase;
+    outline:none
+  }
+  .slot input.code:focus{border-color:var(--cyan-500)}
+  .slot input.name{
+    width:240px;padding:8px 12px;border-radius:8px;border:1px solid var(--dbd);background:var(--d2);
+    color:#fff;font-family:'Poppins';font-size:14px;outline:none
+  }
+  .slot input.name:focus{border-color:var(--cyan-500)}
+  .slot label{font-size:10px;color:var(--dtl);letter-spacing:0.12em;text-transform:uppercase;display:block;margin-bottom:6px}
+
+  /* Logo lockups */
+  .lockup-stage{display:grid;place-items:center;padding:36px;border-radius:12px;border:1px solid var(--g200)}
+  .lockup-stage.dark{background:var(--d0)}
+  .lockup-stage.light{background:#fff}
+  .lockup-stage.paper{background:var(--g50)}
+  .lockup-stage .meta{font-size:10px;color:var(--g500);font-family:'JetBrains Mono';letter-spacing:0.06em}
+
+  .lockup{display:flex;align-items:center;gap:14px}
+  .lockup .tile{
+    width:56px;height:56px;border-radius:13px;background:var(--d0);
+    display:grid;place-items:center;border:1px solid rgba(255,255,255,0.06)
+  }
+  .lockup .tile.inv{background:#fff;border-color:rgba(0,0,0,0.08)}
+  .lockup .word{display:flex;flex-direction:column;line-height:1.05}
+  .lockup .parent{font-family:'JetBrains Mono';font-size:11px;letter-spacing:0.18em;color:var(--g500);text-transform:uppercase}
+  .lockup .parent.dark-on{color:var(--dtl)}
+  .lockup .product{font-family:'Montserrat';font-weight:800;font-size:24px;color:var(--g900);letter-spacing:-0.01em;margin-top:4px}
+  .lockup .product.dark-on{color:#fff}
+  .lockup .product .sep{color:var(--g400);margin:0 4px}
+  .lockup .product.dark-on .sep{color:rgba(255,255,255,0.45)}
+
+  /* Stacked variant */
+  .lockup.stacked{flex-direction:column;align-items:flex-start;gap:10px}
+
+  /* Swatches */
+  .sw{border:1px solid var(--g200);border-radius:10px;overflow:hidden;background:#fff}
+  .sw .fill{height:62px}
+  .sw .info{padding:10px 12px}
+  .sw .info .n{font-size:12px;color:var(--g900);font-weight:500;font-family:'Montserrat'}
+  .sw .info .h{font-size:11px;color:var(--g500);font-family:'JetBrains Mono';margin-top:2px}
+
+  /* Component demos */
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:0 16px;height:38px;border-radius:8px;border:1px solid;font-size:13px;font-weight:500;cursor:pointer;font-family:'Poppins'}
+  .btn.primary{background:linear-gradient(90deg,#74ECFF,#00CAFF 55%,#0006A5);border-color:transparent;color:#fff;box-shadow:0 1px 2px rgba(0,6,165,0.15),0 8px 20px rgba(0,6,165,0.15)}
+  .btn.solid{background:var(--g900);border-color:var(--g900);color:#fff}
+  .btn.outline{background:#fff;border-color:var(--g300);color:var(--g900)}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--g700)}
+  .btn.danger{background:var(--err);border-color:var(--err);color:#fff}
+
+  .input{height:38px;border:1px solid var(--g200);border-radius:8px;padding:0 12px;font-size:13px;background:var(--g50);color:var(--g700);outline:none;width:100%;font-family:'Poppins'}
+  .input:focus{border-color:var(--cyan-500);background:#fff;box-shadow:0 0 0 3px rgba(0,202,255,0.15)}
+
+  .bdg{font-family:'JetBrains Mono';font-size:10px;font-weight:500;letter-spacing:0.08em;padding:3px 8px;border-radius:4px;border:1px solid;display:inline-block}
+  .bdg.ok{color:var(--ok);background:rgba(16,185,129,0.10);border-color:rgba(16,185,129,0.35)}
+  .bdg.warn{color:var(--warn);background:rgba(245,158,11,0.10);border-color:rgba(245,158,11,0.35)}
+  .bdg.err{color:var(--err);background:rgba(239,68,68,0.10);border-color:rgba(239,68,68,0.35)}
+  .bdg.info{color:var(--info);background:rgba(59,130,246,0.10);border-color:rgba(59,130,246,0.35)}
+  .bdg.muted{color:var(--g500);background:rgba(107,107,107,0.10);border-color:rgba(107,107,107,0.30)}
+
+  table.demo{width:100%;border-collapse:collapse;font-size:13px}
+  table.demo th{font-family:'Poppins';font-weight:500;text-transform:uppercase;letter-spacing:0.08em;font-size:10px;color:var(--g500);padding:10px 12px;text-align:left;border-bottom:1px solid var(--g200);background:var(--g50)}
+  table.demo td{padding:12px;border-bottom:1px solid var(--g100);color:var(--g700)}
+  table.demo tr:last-child td{border-bottom:none}
+  table.demo .id{font-family:'JetBrains Mono';font-size:12px;color:var(--g900);font-weight:500}
+
+  .codeblock{background:var(--d0);color:var(--dth);border-radius:10px;padding:18px 20px;font-family:'JetBrains Mono';font-size:12px;line-height:1.7;overflow-x:auto;border:1px solid var(--dbd)}
+  .codeblock .k{color:var(--cyan-500)}
+  .codeblock .s{color:#9CDCFE}
+  .codeblock .c{color:var(--dtl)}
+  .codeblock .v{color:#CE9178}
+
+  /* Tabs nav within section */
+  .tabs{display:flex;gap:0;border-bottom:1px solid var(--g200);margin-bottom:18px}
+  .tabs .tab{padding:10px 16px;font-size:13px;color:var(--g500);font-weight:300;border-bottom:2px solid transparent;cursor:pointer}
+  .tabs .tab.active{color:var(--g900);font-weight:500;border-bottom-color:var(--cyan-500)}
+
+  /* App shell preview */
+  .preview{border:1px solid var(--g200);border-radius:14px;overflow:hidden;background:#fff}
+  .pv-shell{display:grid;grid-template-columns:200px 1fr;height:520px}
+  .pv-side{background:var(--d0);color:var(--dth);padding:16px 12px;display:flex;flex-direction:column;gap:1px}
+  .pv-side .pv-logo{padding:6px 8px 14px;display:flex;align-items:center;gap:8px}
+  .pv-side .pv-item{padding:7px 10px;border-radius:6px;font-size:12px;color:var(--dtl);display:flex;align-items:center;gap:8px}
+  .pv-side .pv-item.act{color:#fff;background:var(--d2);border-left:2px solid var(--cyan-500);padding-left:8px}
+  .pv-side .pv-grp{font-size:9px;color:var(--dtl);letter-spacing:0.14em;text-transform:uppercase;padding:10px 10px 4px;font-weight:500}
+  .pv-main{display:flex;flex-direction:column;background:var(--g50)}
+  .pv-top{height:50px;background:#fff;border-bottom:1px solid var(--g200);display:flex;align-items:center;padding:0 18px;gap:12px}
+  .pv-content{flex:1;padding:18px;overflow:hidden}
+  .pv-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .pv-kpi .k{background:#fff;border:1px solid var(--g200);border-radius:10px;padding:10px 12px;position:relative;overflow:hidden}
+  .pv-kpi .k.acc::before{content:"";position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,#74ECFF,#00CAFF 55%,#0006A5)}
+  .pv-kpi .k .lbl{font-size:9px;color:var(--g500);letter-spacing:0.12em;text-transform:uppercase}
+  .pv-kpi .k .val{font-family:'Montserrat';font-weight:800;font-size:20px;color:var(--g900);margin-top:4px}
+
+  /* Type scale */
+  .type-row{display:grid;grid-template-columns:120px 1fr;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--g100)}
+  .type-row:last-child{border-bottom:none}
+  .type-row .label{font-family:'JetBrains Mono';font-size:11px;color:var(--g500)}
+
+  /* Sub-brand grid */
+  .subgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .subcard{background:#fff;border:1px solid var(--g200);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px}
+  .subcard .stage{background:var(--d0);border-radius:8px;padding:20px;display:grid;place-items:center}
+  .subcard .desc{font-size:12px;color:var(--g500);line-height:1.5}
+  .subcard h4{margin:0;font-family:'Montserrat';font-weight:700;font-size:14px;color:var(--g900);letter-spacing:-0.01em}
+
+  footer{margin-top:40px;padding-top:24px;border-top:1px solid var(--g200);display:flex;justify-content:space-between;font-size:11px;color:var(--g500);font-family:'JetBrains Mono'}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- LEFT NAV -->
+  <aside class="nav">
+    <h1>SELECT-PX</h1>
+    <div class="sub">DESIGN SYSTEM · v1.0</div>
+    <div class="group">
+      <div class="lbl">Foundations</div>
+      <a class="item active" href="#brand"><span class="num">01</span>Brand</a>
+      <a class="item" href="gallery.html" style="color:var(--cyan-500)"><span class="num">★</span>Gallery (pages &amp; patterns)</a>
+      <a class="item" href="#products"><span class="num">02</span>Sub-brands</a>
+      <a class="item" href="#tokens"><span class="num">03</span>Tokens</a>
+      <a class="item" href="#color"><span class="num">04</span>Color</a>
+      <a class="item" href="#type"><span class="num">05</span>Typography</a>
+      <a class="item" href="#space"><span class="num">06</span>Space &amp; radius</a>
+    </div>
+    <div class="group">
+      <div class="lbl">Components</div>
+      <a class="item" href="#buttons"><span class="num">07</span>Buttons</a>
+      <a class="item" href="#forms"><span class="num">08</span>Forms</a>
+      <a class="item" href="#badges"><span class="num">09</span>Badges</a>
+      <a class="item" href="#tables"><span class="num">10</span>Tables</a>
+      <a class="item" href="#kpi"><span class="num">11</span>KPI &amp; cards</a>
+    </div>
+    <div class="group">
+      <div class="lbl">Patterns</div>
+      <a class="item" href="#shell"><span class="num">12</span>App shell</a>
+      <a class="item" href="#auth"><span class="num">13</span>Auth</a>
+    </div>
+    <div class="group">
+      <div class="lbl">Engineering</div>
+      <a class="item" href="#stack"><span class="num">14</span>Stack</a>
+      <a class="item" href="#install"><span class="num">15</span>Install</a>
+      <a class="item" href="#i18n"><span class="num">16</span>i18n</a>
+    </div>
+  </aside>
+
+  <main>
+
+    <!-- ===================== HERO ===================== -->
+    <section style="margin-top:0">
+      <div class="slot">
+        <div style="display:flex;align-items:center;gap:14px">
+          <div class="tile" style="width:56px;height:56px;border-radius:13px;background:#fff;display:grid;place-items:center;border:1px solid rgba(0,0,0,0.08)">
+            <svg viewBox="0 0 120 120" width="40" height="40">
+              <defs><linearGradient id="hg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#74ECFF"/><stop offset="55%" stop-color="#00CAFF"/><stop offset="100%" stop-color="#0006A5"/></linearGradient></defs>
+              <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#3F3F3E"/>
+              <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#hg)"/>
+            </svg>
+          </div>
+          <div>
+            <div class="caps" style="color:var(--cyan-500)">S2M · Monétique · System v1.0</div>
+            <div class="display" style="font-size:18px;color:#fff;margin-top:2px">SELECT-PX Design System</div>
+          </div>
+        </div>
+        <h2 class="display" style="font-size:46px;line-height:1.05;color:#fff;margin:22px 0 0;letter-spacing:-0.025em;max-width:760px">
+          Une marque parente, des produits qui s'y accrochent.
+        </h2>
+        <p style="color:var(--dtl);font-size:14px;max-width:680px;line-height:1.6;margin-top:14px">
+          Base réutilisable pour tous les produits monétique SELECT-PX. La marque parente porte
+          l'identité (X chevron, dégradé cyan→bleu, typo) ; chaque produit s'identifie par un
+          sigle court 3–4 lettres et un nom de projet. Drop-in pour Next.js 16 + Tailwind 4 + shadcn.
+        </p>
+
+        <!-- LIVE PRODUCT SLOT -->
+        <div style="display:flex;gap:18px;align-items:flex-end;margin-top:28px;flex-wrap:wrap">
+          <div>
+            <label>Sigle produit (3–4)</label>
+            <input id="codeInput" class="code" maxlength="4" value="LIC"/>
+          </div>
+          <div>
+            <label>Nom complet</label>
+            <input id="nameInput" class="name" value="Licensing Portal"/>
+          </div>
+          <div style="font-size:11px;color:var(--dtl);font-family:'JetBrains Mono';padding-bottom:8px">
+            Tape ↑ — toute la doc se met à jour en direct.
+          </div>
+        </div>
+
+        <!-- LIVE LOCKUP -->
+        <div style="margin-top:28px;padding:24px;background:#fff;border-radius:12px;display:flex;align-items:center;gap:18px">
+          <div style="width:64px;height:64px;border-radius:14px;background:var(--d0);display:grid;place-items:center;border:1px solid rgba(255,255,255,0.06);position:relative">
+            <svg viewBox="0 0 120 120" width="44" height="44">
+              <defs><linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#74ECFF"/><stop offset="55%" stop-color="#00CAFF"/><stop offset="100%" stop-color="#0006A5"/></linearGradient></defs>
+              <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#FFFFFF"/>
+              <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#lg1)"/>
+            </svg>
+            <div id="liveCodeChip" style="position:absolute;bottom:-6px;right:-6px;background:#fff;color:var(--g900);font-family:'JetBrains Mono';font-weight:600;font-size:9px;letter-spacing:0.08em;padding:2px 5px;border-radius:4px;border:1px solid var(--g200)">LIC</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+            <div class="mono" style="font-size:11px;letter-spacing:0.18em;color:var(--g500);text-transform:uppercase">SELECT-PX</div>
+            <div style="display:flex;align-items:baseline;gap:10px">
+              <span class="display" id="liveCode" style="font-size:30px;color:var(--g900);letter-spacing:-0.015em">LIC</span>
+              <span class="display" style="font-size:30px;color:var(--g300);letter-spacing:-0.015em">_</span>
+              <span class="display" style="font-size:30px;color:var(--g900);letter-spacing:-0.015em">PORTAL</span>
+              <span style="font-family:'Poppins';font-weight:300;color:var(--g500);font-size:13px;margin-left:6px" id="liveName">· Licensing Portal</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 01 BRAND ===================== -->
+    <section id="brand">
+      <div class="secid">01 · FOUNDATIONS</div>
+      <h2 style="margin-top:6px">Brand</h2>
+      <p class="lead">L'identité parente est immuable : la tuile sombre arrondie, le chevron X
+        au dégradé signature, et la wordmark <span class="mono">SELECT-PX</span> en surplomb. Tous les produits
+        l'héritent. Seul le bloc produit (sigle + nom) varie.</p>
+
+      <div class="grid-3" style="margin-top:18px">
+        <div class="card">
+          <div class="caps" style="color:var(--g500)">Anatomy</div>
+          <div style="margin-top:14px">
+            <svg viewBox="0 0 320 200" style="width:100%;height:auto">
+              <!-- tile -->
+              <rect x="20" y="40" width="120" height="120" rx="22" fill="#0B0D12"/>
+              <!-- mark -->
+              <g transform="translate(40 60) scale(0.667)">
+                <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#FFF"/>
+                <defs><linearGradient id="ag" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#74ECFF"/><stop offset="55%" stop-color="#00CAFF"/><stop offset="100%" stop-color="#0006A5"/></linearGradient></defs>
+                <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#ag)"/>
+              </g>
+              <!-- words -->
+              <text x="160" y="80" font-family="JetBrains Mono" font-size="11" fill="#6b6b6b" letter-spacing="2">SELECT-PX</text>
+              <text x="160" y="115" font-family="Montserrat" font-weight="800" font-size="24" fill="#1a1a1a">PRODUCT</text>
+              <text x="160" y="138" font-family="Poppins" font-weight="300" font-size="11" fill="#6b6b6b">Project name</text>
+              <!-- callouts -->
+              <line x1="80" y1="24" x2="80" y2="38" stroke="#a3a3a3" stroke-width="1"/>
+              <text x="84" y="20" font-family="JetBrains Mono" font-size="9" fill="#6b6b6b">A · Tile</text>
+              <line x1="160" y1="50" x2="148" y2="50" stroke="#a3a3a3" stroke-width="1"/>
+              <text x="160" y="48" font-family="JetBrains Mono" font-size="9" fill="#6b6b6b">B · Parent mark</text>
+              <line x1="160" y1="148" x2="155" y2="148" stroke="#a3a3a3" stroke-width="1"/>
+              <text x="160" y="160" font-family="JetBrains Mono" font-size="9" fill="#6b6b6b">C · Product slot</text>
+            </svg>
+          </div>
+          <div style="font-size:12px;color:var(--g500);line-height:1.55;margin-top:8px">
+            <b style="color:var(--g700)">A</b> Tuile · constante. <b style="color:var(--g700)">B</b> Parent mark <span class="mono">SELECT-PX</span> · constant.
+            <b style="color:var(--g700)">C</b> Slot produit · sigle + nom de projet (variable).
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="caps" style="color:var(--g500)">Règles</div>
+          <ul style="margin:10px 0 0;padding-left:18px;font-size:13px;color:var(--g700);line-height:1.7">
+            <li>Sigle produit : <b>3–4 lettres</b> majuscules · ex. <span class="mono">LIC</span>, <span class="mono">PHS</span>, <span class="mono">MON</span>, <span class="mono">ACQ</span></li>
+            <li>Séparateur : underscore <span class="mono">_</span> en gris 300 — jamais espace ni tiret</li>
+            <li>Suffixe métier facultatif : <span class="mono">PORTAL</span>, <span class="mono">CONSOLE</span>, <span class="mono">OPS</span>, <span class="mono">DASH</span></li>
+            <li>Le X du parent ne change <b>jamais</b> de couleur — le dégradé est l'invariant</li>
+            <li>Pour différencier visuellement deux produits, n'utiliser que la couleur d'<b>accent UI</b> (voir §04), pas le logo</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="caps" style="color:var(--g500)">Voix</div>
+          <p style="font-size:13px;color:var(--g700);line-height:1.6;margin:10px 0 0">
+            Sobre, technique, financier. Le ton d'un back-office bancaire — pas d'un SaaS marketing.
+            Vocabulaire métier précis, pas de superlatifs, pas d'emoji. Les noms de produits restent
+            descriptifs (<span class="mono">Licensing Portal</span>, <span class="mono">Payment Hub Services</span>) et jamais "fun".
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 02 SUB-BRANDS ===================== -->
+    <section id="products">
+      <div class="secid">02 · FOUNDATIONS</div>
+      <h2 style="margin-top:6px">Sub-brands</h2>
+      <p class="lead">Le même mécanisme, instancié pour chaque produit. Le slot accepte n'importe
+        quel sigle 3–4 lettres et un nom complet — la mise en page se réajuste automatiquement.</p>
+
+      <div class="subgrid" style="margin-top:18px" id="subgrid"></div>
+
+      <div class="card" style="margin-top:18px">
+        <div class="caps" style="color:var(--g500)">Lockup variants</div>
+        <div class="grid-3" style="margin-top:14px">
+          <div class="lockup-stage light">
+            <div class="lockup">
+              <div class="tile">
+                <svg viewBox="0 0 120 120" width="38" height="38">
+                  <defs><linearGradient id="va" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#74ECFF"/><stop offset="55%" stop-color="#00CAFF"/><stop offset="100%" stop-color="#0006A5"/></linearGradient></defs>
+                  <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#FFFFFF"/>
+                  <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#va)"/>
+                </svg>
+              </div>
+              <div class="word">
+                <span class="parent">SELECT-PX</span>
+                <span class="product"><span data-bind="code">LIC</span><span class="sep">_</span><span>PORTAL</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="lockup-stage paper">
+            <div class="lockup stacked">
+              <div class="tile">
+                <svg viewBox="0 0 120 120" width="38" height="38">
+                  <defs><linearGradient id="vb" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#74ECFF"/><stop offset="55%" stop-color="#00CAFF"/><stop offset="100%" stop-color="#0006A5"/></linearGradient></defs>
+                  <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#FFFFFF"/>
+                  <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#vb)"/>
+                </svg>
+              </div>
+              <div class="word">
+                <span class="parent">SELECT-PX</span>
+                <span class="product"><span data-bind="code">LIC</span><span class="sep">_</span><span>PORTAL</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="lockup-stage dark">
+            <div class="lockup">
+              <div class="tile inv">
+                <svg viewBox="0 0 120 120" width="38" height="38">
+                  <defs><linearGradient id="vc" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#74ECFF"/><stop offset="55%" stop-color="#00CAFF"/><stop offset="100%" stop-color="#0006A5"/></linearGradient></defs>
+                  <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#3F3F3E"/>
+                  <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#vc)"/>
+                </svg>
+              </div>
+              <div class="word">
+                <span class="parent dark-on">SELECT-PX</span>
+                <span class="product dark-on"><span data-bind="code">LIC</span><span class="sep">_</span><span>PORTAL</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 03 TOKENS ===================== -->
+    <section id="tokens">
+      <div class="secid">03 · FOUNDATIONS</div>
+      <h2 style="margin-top:6px">Tokens · Tailwind 4 <span style="color:var(--g400)">@theme</span></h2>
+      <p class="lead">Tokens prêts à coller dans <span class="mono">app/globals.css</span>. Tailwind 4 lit les
+        variables CSS directement, plus besoin de <span class="mono">tailwind.config.ts</span> pour les couleurs.</p>
+
+      <div class="codeblock" style="margin-top:14px"><span class="c">/* app/globals.css */</span>
+<span class="k">@import</span> <span class="s">"tailwindcss"</span>;
+
+<span class="k">@theme</span> {
+  <span class="c">/* Brand */</span>
+  --color-spx-cyan-100: <span class="v">#74ECFF</span>;
+  --color-spx-cyan-500: <span class="v">#00CAFF</span>;
+  --color-spx-blue-600: <span class="v">#0066D6</span>;
+  --color-spx-blue-900: <span class="v">#0006A5</span>;
+  --color-spx-ink:      <span class="v">#3F3F3E</span>;
+
+  <span class="c">/* Dark surfaces */</span>
+  --color-surface-0: <span class="v">#0B0D12</span>;
+  --color-surface-1: <span class="v">#11141B</span>;
+  --color-surface-2: <span class="v">#1A1F2B</span>;
+  --color-border-subtle: <span class="v">#242A38</span>;
+
+  <span class="c">/* Semantic */</span>
+  --color-success: <span class="v">#10B981</span>;
+  --color-warning: <span class="v">#F59E0B</span>;
+  --color-danger:  <span class="v">#EF4444</span>;
+  --color-info:    <span class="v">#3B82F6</span>;
+
+  <span class="c">/* Type */</span>
+  --font-display: <span class="s">"Montserrat"</span>, <span class="s">"Helvetica Neue"</span>, sans-serif;
+  --font-sans:    <span class="s">"Poppins"</span>, system-ui, sans-serif;
+  --font-mono:    <span class="s">"JetBrains Mono"</span>, ui-monospace, monospace;
+
+  <span class="c">/* Radii */</span>
+  --radius-xs: 4px; --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+
+  <span class="c">/* Signature gradient */</span>
+  --gradient-spx: linear-gradient(90deg, <span class="v">#74ECFF</span> 0%, <span class="v">#00CAFF</span> 55%, <span class="v">#0006A5</span> 100%);
+}</div>
+
+      <div class="codeblock" style="margin-top:14px"><span class="c">// lib/brand.ts — runtime config produit</span>
+<span class="k">export const</span> brand = {
+  parent: <span class="s">"SELECT-PX"</span>,
+  code:   process.env.NEXT_PUBLIC_PRODUCT_CODE ?? <span class="s">"LIC"</span>,    <span class="c">// 3-4 chars uppercase</span>
+  name:   process.env.NEXT_PUBLIC_PRODUCT_NAME ?? <span class="s">"Licensing Portal"</span>,
+  suffix: process.env.NEXT_PUBLIC_PRODUCT_SUFFIX ?? <span class="s">"PORTAL"</span>,
+} <span class="k">as const</span>;
+
+<span class="k">export type</span> Brand = <span class="k">typeof</span> brand;</div>
+    </section>
+
+    <!-- ===================== 04 COLOR ===================== -->
+    <section id="color">
+      <div class="secid">04 · FOUNDATIONS</div>
+      <h2 style="margin-top:6px">Color</h2>
+      <p class="lead">Palette parente immuable. Si un produit a besoin d'un accent distinct,
+        il prend une couleur de la rampe brand existante (pas une nouvelle teinte).</p>
+
+      <div class="card" style="margin-top:14px">
+        <div class="caps" style="color:var(--g500)">Brand</div>
+        <div class="grid-5" style="margin-top:10px">
+          <div class="sw"><div class="fill" style="background:#74ECFF"></div><div class="info"><div class="n">Cyan 100</div><div class="h">#74ECFF · spx-cyan-100</div></div></div>
+          <div class="sw"><div class="fill" style="background:#00CAFF"></div><div class="info"><div class="n">Cyan 500</div><div class="h">#00CAFF · spx-cyan-500</div></div></div>
+          <div class="sw"><div class="fill" style="background:#0066D6"></div><div class="info"><div class="n">Blue 600</div><div class="h">#0066D6 · spx-blue-600</div></div></div>
+          <div class="sw"><div class="fill" style="background:#0006A5"></div><div class="info"><div class="n">Blue 900</div><div class="h">#0006A5 · spx-blue-900</div></div></div>
+          <div class="sw"><div class="fill" style="background:#3F3F3E"></div><div class="info"><div class="n">Ink</div><div class="h">#3F3F3E · spx-ink</div></div></div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:14px">
+        <div class="card">
+          <div class="caps" style="color:var(--g500)">Neutrals</div>
+          <div class="grid-4" style="margin-top:10px">
+            <div class="sw"><div class="fill" style="background:#FAFAFA;border-bottom:1px solid var(--g200)"></div><div class="info"><div class="n">50</div><div class="h">#FAFAFA</div></div></div>
+            <div class="sw"><div class="fill" style="background:#F4F4F4;border-bottom:1px solid var(--g200)"></div><div class="info"><div class="n">100</div><div class="h">#F4F4F4</div></div></div>
+            <div class="sw"><div class="fill" style="background:#E5E5E5"></div><div class="info"><div class="n">200</div><div class="h">#E5E5E5</div></div></div>
+            <div class="sw"><div class="fill" style="background:#A3A3A3"></div><div class="info"><div class="n">400</div><div class="h">#A3A3A3</div></div></div>
+            <div class="sw"><div class="fill" style="background:#6B6B6B"></div><div class="info"><div class="n">500</div><div class="h">#6B6B6B</div></div></div>
+            <div class="sw"><div class="fill" style="background:#3F3F3E"></div><div class="info"><div class="n">700</div><div class="h">#3F3F3E</div></div></div>
+            <div class="sw"><div class="fill" style="background:#1A1A1A"></div><div class="info"><div class="n">900</div><div class="h">#1A1A1A</div></div></div>
+          </div>
+        </div>
+        <div class="card" style="background:var(--d0);border-color:var(--dbd);color:var(--dth)">
+          <div class="caps" style="color:var(--dtl)">Dark surfaces</div>
+          <div class="grid-2" style="margin-top:10px">
+            <div style="background:#0B0D12;border:1px solid var(--dbd);border-radius:10px;padding:14px"><div style="font-family:'Montserrat';font-weight:500;font-size:12px">surface.0</div><div class="mono" style="font-size:11px;color:var(--dtl);margin-top:4px">#0B0D12</div></div>
+            <div style="background:#11141B;border:1px solid var(--dbd);border-radius:10px;padding:14px"><div style="font-family:'Montserrat';font-weight:500;font-size:12px">surface.1</div><div class="mono" style="font-size:11px;color:var(--dtl);margin-top:4px">#11141B</div></div>
+            <div style="background:#1A1F2B;border:1px solid var(--dbd);border-radius:10px;padding:14px"><div style="font-family:'Montserrat';font-weight:500;font-size:12px">surface.2</div><div class="mono" style="font-size:11px;color:var(--dtl);margin-top:4px">#1A1F2B</div></div>
+            <div style="background:#242A38;border:1px solid var(--dbd);border-radius:10px;padding:14px"><div style="font-family:'Montserrat';font-weight:500;font-size:12px">border.subtle</div><div class="mono" style="font-size:11px;color:var(--dtl);margin-top:4px">#242A38</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="caps" style="color:var(--g500)">Semantic & status</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+          <span class="bdg ok">SUCCESS · #10B981</span>
+          <span class="bdg warn">WARNING · #F59E0B</span>
+          <span class="bdg err">DANGER · #EF4444</span>
+          <span class="bdg info">INFO · #3B82F6</span>
+          <span class="bdg muted">MUTED · #6B6B6B</span>
+        </div>
+        <div style="height:32px;border-radius:8px;background:linear-gradient(90deg,#74ECFF 0%,#00CAFF 55%,#0006A5 100%);margin-top:14px"></div>
+        <div class="mono" style="font-size:11px;color:var(--g500);margin-top:4px">signature gradient · réservé au mark, CTA primaire (1/page max), hero KPI</div>
+      </div>
+    </section>
+
+    <!-- ===================== 05 TYPE ===================== -->
+    <section id="type">
+      <div class="secid">05 · FOUNDATIONS</div>
+      <h2 style="margin-top:6px">Typography</h2>
+      <p class="lead">Trois familles, une échelle. Pour l'arabe (RTL), pairer avec Al Jazeera Arabic en
+        gardant les mêmes poids et la même échelle.</p>
+
+      <div class="card" style="margin-top:14px">
+        <div class="type-row"><div class="label">H1 · 32 / 800</div><div class="display" style="font-size:32px;color:var(--g900)">Gestion des licences SELECT-PX</div></div>
+        <div class="type-row"><div class="label">H2 · 24 / 800</div><div class="display" style="font-size:24px;color:var(--g900)">247 contrats actifs · 18 en alerte</div></div>
+        <div class="type-row"><div class="label">H3 · 18 / 700</div><div class="display" style="font-size:18px;font-weight:700;color:var(--g900)">Quotas contractuels</div></div>
+        <div class="type-row"><div class="label">Body · 14 / 400</div><div style="font-size:14px;color:var(--g700);font-weight:400">Le portail interne suit les contrats, gère les quotas et génère les clés d'activation.</div></div>
+        <div class="type-row"><div class="label">Small · 12 / 400</div><div style="font-size:12px;color:var(--g500)">Renouvellement le 12 mai 2026 (dans 17 jours).</div></div>
+        <div class="type-row"><div class="label">Caption · 11 / 500 / +0.08</div><div class="caps" style="color:var(--g500)">CONTRAT · ACTIF · MAROC</div></div>
+        <div class="type-row"><div class="label">Mono · 12 / 500</div><div class="mono" style="font-size:12px;color:var(--g900)">SPX-2024-0156 · KEY-A1F4-9C81-22E0</div></div>
+      </div>
+
+      <div class="grid-3" style="margin-top:14px">
+        <div class="card"><h4 class="display" style="margin:0;font-size:14px">Display · Montserrat</h4><div class="display" style="font-size:48px;color:var(--g900);margin-top:6px;line-height:1">Aa Bb 247</div><div class="mono" style="font-size:11px;color:var(--g500);margin-top:6px">800 · 900 · letter-spacing -0.02 → -0.01</div></div>
+        <div class="card"><h4 class="display" style="margin:0;font-size:14px">Sans · Poppins</h4><div style="font-family:'Poppins';font-weight:300;font-size:42px;color:var(--g900);margin-top:6px;line-height:1">Aa Bb 247</div><div class="mono" style="font-size:11px;color:var(--g500);margin-top:6px">300 · 400 · 500</div></div>
+        <div class="card"><h4 class="display" style="margin:0;font-size:14px">Mono · JetBrains</h4><div class="mono" style="font-size:38px;color:var(--g900);margin-top:6px;line-height:1">Aa Bb 247</div><div class="mono" style="font-size:11px;color:var(--g500);margin-top:6px">400 · 500</div></div>
+      </div>
+    </section>
+
+    <!-- ===================== 06 SPACE ===================== -->
+    <section id="space">
+      <div class="secid">06 · FOUNDATIONS</div>
+      <h2 style="margin-top:6px">Space &amp; radius</h2>
+      <div class="grid-2" style="margin-top:14px">
+        <div class="card">
+          <div class="caps" style="color:var(--g500)">Spacing scale (Tailwind default × 4px)</div>
+          <div style="display:flex;align-items:flex-end;gap:14px;margin-top:14px;height:80px">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:4px;height:4px;background:var(--cyan-500)"></div><span class="mono" style="font-size:10px;color:var(--g500)">1·4</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:8px;height:8px;background:var(--cyan-500)"></div><span class="mono" style="font-size:10px;color:var(--g500)">2·8</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:12px;height:12px;background:var(--cyan-500)"></div><span class="mono" style="font-size:10px;color:var(--g500)">3·12</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:16px;height:16px;background:var(--cyan-500)"></div><span class="mono" style="font-size:10px;color:var(--g500)">4·16</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:24px;height:24px;background:var(--cyan-500)"></div><span class="mono" style="font-size:10px;color:var(--g500)">6·24</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:32px;height:32px;background:var(--cyan-500)"></div><span class="mono" style="font-size:10px;color:var(--g500)">8·32</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:48px;height:48px;background:var(--cyan-500)"></div><span class="mono" style="font-size:10px;color:var(--g500)">12·48</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:64px;height:64px;background:var(--cyan-500)"></div><span class="mono" style="font-size:10px;color:var(--g500)">16·64</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="caps" style="color:var(--g500)">Radius</div>
+          <div style="display:flex;gap:14px;align-items:flex-end;margin-top:14px">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:60px;height:60px;background:var(--g100);border:1px solid var(--g200);border-radius:4px"></div><span class="mono" style="font-size:10px;color:var(--g500)">xs · 4</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:60px;height:60px;background:var(--g100);border:1px solid var(--g200);border-radius:6px"></div><span class="mono" style="font-size:10px;color:var(--g500)">sm · 6</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:60px;height:60px;background:var(--g100);border:1px solid var(--g200);border-radius:8px"></div><span class="mono" style="font-size:10px;color:var(--g500)">md · 8</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:60px;height:60px;background:var(--g100);border:1px solid var(--g200);border-radius:12px"></div><span class="mono" style="font-size:10px;color:var(--g500)">lg · 12</span></div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:60px;height:60px;background:var(--g100);border:1px solid var(--g200);border-radius:16px"></div><span class="mono" style="font-size:10px;color:var(--g500)">xl · 16</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 07 BUTTONS ===================== -->
+    <section id="buttons">
+      <div class="secid">07 · COMPONENTS</div>
+      <h2 style="margin-top:6px">Buttons</h2>
+      <p class="lead">Cinq variantes. Le primary signature (gradient) est <b>limité à un seul par écran</b>.</p>
+      <div class="card" style="margin-top:14px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn primary">Générer une clé</button>
+          <button class="btn solid">Enregistrer</button>
+          <button class="btn outline">Annuler</button>
+          <button class="btn ghost">Voir tout</button>
+          <button class="btn danger">Supprimer</button>
+        </div>
+        <div class="codeblock" style="margin-top:14px"><span class="c">// shadcn/ui — Button.tsx (extrait)</span>
+<span class="k">const</span> buttonVariants = cva(
+  <span class="s">"inline-flex items-center gap-2 h-9 rounded-md px-4 text-sm font-medium transition"</span>,
+  { variants: { variant: {
+      primary: <span class="s">"text-white bg-[image:var(--gradient-spx)] shadow-md"</span>,
+      solid:   <span class="s">"bg-gray-900 text-white hover:bg-gray-800"</span>,
+      outline: <span class="s">"border border-gray-200 bg-white hover:bg-gray-50"</span>,
+      ghost:   <span class="s">"hover:bg-gray-100"</span>,
+      danger:  <span class="s">"bg-danger text-white hover:opacity-90"</span>,
+  }}});</div>
+      </div>
+    </section>
+
+    <!-- ===================== 08 FORMS ===================== -->
+    <section id="forms">
+      <div class="secid">08 · COMPONENTS</div>
+      <h2 style="margin-top:6px">Forms</h2>
+      <p class="lead">React Hook Form + zod. Le focus ring utilise <span class="mono">spx-cyan-500</span> à 15% pour rester cohérent avec le mark.</p>
+      <div class="card" style="margin-top:14px">
+        <div class="grid-3">
+          <div>
+            <div class="caps" style="color:var(--g500);margin-bottom:6px">Email</div>
+            <input class="input" value="a.bennani@s2m.ma"/>
+          </div>
+          <div>
+            <div class="caps" style="color:var(--g500);margin-bottom:6px">Sigle produit</div>
+            <input class="input mono" value="LIC" style="text-transform:uppercase;letter-spacing:0.06em"/>
+          </div>
+          <div>
+            <div class="caps" style="color:var(--g500);margin-bottom:6px">Statut</div>
+            <select class="input"><option>Actif</option><option>Suspendu</option></select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 09 BADGES ===================== -->
+    <section id="badges">
+      <div class="secid">09 · COMPONENTS</div>
+      <h2 style="margin-top:6px">Badges &amp; status</h2>
+      <p class="lead">Toujours uppercase, mono, padding 3×8, fg 100% / bg 15% / border 35%.</p>
+      <div class="card" style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <span class="bdg ok">ACTIF</span>
+        <span class="bdg warn">SUSPENDU</span>
+        <span class="bdg err">EXPIRE</span>
+        <span class="bdg muted">INACTIF</span>
+        <span class="bdg warn">ALERTE</span>
+        <span class="bdg err">DÉPASSÉ</span>
+        <span class="bdg info">INFO</span>
+      </div>
+    </section>
+
+    <!-- ===================== 10 TABLES ===================== -->
+    <section id="tables">
+      <div class="secid">10 · COMPONENTS</div>
+      <h2 style="margin-top:6px">Tables</h2>
+      <p class="lead">Densité moyenne · 14 px body, 10 px caption uppercase pour les en-têtes, IDs en mono.</p>
+      <div class="card" style="margin-top:14px;padding:0;overflow:hidden">
+        <table class="demo">
+          <thead><tr><th>N° contrat</th><th>Banque</th><th>Pays</th><th>Statut</th><th>Conso.</th></tr></thead>
+          <tbody>
+            <tr><td class="id">SPX-2024-0142</td><td>BMCE Bank of Africa</td><td>Maroc</td><td><span class="bdg ok">ACTIF</span></td><td class="mono" style="color:var(--ok)">72%</td></tr>
+            <tr><td class="id">SPX-2024-0156</td><td>Attijariwafa Bank</td><td>Maroc</td><td><span class="bdg warn">ALERTE</span></td><td class="mono" style="color:var(--warn)">91%</td></tr>
+            <tr><td class="id">SPX-2024-0203</td><td>UBA Côte d'Ivoire</td><td>Côte d'Ivoire</td><td><span class="bdg err">DÉPASSÉ</span></td><td class="mono" style="color:var(--err)">112%</td></tr>
+            <tr><td class="id">SPX-2023-0188</td><td>BCI Tunisie</td><td>Tunisie</td><td><span class="bdg muted">SUSPENDU</span></td><td class="mono" style="color:var(--g500)">0%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== 11 KPI ===================== -->
+    <section id="kpi">
+      <div class="secid">11 · COMPONENTS</div>
+      <h2 style="margin-top:6px">KPI &amp; cards</h2>
+      <p class="lead">Le KPI "hero" en haut d'un dashboard porte le filet gradient (signature). Les autres restent neutres.</p>
+      <div class="grid-4" style="margin-top:14px">
+        <div class="card" style="padding:18px;position:relative;overflow:hidden">
+          <div style="position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,#74ECFF,#00CAFF 55%,#0006A5)"></div>
+          <div class="caps" style="color:var(--g500)">Contrats actifs</div>
+          <div class="display" style="font-size:30px;color:var(--g900);margin-top:8px">247</div>
+          <div class="mono" style="font-size:11px;color:var(--ok)">▲ 4 ce mois</div>
+        </div>
+        <div class="card" style="padding:18px">
+          <div class="caps" style="color:var(--g500)">Alertes</div>
+          <div class="display" style="font-size:30px;color:var(--g900);margin-top:8px">18</div>
+          <div class="mono" style="font-size:11px;color:var(--warn)">▲ 3 / 7j</div>
+        </div>
+        <div class="card" style="padding:18px">
+          <div class="caps" style="color:var(--g500)">Dépassements</div>
+          <div class="display" style="font-size:30px;color:var(--g900);margin-top:8px">5</div>
+          <div class="mono" style="font-size:11px;color:var(--err)">⚠ action requise</div>
+        </div>
+        <div class="card" style="padding:18px">
+          <div class="caps" style="color:var(--g500)">Revenu MRR</div>
+          <div class="display" style="font-size:30px;color:var(--g900);margin-top:8px">2.4M</div>
+          <div class="mono" style="font-size:11px;color:var(--ok)">▲ 6.2%</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 12 SHELL ===================== -->
+    <section id="shell">
+      <div class="secid">12 · PATTERNS</div>
+      <h2 style="margin-top:6px">App shell</h2>
+      <p class="lead">Layout Next.js 16 typique. Sidebar dark + content area light (ou inverse selon le produit). Le slot produit apparaît en haut à gauche de la sidebar.</p>
+
+      <div class="preview" style="margin-top:14px">
+        <div class="pv-shell">
+          <div class="pv-side">
+            <div class="pv-logo">
+              <div style="width:30px;height:30px;border-radius:7px;background:#fff;display:grid;place-items:center">
+                <svg viewBox="0 0 120 120" width="20" height="20">
+                  <defs><linearGradient id="pv1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#74ECFF"/><stop offset="55%" stop-color="#00CAFF"/><stop offset="100%" stop-color="#0006A5"/></linearGradient></defs>
+                  <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#3F3F3E"/>
+                  <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#pv1)"/>
+                </svg>
+              </div>
+              <div style="display:flex;flex-direction:column;line-height:1.05">
+                <span class="mono" style="font-size:8px;letter-spacing:0.18em;color:var(--dtl)">SELECT-PX</span>
+                <span class="display" style="font-size:13px;color:#fff;margin-top:3px"><span data-bind="code">LIC</span><span style="color:rgba(255,255,255,0.45);margin:0 1px">_</span>PORTAL</span>
+              </div>
+            </div>
+            <div class="pv-grp">Gestion</div>
+            <div class="pv-item act">▦ Dashboard</div>
+            <div class="pv-item">▢ Contrats</div>
+            <div class="pv-item">⟋ Licences</div>
+            <div class="pv-item">▤ Quotas</div>
+            <div class="pv-item">! Alertes</div>
+            <div class="pv-grp" style="margin-top:auto">Système</div>
+            <div class="pv-item">⚙ Paramètres</div>
+          </div>
+          <div class="pv-main">
+            <div class="pv-top">
+              <span class="display" style="font-size:13px;color:var(--g900)">Dashboard</span>
+              <div style="flex:1"></div>
+              <div style="height:30px;padding:0 10px;border:1px solid var(--g200);border-radius:7px;display:flex;align-items:center;gap:8px;background:var(--g50);font-size:11px;color:var(--g500);min-width:200px">
+                <span class="mono">⌕</span><span>Rechercher…</span><div style="flex:1"></div><span class="mono" style="font-size:9px;border:1px solid var(--g200);padding:1px 5px;border-radius:3px">⌘K</span>
+              </div>
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--cyan-500);opacity:0.2"></div>
+            </div>
+            <div class="pv-content">
+              <div class="pv-kpi">
+                <div class="k acc"><div class="lbl">Contrats</div><div class="val">247</div></div>
+                <div class="k"><div class="lbl">Alertes</div><div class="val" style="color:var(--warn)">18</div></div>
+                <div class="k"><div class="lbl">Dépassés</div><div class="val" style="color:var(--err)">5</div></div>
+                <div class="k"><div class="lbl">MRR</div><div class="val">2.4M</div></div>
+              </div>
+              <div style="background:#fff;border:1px solid var(--g200);border-radius:10px;padding:14px;height:200px">
+                <svg viewBox="0 0 600 160" width="100%" height="100%" preserveAspectRatio="none">
+                  <defs><linearGradient id="pa" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00CAFF" stop-opacity="0.25"/><stop offset="100%" stop-color="#00CAFF" stop-opacity="0"/></linearGradient></defs>
+                  <path d="M 0 110 C 60 90, 120 120, 180 90 S 320 50, 380 60 S 500 30, 600 38 L 600 160 L 0 160 Z" fill="url(#pa)"/>
+                  <path d="M 0 110 C 60 90, 120 120, 180 90 S 320 50, 380 60 S 500 30, 600 38" fill="none" stroke="#00CAFF" stroke-width="2"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 13 AUTH ===================== -->
+    <section id="auth">
+      <div class="secid">13 · PATTERNS</div>
+      <h2 style="margin-top:6px">Auth</h2>
+      <p class="lead">Split-screen sombre/clair. Le panneau gauche affiche le lockup parent + slot produit. SSO S2M par défaut.</p>
+      <div class="preview" style="margin-top:14px;display:grid;grid-template-columns:1.1fr 1fr;height:380px">
+        <div style="background:#0B0D12;color:#fff;padding:32px 36px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden">
+          <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);background-size:24px 24px;-webkit-mask-image:radial-gradient(ellipse at 30% 20%,black 30%,transparent 80%);mask-image:radial-gradient(ellipse at 30% 20%,black 30%,transparent 80%)"></div>
+          <div style="position:relative">
+            <div class="lockup">
+              <div class="tile inv">
+                <svg viewBox="0 0 120 120" width="32" height="32">
+                  <defs><linearGradient id="ag2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#74ECFF"/><stop offset="55%" stop-color="#00CAFF"/><stop offset="100%" stop-color="#0006A5"/></linearGradient></defs>
+                  <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#3F3F3E"/>
+                  <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#ag2)"/>
+                </svg>
+              </div>
+              <div class="word">
+                <span class="parent dark-on">SELECT-PX</span>
+                <span class="product dark-on" style="font-size:18px"><span data-bind="code">LIC</span><span class="sep">_</span><span>PORTAL</span></span>
+              </div>
+            </div>
+          </div>
+          <div style="position:relative">
+            <div class="caps" style="color:var(--cyan-500)">S2M · Internal</div>
+            <div class="display" style="font-size:24px;color:#fff;margin-top:8px;line-height:1.1" data-bind="name-display">Licensing Portal</div>
+            <div style="font-size:12px;color:var(--dtl);margin-top:8px;max-width:300px;line-height:1.5">Outil interne de l'équipe finance S2M. Accès réservé.</div>
+          </div>
+          <div class="mono" style="position:relative;font-size:10px;color:var(--dtl)">v1.0.0 · © S2M 2026</div>
+        </div>
+        <div style="padding:36px;display:flex;flex-direction:column;justify-content:center">
+          <div class="caps" style="color:var(--cyan-500)">Connexion</div>
+          <div class="display" style="font-size:22px;color:var(--g900);margin-top:6px">Bienvenue.</div>
+          <div style="font-size:12px;color:var(--g500);margin:4px 0 18px">Compte S2M requis.</div>
+          <input class="input" value="a.bennani@s2m.ma" style="margin-bottom:8px"/>
+          <input class="input" value="••••••••••••" style="margin-bottom:14px;letter-spacing:0.2em"/>
+          <button class="btn primary" style="width:100%;height:38px">Se connecter avec SSO</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 14 STACK ===================== -->
+    <section id="stack">
+      <div class="secid">14 · ENGINEERING</div>
+      <h2 style="margin-top:6px">Stack</h2>
+      <p class="lead">Le DS s'aligne sur la stack frontend cible — aucun lock-in supplémentaire.</p>
+      <div class="card" style="margin-top:14px;padding:0;overflow:hidden">
+        <table class="demo">
+          <thead><tr><th>Outil</th><th>Version</th><th>Rôle dans le DS</th></tr></thead>
+          <tbody>
+            <tr><td><b>Next.js</b></td><td class="mono">16.2.4 LTS</td><td>App Router, Server Components, Turbopack</td></tr>
+            <tr><td><b>React</b></td><td class="mono">19.2</td><td>useEffectEvent, View Transitions, React Compiler</td></tr>
+            <tr><td><b>TypeScript</b></td><td class="mono">6.0.3</td><td>Schémas zod partagés via <span class="mono">shared/</span></td></tr>
+            <tr><td><b>Tailwind CSS</b></td><td class="mono">4.2.4 LTS</td><td>Tokens via <span class="mono">@theme</span> · build 3.5× plus rapide</td></tr>
+            <tr><td><b>shadcn/ui</b></td><td class="mono">latest</td><td>Composants headless (Radix), copiés et thémés</td></tr>
+            <tr><td><b>TanStack Query</b></td><td class="mono">5.51+</td><td>Cache serveur · invalidations · mutations</td></tr>
+            <tr><td><b>React Hook Form</b></td><td class="mono">7.52+</td><td>Forms · resolver zod</td></tr>
+            <tr><td><b>next-intl</b></td><td class="mono">latest</td><td>FR + EN par défaut · AR (RTL) opt-in</td></tr>
+            <tr><td><b>Vitest + Playwright</b></td><td class="mono">2.1 / 1.48</td><td>Unit + E2E</td></tr>
+            <tr><td><b>OpenTelemetry Web</b></td><td class="mono">0.x</td><td>Erreurs JS · trace_id propagation</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== 15 INSTALL ===================== -->
+    <section id="install">
+      <div class="secid">15 · ENGINEERING</div>
+      <h2 style="margin-top:6px">Install dans un nouveau produit</h2>
+      <p class="lead">Trois étapes pour brancher le DS sur un nouveau produit SPX.</p>
+
+      <div class="card" style="margin-top:14px">
+        <h4 style="margin:0;font-family:'Montserrat';font-weight:700;font-size:14px;color:var(--g900)">1 · Variables d'environnement</h4>
+        <div class="codeblock" style="margin-top:8px"><span class="c"># .env.local — branding par produit</span>
+<span class="k">NEXT_PUBLIC_PRODUCT_CODE</span>=PHS
+<span class="k">NEXT_PUBLIC_PRODUCT_NAME</span>=<span class="s">"Payment Hub Services"</span>
+<span class="k">NEXT_PUBLIC_PRODUCT_SUFFIX</span>=CONSOLE</div>
+      </div>
+
+      <div class="card" style="margin-top:10px">
+        <h4 style="margin:0;font-family:'Montserrat';font-weight:700;font-size:14px;color:var(--g900)">2 · Coller les tokens</h4>
+        <div style="font-size:12px;color:var(--g500);margin-top:6px">Copier le bloc <span class="mono">@theme</span> §03 dans <span class="mono">app/globals.css</span> et importer les fonts via <span class="mono">next/font/google</span>.</div>
+      </div>
+
+      <div class="card" style="margin-top:10px">
+        <h4 style="margin:0;font-family:'Montserrat';font-weight:700;font-size:14px;color:var(--g900)">3 · Installer les composants shadcn customisés</h4>
+        <div class="codeblock" style="margin-top:8px"><span class="c"># Le DS fournit des recettes shadcn pré-thémées</span>
+pnpm dlx shadcn@latest add button input badge table card dialog tabs sheet
+<span class="c"># puis appliquer les patches du DS (cf. /components/spx-overrides)</span></div>
+      </div>
+
+      <div class="card" style="margin-top:10px">
+        <h4 style="margin:0;font-family:'Montserrat';font-weight:700;font-size:14px;color:var(--g900)">4 · Composant Brand</h4>
+        <div class="codeblock" style="margin-top:8px"><span class="c">// components/Brand.tsx</span>
+<span class="k">"use client"</span>;
+<span class="k">import</span> { brand } <span class="k">from</span> <span class="s">"@/lib/brand"</span>;
+
+<span class="k">export function</span> <span class="v">BrandLockup</span>({ size = 40 }: { size?: <span class="k">number</span> }) {
+  <span class="k">return</span> (
+    &lt;<span class="k">div</span> className=<span class="s">"flex items-center gap-3"</span>&gt;
+      &lt;<span class="k">SpxTile</span> size={size} /&gt;
+      &lt;<span class="k">div</span> className=<span class="s">"flex flex-col leading-tight"</span>&gt;
+        &lt;<span class="k">span</span> className=<span class="s">"font-mono text-[10px] tracking-[0.18em] uppercase text-gray-500"</span>&gt;{brand.parent}&lt;/<span class="k">span</span>&gt;
+        &lt;<span class="k">span</span> className=<span class="s">"font-display font-extrabold text-lg"</span>&gt;
+          {brand.code}&lt;<span class="k">span</span> className=<span class="s">"text-gray-300 mx-0.5"</span>&gt;_&lt;/<span class="k">span</span>&gt;{brand.suffix}
+        &lt;/<span class="k">span</span>&gt;
+      &lt;/<span class="k">div</span>&gt;
+    &lt;/<span class="k">div</span>&gt;
+  );
+}</div>
+      </div>
+    </section>
+
+    <!-- ===================== 16 i18n ===================== -->
+    <section id="i18n">
+      <div class="secid">16 · ENGINEERING</div>
+      <h2 style="margin-top:6px">Internationalisation</h2>
+      <p class="lead">FR + EN par défaut via next-intl. Le sigle produit reste en uppercase latin dans toutes les locales.</p>
+      <div class="codeblock" style="margin-top:14px"><span class="c">// i18n/messages/fr.json</span>
+{
+  <span class="s">"app.title"</span>: <span class="s">"{code}_{suffix}"</span>,
+  <span class="s">"app.tagline"</span>: <span class="s">"{name} · SELECT-PX"</span>,
+  <span class="s">"auth.welcome"</span>: <span class="s">"Bienvenue."</span>,
+  <span class="s">"auth.cta"</span>: <span class="s">"Se connecter avec SSO"</span>
+}
+
+<span class="c">// usage</span>
+<span class="k">const</span> t = useTranslations();
+t(<span class="s">"app.title"</span>, { code: brand.code, suffix: brand.suffix });</div>
+    </section>
+
+    <footer>
+      <span>SELECT-PX · Design System v1.0</span>
+      <span>© 2026 S2M · Confidentiel interne</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+  // Live product slot — update every [data-bind] in the page
+  const codeIn = document.getElementById('codeInput');
+  const nameIn = document.getElementById('nameInput');
+  const liveCode = document.getElementById('liveCode');
+  const liveCodeChip = document.getElementById('liveCodeChip');
+  const liveName = document.getElementById('liveName');
+
+  function applyBrand() {
+    const code = (codeIn.value || 'LIC').toUpperCase().slice(0, 4);
+    const name = nameIn.value || 'Licensing Portal';
+    document.querySelectorAll('[data-bind="code"]').forEach(el => el.textContent = code);
+    document.querySelectorAll('[data-bind="name-display"]').forEach(el => el.textContent = name);
+    liveCode.textContent = code;
+    liveCodeChip.textContent = code;
+    liveName.textContent = '· ' + name;
+  }
+  codeIn.addEventListener('input', applyBrand);
+  nameIn.addEventListener('input', applyBrand);
+
+  // Sub-brands grid
+  const subs = [
+    { code: 'LIC', suffix: 'PORTAL',  name: 'Licensing Portal',     desc: 'Gestion des licences et quotas contractuels.' },
+    { code: 'PHS', suffix: 'CONSOLE', name: 'Payment Hub Services', desc: 'Orchestration des flux de paiement multi-canaux.' },
+    { code: 'MON', suffix: 'OPS',     name: 'Monitoring & Ops',     desc: 'Surveillance temps réel, alerting, SLA.' },
+    { code: 'ACQ', suffix: 'DASH',    name: 'Acquiring Dashboard',  desc: 'Suivi des transactions et marchands.' },
+    { code: 'CRD', suffix: 'STUDIO',  name: 'Card Studio',          desc: 'Conception et émission de programmes carte.' },
+    { code: 'ATM', suffix: 'CTRL',    name: 'ATM Control',          desc: 'Pilotage de la flotte GAB.' },
+  ];
+  const sg = document.getElementById('subgrid');
+  sg.innerHTML = subs.map(s => `
+    <div class="subcard">
+      <div class="stage">
+        <div class="lockup">
+          <div class="tile">
+            <svg viewBox="0 0 120 120" width="34" height="34">
+              <defs><linearGradient id="sg-${s.code}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#74ECFF"/><stop offset="55%" stop-color="#00CAFF"/><stop offset="100%" stop-color="#0006A5"/></linearGradient></defs>
+              <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#FFFFFF"/>
+              <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#sg-${s.code})"/>
+            </svg>
+          </div>
+          <div class="word">
+            <span class="parent dark-on">SELECT-PX</span>
+            <span class="product dark-on" style="font-size:18px">${s.code}<span class="sep">_</span>${s.suffix}</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h4>${s.name}</h4>
+        <div class="desc">${s.desc}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <span class="bdg muted" style="font-size:9px">${s.code}</span>
+        <span class="bdg info" style="font-size:9px">v1</span>
+      </div>
+    </div>
+  `).join('');
+
+  applyBrand();
+
+  // Smooth scrolling + active state
+  const items = document.querySelectorAll('aside.nav a.item');
+  items.forEach(a => a.addEventListener('click', () => {
+    items.forEach(i => i.classList.remove('active'));
+    a.classList.add('active');
+  }));
+</script>
+</body>
+</html>

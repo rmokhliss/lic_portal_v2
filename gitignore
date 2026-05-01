@@ -1,0 +1,177 @@
+# ==============================================================================
+# LIC v2 — .gitignore
+# Stack : Node 24 + pnpm + Next.js 16 + Drizzle + PostgreSQL 18 + Vitest + Playwright
+# ==============================================================================
+
+# --- Dépendances -------------------------------------------------------------
+node_modules/
+.pnpm-store/
+.pnp.*
+.yarn/
+.npm/
+
+# --- Variables d'environnement (NE JAMAIS COMMITER) --------------------------
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+
+# Le seul fichier .env autorisé en dépôt :
+!.env.example
+
+# --- Builds Next.js -----------------------------------------------------------
+.next/
+out/
+build/
+dist/
+
+# --- TypeScript ---------------------------------------------------------------
+*.tsbuildinfo
+.tsbuildinfo
+next-env.d.ts
+
+# --- Tests --------------------------------------------------------------------
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+playwright-report/
+playwright/.cache/
+.vitest-cache/
+
+# --- Logs ---------------------------------------------------------------------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# --- Caches et artefacts d'outillage ------------------------------------------
+.eslintcache
+.prettiercache
+.stylelintcache
+.cache/
+.turbo/
+.parcel-cache/
+.swc/
+
+# --- Drizzle ORM --------------------------------------------------------------
+# Les migrations doivent être commitées (versionnées avec le code)
+# /app/src/server/infrastructure/db/migrations/  ← À COMMITER
+# Mais pas les artefacts intermédiaires :
+drizzle/.snapshots/
+.drizzle-kit/
+
+# --- Docker -------------------------------------------------------------------
+# docker-compose.yml et Dockerfile sont commités
+# Mais pas les volumes persistés ni les overrides locaux :
+docker-compose.override.yml
+.docker/
+docker-data/
+postgres-data/
+
+# --- IDE et éditeurs ---------------------------------------------------------
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# --- OS spécifique ------------------------------------------------------------
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+.directory
+.fuse_hidden*
+.Trash-*
+
+# --- Secrets et clés ----------------------------------------------------------
+# JAMAIS commiter de clé privée ou secret crypto
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+secrets/
+.secrets/
+
+# Exception : les certificats publics de référence si placés en docs/
+!docs/**/*.pem.example
+!docs/**/*-public.pem
+
+# --- Fichiers générés par les jobs et tests -----------------------------------
+# Fichiers .lic/.hc générés en local (jamais en dépôt)
+*.lic
+*.hc
+*.enc
+
+# Rapports temporaires (PDF, Excel) générés par les tests E2E
+*.pdf.tmp
+*.xlsx.tmp
+test-output/
+
+# --- Outils analyse / monitoring ----------------------------------------------
+.sentryclirc
+.lighthouseci/
+
+# --- Husky --------------------------------------------------------------------
+# .husky/ est commité (hooks partagés en équipe)
+# Mais pas le fichier d'install pour Husky v9 :
+.husky/_/
+
+# --- Storybook (si ajouté plus tard) ------------------------------------------
+storybook-static/
+
+# --- Bundle analyzers (Next.js) -----------------------------------------------
+.next/analyze/
+
+# --- Local files développeur --------------------------------------------------
+# Notes perso, brouillons
+NOTES.md
+TODO.local.md
+.claude-local/
+*.local.md
+
+# --- Fichiers temporaires -----------------------------------------------------
+*.tmp
+*.bak
+*.backup
+*.orig
+*.rej
+.tmp/
+tmp/
+
+# ==============================================================================
+# Fin du .gitignore
+# ==============================================================================
