@@ -5,8 +5,6 @@
 //   - TypeScript strict (pas de `any`, pas de `console.log`, etc.)
 //   - eslint-plugin-boundaries : hexagonal strict (domain → application → ports → adapters)
 //   - import/order et naming-convention
-//
-// Voir aussi : app/eslint.config.mjs et shared/eslint.config.mjs
 // ==============================================================================
 
 import js from "@eslint/js";
@@ -205,6 +203,37 @@ export default tseslint.config(
       eqeqeq: ["error", "always"],
       "prefer-const": "error",
       "no-var": "error",
+
+      // --- Règle Référentiel §4.11 — dossiers interdits dans modules backend
+      // services/managers/helpers/utils/common/lib INTERDITS dans
+      // app/src/server/modules/<X>/. Toute logique métier doit être
+      // dans domain/, application/, ports/, ou adapters/.
+      // (lib/ et hooks/ restent autorisés à la racine du frontend, exception §4.11)
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/server/modules/*/services",
+                "**/server/modules/*/services/**",
+                "**/server/modules/*/managers",
+                "**/server/modules/*/managers/**",
+                "**/server/modules/*/helpers",
+                "**/server/modules/*/helpers/**",
+                "**/server/modules/*/utils",
+                "**/server/modules/*/utils/**",
+                "**/server/modules/*/common",
+                "**/server/modules/*/common/**",
+                "**/server/modules/*/lib",
+                "**/server/modules/*/lib/**",
+              ],
+              message:
+                "Référentiel §4.11 — services/managers/helpers/utils/common/lib INTERDITS dans app/src/server/modules/<X>/. Toute logique va dans domain/, application/, ports/ ou adapters/.",
+            },
+          ],
+        },
+      ],
     },
   },
 

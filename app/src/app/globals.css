@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand */
+  --color-spx-cyan-100: #74ECFF;
+  --color-spx-cyan-500: #00CAFF;
+  --color-spx-blue-600: #0066D6;
+  --color-spx-blue-900: #0006A5;
+  --color-spx-ink:      #3F3F3E;
+
+  /* Dark surfaces */
+  --color-surface-0: #0B0D12;
+  --color-surface-1: #11141B;
+  --color-surface-2: #1A1F2B;
+  --color-border-subtle: #242A38;
+
+  /* Semantic */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger:  #EF4444;
+  --color-info:    #3B82F6;
+
+  /* Type — variables CSS injectées par next/font/google dans app/src/app/layout.tsx */
+  --font-display: var(--font-montserrat), "Helvetica Neue", sans-serif;
+  --font-sans:    var(--font-poppins), system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  /* Radii */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Signature gradient */
+  --gradient-spx: linear-gradient(90deg, #74ECFF 0%, #00CAFF 55%, #0006A5 100%);
+}

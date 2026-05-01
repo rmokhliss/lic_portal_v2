@@ -126,6 +126,12 @@ Icon
 secrets/
 .secrets/
 
+# Exception : routes Next.js dont le nom de dossier finit par .pem
+# (convention App Router — ex: /.well-known/s2m-ca.pem/route.ts qui retourne
+# dynamiquement le PEM ; le dossier ne contient PAS de fichier .pem en dur).
+!app/src/app/api/**/*.pem/
+!app/src/app/api/**/*.pem/**
+
 # Exception : les certificats publics de référence si placés en docs/
 !docs/**/*.pem.example
 !docs/**/*-public.pem
