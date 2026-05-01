@@ -1,0 +1,55 @@
+{
+  "name": "s2m-lic",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Licence Manager — portail back-office S2M de gestion des licences SELECT-PX",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --filter app dev",
+    "worker:dev": "pnpm --filter app worker:dev",
+    "build": "pnpm --filter shared build && pnpm --filter app build",
+    "start": "pnpm --filter app start",
+    "lint": "pnpm -r lint && pnpm typecheck",
+    "lint:fix": "pnpm -r lint:fix",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:watch": "pnpm --filter app test:watch",
+    "test:coverage": "pnpm -r test:coverage",
+    "test:e2e": "pnpm --filter app test:e2e",
+    "db:generate": "pnpm --filter app db:generate",
+    "db:migrate": "pnpm --filter app db:migrate",
+    "db:seed": "pnpm --filter app db:seed",
+    "db:studio": "pnpm --filter app db:studio",
+    "db:reset": "pnpm --filter app db:reset",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json,yml,yaml}\"",
+    "gitleaks": "gitleaks detect --source . --verbose --redact",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.0",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.15.0",
+    "eslint-plugin-boundaries": "^5.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.9",
+    "typescript": "^6.0.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{md,json,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}

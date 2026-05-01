@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+# Commit-msg hook (Référentiel §4.17 — Conventional Commits)
+pnpm exec commitlint --edit $1

@@ -1,0 +1,6 @@
+# Exceptions gitleaks pour LIC v2.
+# Format : <commit_sha>:<file>:<rule_id>:<line>
+# Voir : https://github.com/gitleaks/gitleaks#configuration
+
+# Les valeurs "__TO_GENERATE__" du .env.example sont des placeholders, pas des secrets
+# (gitleaks les ignore normalement, mais en cas de faux positif, ajouter ici)

@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: lic-portal-v2-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lic_portal
+      POSTGRES_PASSWORD: lic_portal_dev
+      POSTGRES_DB: lic_portal
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+      TZ: UTC
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lic_portal -d lic_portal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    command: >
+      postgres
+      -c log_statement=none
+      -c log_min_duration_statement=200
+      -c shared_buffers=256MB
+      -c max_connections=50
+
+volumes:
+  postgres-data:
+    name: lic-portal-v2-postgres-data

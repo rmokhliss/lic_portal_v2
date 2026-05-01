@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+
+# Pre-commit hook (Référentiel §4.17)
+# - lint-staged : lint + format sur fichiers stagés
+# - gitleaks    : détection de secrets
+
+# 1. Lint + format des fichiers stagés
+pnpm exec lint-staged || exit 1
+
+# 2. Scan secrets (silent si gitleaks pas installé localement, géré en CI)
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --verbose || {
+    echo ""
+    echo "  ⛔ gitleaks a détecté un secret potentiel. Commit annulé."
+    echo "  Si faux positif : ajouter une exception dans .gitleaksignore"
+    exit 1
+  }
+else
+  echo "  ⚠  gitleaks non installé localement (le scan sera fait en CI)"
+fi
