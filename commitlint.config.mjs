@@ -24,7 +24,7 @@ export default {
       ],
     ],
     "scope-enum": [
-      1, // warning (pas error) pour laisser de la flexibilité
+      2, // strict — tout commit avec un scope hors liste est rejeté (aligné type-enum)
       "always",
       [
         // Modules métier
@@ -36,7 +36,7 @@ export default {
         // Frontend
         "ui", "components", "hooks", "i18n", "design",
         // Transverse
-        "deps", "ci", "docs", "config", "release",
+        "bootstrap", "deps", "ci", "docs", "config", "release",
       ],
     ],
   },

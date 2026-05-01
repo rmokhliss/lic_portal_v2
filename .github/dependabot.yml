@@ -1,0 +1,94 @@
+# ==============================================================================
+# LIC v2 — Dependabot (Référentiel S2M v2.0 §4.17 — outillage repo)
+#
+# Mises à jour automatiques des dépendances :
+#   - npm (workspace racine + app/ + shared/)
+#   - GitHub Actions (workflows futurs en .github/workflows/)
+#   - Docker (Dockerfile à venir Phase 13 + base images docker-compose.yml)
+#
+# Cadence : hebdomadaire le lundi, max 5 PR ouvertes par target.
+# Reviewers : à compléter quand le repo sera publié sur GitHub.
+#
+# Doc : https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# ==============================================================================
+
+version: 2
+
+updates:
+  # --- npm racine — workspace pnpm root ---------------------------------------
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+      include: scope
+    # reviewers:
+    #   - rmokhliss
+
+  # --- npm workspace app/ -----------------------------------------------------
+  - package-ecosystem: npm
+    directory: /app
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+      include: scope
+    # reviewers:
+    #   - rmokhliss
+
+  # --- npm workspace shared/ --------------------------------------------------
+  - package-ecosystem: npm
+    directory: /shared
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+      include: scope
+    # reviewers:
+    #   - rmokhliss
+
+  # --- GitHub Actions ---------------------------------------------------------
+  # Suit les versions des actions dans .github/workflows/*.yml (à créer Phase 13)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(ci)
+      include: scope
+    # reviewers:
+    #   - rmokhliss
+
+  # --- Docker -----------------------------------------------------------------
+  # Suit les bumps d'images de base (Dockerfile Phase 13 ; postgres:18-alpine
+  # dans docker-compose.yml — Dependabot scanne les Dockerfile, pas docker-compose.yml).
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+      include: scope
+    # reviewers:
+    #   - rmokhliss
