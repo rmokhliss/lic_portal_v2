@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Montserrat, Poppins, JetBrains_Mono } from "next/font/google";
 
 import "./globals.css";
+import { OtelProvider } from "@/components/shared/OtelProvider";
 
 const montserrat = Montserrat({
   weight: "800",
@@ -35,7 +36,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       lang="fr"
       className={`dark ${montserrat.variable} ${poppins.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <OtelProvider>{children}</OtelProvider>
+      </body>
     </html>
   );
 }
