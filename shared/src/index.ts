@@ -13,3 +13,10 @@ export type {
   ErrorCode,
   ErrorCodeEntry,
 } from "./constants/error-codes";
+
+// --- Identité SYSTEM (F-06) ------------------------------------------------
+export {
+  SYSTEM_USER_DISPLAY,
+  SYSTEM_USER_ID,
+  SYSTEM_USER_MATRICULE,
+} from "./constants/system-user";

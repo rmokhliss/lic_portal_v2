@@ -46,6 +46,16 @@ export default tseslint.config(
     },
     settings: {
       "boundaries/elements": [
+        // module-schema DOIT être déclaré AVANT "adapters" pour avoir priorité
+        // de matching (eslint-plugin-boundaries : le premier match gagne).
+        // Surface publique cross-module d'un adapter Postgres : seul fichier qui
+        // peut être importé depuis d'autres modules. Le reste de l'adapter
+        // (repository.pg.ts, mapper.ts) reste privé au module.
+        {
+          type: "module-schema",
+          pattern: "app/src/server/modules/*/adapters/postgres/schema.ts",
+        },
+
         // Backend hexagonal — modules
         { type: "domain", pattern: "app/src/server/modules/*/domain/**" },
         { type: "application", pattern: "app/src/server/modules/*/application/**" },
@@ -138,13 +148,24 @@ export default tseslint.config(
             // interdit par §4.11 dans les modules métier.
             {
               from: "infrastructure",
-              allow: ["shared", "infrastructure", "module-error"],
+              allow: ["shared", "infrastructure", "module-error", "module-schema"],
             },
 
             // module-error : module transverse, ne dépend que du catalogue dans shared/.
             // N'importe JAMAIS infrastructure/env/ ni infrastructure/logger/ pour
             // éviter tout cycle de bootstrap (l'app peut lever une AppError très tôt).
             { from: "module-error", allow: ["shared"] },
+
+            // module-schema : surface publique cross-module d'un adapter Postgres.
+            // Importe : shared (constants/types), infrastructure (helpers columns.ts),
+            // module-error (erreurs typées éventuelles) et OTHER module-schema (FK
+            // cross-module — c'est précisément le point de définir ce type séparé).
+            // À F-07+, étendre `from: adapters` avec module-schema quand un repository
+            // fera des JOIN cross-module (note de processus, pas d'anticipation ici).
+            {
+              from: "module-schema",
+              allow: ["shared", "infrastructure", "module-error", "module-schema"],
+            },
 
             // jobs : peuvent appeler les modules via leur module-root + infra + shared + erreurs
             {

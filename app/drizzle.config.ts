@@ -11,6 +11,11 @@
 //   pnpm db:studio     → drizzle-kit studio
 // ==============================================================================
 
+// Side-effect import en PREMIER : charge .env (process.loadEnvFile natif Node)
+// AVANT que infrastructure/env ne soit évalué. ESM garantit l'ordre d'exécution
+// des imports dans l'ordre de déclaration.
+import "./scripts/load-env";
+
 import { defineConfig } from "drizzle-kit";
 
 // Import RELATIF (pas `@/...`) : drizzle-kit n'utilise pas les paths TS du
