@@ -12,7 +12,12 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      # PG 18+ : mount sur le parent /var/lib/postgresql (pas /data).
+      # PGDATA par défaut de l'image = /var/lib/postgresql/<MAJOR>/docker.
+      # Cf. https://github.com/docker-library/postgres/pull/1259 (mergé) et
+      # docs Docker Hub officielles. Permet pg_upgrade --link sans souci de
+      # mount boundaries entre versions majeures.
+      - postgres-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U lic_portal -d lic_portal"]
       interval: 10s
