@@ -209,6 +209,7 @@ Référentiel §4.8 :
 - Pas de nouveau composant, module ou concept sans validation explicite
 - En cas de doute : `[à valider]` entre crochets, jamais d'approximation
 - Si un pattern non listé est nécessaire → demander avant de l'introduire
+- Toute modification d'un fichier de config architecturale (`eslint.config.mjs`, `tsconfig*.json`, `vitest.config.ts`, `next.config.ts`, `drizzle.config.ts`) — **même strictement additive** — passe par un Stop validation. Lister chaque règle/section impactée + justification.
 
 ---
 
