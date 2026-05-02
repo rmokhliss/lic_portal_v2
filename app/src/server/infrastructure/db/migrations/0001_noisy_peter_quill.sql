@@ -1,0 +1,1 @@
+ALTER TABLE "lic_users" ADD COLUMN "token_version" integer DEFAULT 0 NOT NULL;

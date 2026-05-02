@@ -8,7 +8,9 @@
 // chargement .env, contrairement à Next.js (`next dev`) qui le fait nativement.
 //
 // `process.loadEnvFile` est natif Node 21.7+ (zero dépendance). Le path est
-// relatif au CWD du script, donc `../.env` car drizzle-kit s'exécute depuis app/.
+// relatif au CWD du script, donc `.env` car les scripts (drizzle-kit, migrate,
+// vitest) tournent depuis app/. F-07 : .env déplacé de racine repo vers app/
+// pour que Next.js dev le charge automatiquement (convention next dev).
 // ==============================================================================
 
-process.loadEnvFile("../.env");
+process.loadEnvFile(".env");

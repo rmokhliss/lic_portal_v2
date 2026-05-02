@@ -14,6 +14,7 @@ import {
   type AnyPgColumn,
   boolean,
   index,
+  integer,
   pgEnum,
   pgTable,
   timestamp,
@@ -36,6 +37,9 @@ export const users = pgTable(
     // DETTE-002 traitée d'entrée v2 : flag forçant le changement de mot de passe
     // au prochain login (ex: comptes seedés, reset admin).
     mustChangePassword: boolean("must_change_password").notNull().default(false),
+    // F-07 : compteur incrémenté à chaque révocation forcée (logout admin, change
+    // password). Le JWT contient une copie ; mismatch JWT/BD = session invalidée.
+    tokenVersion: integer("token_version").notNull().default(0),
     telephone: varchar("telephone", { length: 20 }),
     role: userRole("role").notNull(),
     actif: boolean("actif").notNull().default(true),

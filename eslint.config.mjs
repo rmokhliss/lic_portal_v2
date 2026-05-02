@@ -67,6 +67,17 @@ export default tseslint.config(
         // Importable par toutes les couches serveur (PROJECT_CONTEXT §7).
         { type: "module-error", pattern: "app/src/server/modules/error/**" },
 
+        // Next.js 16 instrumentation hook (boot Node runtime, exécuté UNE fois).
+        { type: "instrumentation", pattern: "app/src/instrumentation.ts" },
+
+        // Composition root : SEUL fichier autorisé à câbler les modules cross-module.
+        // Garde les <X>.module.ts fermés (DI intra-module uniquement) et rend le
+        // graphe de dépendances cross-module auditable en un seul endroit.
+        {
+          type: "composition-root",
+          pattern: "app/src/server/composition-root.ts",
+        },
+
         // Backend infra et jobs
         { type: "infrastructure", pattern: "app/src/server/infrastructure/**" },
         { type: "jobs", pattern: "app/src/server/jobs/**" },
@@ -156,6 +167,31 @@ export default tseslint.config(
             // éviter tout cycle de bootstrap (l'app peut lever une AppError très tôt).
             { from: "module-error", allow: ["shared"] },
 
+            // instrumentation : boot hook Next.js, peut appeler les helpers infra
+            // (bootstrapAdmin, init OTel futur, etc.) + erreurs typées + shared.
+            // N'importe PAS les modules métier directement — passer par
+            // composition-root pour ça.
+            {
+              from: "instrumentation",
+              allow: ["infrastructure", "module-error", "shared"],
+            },
+
+            // composition-root : SEUL autorisé à voir tous les <X>.module.ts.
+            // Câble les use-cases cross-module et expose des singletons prêts
+            // à consommer (ex: changePasswordUseCase). Les modules eux-mêmes
+            // restent fermés à toute composition cross-module.
+            {
+              from: "composition-root",
+              allow: [
+                "module-root",
+                "application",
+                "ports",
+                "infrastructure",
+                "module-error",
+                "shared",
+              ],
+            },
+
             // module-schema : surface publique cross-module d'un adapter Postgres.
             // Importe : shared (constants/types), infrastructure (helpers columns.ts),
             // module-error (erreurs typées éventuelles) et OTHER module-schema (FK
@@ -179,12 +215,13 @@ export default tseslint.config(
               ],
             },
 
-            // app-route (Server Actions, pages) : appelle module-root + shared + frontend libs + erreurs
+            // app-route (Server Actions, pages) : DOIT passer par composition-root
+            // pour atteindre les use-cases câblés. Pas d'accès direct aux
+            // module-root ni aux application/ — pattern strict (cf. F-07 décision).
             {
               from: "app-route",
               allow: [
-                "module-root",
-                "application",
+                "composition-root",
                 "shared",
                 "components",
                 "hooks",

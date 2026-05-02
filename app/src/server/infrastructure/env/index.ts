@@ -60,11 +60,41 @@ const envSchema = z.object({
   // --- OpenTelemetry --------------------------------------------------------
   OTEL_EXPORTER_OTLP_ENDPOINT: z.url().optional(),
   OTEL_SERVICE_NAME: z.string().min(1).default("s2m-lic"),
+
+  // --- Bootstrap admin initial (F-07) --------------------------------------
+  // Crée un user SADMIN avec must_change_password=true au démarrage SI aucun
+  // SADMIN actif n'existe encore en BD ET les 3 vars sont présentes.
+  // Sinon : skip silencieux. Cf. helper bootstrapAdmin() dans infra/auth.
+  // Tout-ou-rien : les 3 doivent être présentes ensemble (validé par .refine()
+  // ci-dessous), sinon état partiel ambigu et le serveur refuse de démarrer.
+  INITIAL_ADMIN_EMAIL: z.email().optional(),
+  INITIAL_ADMIN_PASSWORD: z.string().min(12).optional(),
+  INITIAL_ADMIN_MATRICULE: z
+    .string()
+    .regex(/^MAT-\d{3}$/, "Format attendu : MAT-NNN (3 chiffres)")
+    .optional(),
 });
 
-export type Env = z.infer<typeof envSchema>;
+// Validation transverse : les 3 vars INITIAL_ADMIN_* sont tout-ou-rien.
+const envSchemaWithRefine = envSchema.refine(
+  (data) => {
+    const present = [
+      data.INITIAL_ADMIN_EMAIL,
+      data.INITIAL_ADMIN_PASSWORD,
+      data.INITIAL_ADMIN_MATRICULE,
+    ].filter((v) => v !== undefined).length;
+    return present === 0 || present === 3;
+  },
+  {
+    message:
+      "INITIAL_ADMIN_EMAIL, INITIAL_ADMIN_PASSWORD et INITIAL_ADMIN_MATRICULE doivent être TOUS présents OU TOUS absents (état partiel ambigu)",
+    path: ["INITIAL_ADMIN_*"],
+  },
+);
 
-const parsed = envSchema.safeParse(process.env);
+export type Env = z.infer<typeof envSchemaWithRefine>;
+
+const parsed = envSchemaWithRefine.safeParse(process.env);
 
 if (!parsed.success) {
   const lines = parsed.error.issues.map((issue) => {

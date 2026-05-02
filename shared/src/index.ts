@@ -20,3 +20,7 @@ export {
   SYSTEM_USER_ID,
   SYSTEM_USER_MATRICULE,
 } from "./constants/system-user";
+
+// --- Schémas auth (F-07) ----------------------------------------------------
+export { ChangePasswordSchema, LoginSchema } from "./schemas/auth.schema";
+export type { ChangePasswordInput, LoginInput } from "./schemas/auth.schema";

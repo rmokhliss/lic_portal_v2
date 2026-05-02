@@ -95,4 +95,86 @@ describe("env", () => {
       "DATABASE_URL : DATABASE_URL doit commencer par postgresql:// ou postgres://",
     );
   });
+
+  // === F-07 — bootstrap admin INITIAL_ADMIN_* ===
+
+  it("parses successfully when the 3 INITIAL_ADMIN_* are all present and valid", async () => {
+    process.env = {
+      ...originalEnv,
+      ...REQUIRED_VALID_ENV,
+      INITIAL_ADMIN_EMAIL: "admin@s2m.local",
+      INITIAL_ADMIN_PASSWORD: "ChangeMe-F07-DevOnly-A8x2!",
+      INITIAL_ADMIN_MATRICULE: "MAT-001",
+    };
+
+    const mod = await import("../index");
+
+    expect(mod.env.INITIAL_ADMIN_EMAIL).toBe("admin@s2m.local");
+    expect(mod.env.INITIAL_ADMIN_PASSWORD).toBe("ChangeMe-F07-DevOnly-A8x2!");
+    expect(mod.env.INITIAL_ADMIN_MATRICULE).toBe("MAT-001");
+  });
+
+  it("crashes when only some INITIAL_ADMIN_* are present (state partial)", async () => {
+    process.env = {
+      ...originalEnv,
+      ...REQUIRED_VALID_ENV,
+      INITIAL_ADMIN_EMAIL: "admin@s2m.local",
+      // PASSWORD et MATRICULE volontairement absents → état partiel ambigu
+    };
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((_code?: number) => {
+      throw new TestExitSentinel("__test_exit__");
+    }) as never);
+
+    await expect(import("../index")).rejects.toThrow("__test_exit__");
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    const errorMessage = errorSpy.mock.calls[0]?.[0] as string;
+    expect(errorMessage).toContain("INITIAL_ADMIN_*");
+    expect(errorMessage).toContain("TOUS présents OU TOUS absents");
+  });
+
+  it("crashes when INITIAL_ADMIN_MATRICULE doesn't match MAT-NNN", async () => {
+    process.env = {
+      ...originalEnv,
+      ...REQUIRED_VALID_ENV,
+      INITIAL_ADMIN_EMAIL: "admin@s2m.local",
+      INITIAL_ADMIN_PASSWORD: "ChangeMe-F07-DevOnly-A8x2!",
+      INITIAL_ADMIN_MATRICULE: "MAT-1", // 1 chiffre au lieu de 3
+    };
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((_code?: number) => {
+      throw new TestExitSentinel("__test_exit__");
+    }) as never);
+
+    await expect(import("../index")).rejects.toThrow("__test_exit__");
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    const errorMessage = errorSpy.mock.calls[0]?.[0] as string;
+    expect(errorMessage).toContain("INITIAL_ADMIN_MATRICULE");
+    expect(errorMessage).toContain("MAT-NNN");
+  });
+
+  it("crashes when INITIAL_ADMIN_PASSWORD is shorter than 12 chars", async () => {
+    process.env = {
+      ...originalEnv,
+      ...REQUIRED_VALID_ENV,
+      INITIAL_ADMIN_EMAIL: "admin@s2m.local",
+      INITIAL_ADMIN_PASSWORD: "TooShort-1!", // 11 chars
+      INITIAL_ADMIN_MATRICULE: "MAT-001",
+    };
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((_code?: number) => {
+      throw new TestExitSentinel("__test_exit__");
+    }) as never);
+
+    await expect(import("../index")).rejects.toThrow("__test_exit__");
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    const errorMessage = errorSpy.mock.calls[0]?.[0] as string;
+    expect(errorMessage).toContain("INITIAL_ADMIN_PASSWORD");
+  });
 });
