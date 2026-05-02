@@ -81,7 +81,7 @@ Format `SPX-LIC-NNN`. Numérotation par domaine, ranges :
 - `SPX-LIC-500 à 599` : audit + journal + notifications
 - `SPX-LIC-600 à 699` : renouvellements + rapports
 - `SPX-LIC-700 à 799` : settings + utilisateurs + référentiels
-- `SPX-LIC-900 à 999` : système + jobs + batchs
+- `SPX-LIC-900 à 999` : système, jobs, batchs et erreurs génériques transverses
 
 ### Modules (bounded contexts)
 

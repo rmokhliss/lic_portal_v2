@@ -53,6 +53,10 @@ export default tseslint.config(
         { type: "adapters", pattern: "app/src/server/modules/*/adapters/**" },
         { type: "module-root", pattern: "app/src/server/modules/*/*.module.ts" },
 
+        // Module transverse error — structure plate (pas de domain/application/ports/adapters).
+        // Importable par toutes les couches serveur (PROJECT_CONTEXT §7).
+        { type: "module-error", pattern: "app/src/server/modules/error/**" },
+
         // Backend infra et jobs
         { type: "infrastructure", pattern: "app/src/server/infrastructure/**" },
         { type: "jobs", pattern: "app/src/server/jobs/**" },
@@ -95,44 +99,66 @@ export default tseslint.config(
         {
           default: "disallow",
           rules: [
-            // domain : aucune dépendance hors TS et shared
-            { from: "domain", allow: ["domain", "shared"] },
+            // domain : aucune dépendance hors TS, shared et erreurs typées
+            { from: "domain", allow: ["domain", "shared", "module-error"] },
 
-            // application : peut utiliser domain + ports du même module + shared
+            // application : peut utiliser domain + ports du même module + shared + erreurs typées
             {
               from: "application",
-              allow: ["domain", "ports", "shared", "infrastructure"],
+              allow: ["domain", "ports", "shared", "infrastructure", "module-error"],
             },
 
-            // ports : interfaces pures, peuvent référencer domain et shared
-            { from: "ports", allow: ["domain", "shared"] },
+            // ports : interfaces pures, peuvent référencer domain, shared et erreurs typées
+            { from: "ports", allow: ["domain", "shared", "module-error"] },
 
             // adapters : implémentent les ports, peuvent tout sauf application directe
             {
               from: "adapters",
-              allow: ["domain", "ports", "shared", "infrastructure"],
+              allow: ["domain", "ports", "shared", "infrastructure", "module-error"],
             },
 
-            // module-root : composition root, peut tout dans son module + infra
+            // module-root : composition root, peut tout dans son module + infra + erreurs
             {
               from: "module-root",
-              allow: ["domain", "application", "ports", "adapters", "shared", "infrastructure"],
+              allow: [
+                "domain",
+                "application",
+                "ports",
+                "adapters",
+                "shared",
+                "infrastructure",
+                "module-error",
+              ],
             },
 
-            // infrastructure : plomberie, peut shared + autres briques infrastructure.
+            // infrastructure : plomberie, peut shared + autres briques infrastructure + erreurs.
             // Les briques infrastructure (env, logger, db, auth, observability) se composent
             // entre elles : logger lit env.LOG_LEVEL, db lit env.DATABASE_URL, etc.
             // Cette autorisation est différente du fourre-tout services/helpers/utils
             // interdit par §4.11 dans les modules métier.
-            { from: "infrastructure", allow: ["shared", "infrastructure"] },
-
-            // jobs : peuvent appeler les modules via leur module-root + infra + shared
             {
-              from: "jobs",
-              allow: ["module-root", "application", "infrastructure", "shared"],
+              from: "infrastructure",
+              allow: ["shared", "infrastructure", "module-error"],
             },
 
-            // app-route (Server Actions, pages) : appelle module-root + shared + frontend libs
+            // module-error : module transverse, ne dépend que du catalogue dans shared/.
+            // N'importe JAMAIS infrastructure/env/ ni infrastructure/logger/ pour
+            // éviter tout cycle de bootstrap (l'app peut lever une AppError très tôt).
+            { from: "module-error", allow: ["shared"] },
+
+            // jobs : peuvent appeler les modules via leur module-root + infra + shared + erreurs
+            {
+              from: "jobs",
+              allow: [
+                "module-root",
+                "application",
+                "infrastructure",
+                "shared",
+                "module-error",
+              ],
+            },
+
+            // app-route (Server Actions, pages) : appelle module-root + shared + frontend libs + erreurs
             {
               from: "app-route",
               allow: [
@@ -144,6 +170,7 @@ export default tseslint.config(
                 "frontend-lib",
                 "i18n",
                 "infrastructure",
+                "module-error",
               ],
             },
 

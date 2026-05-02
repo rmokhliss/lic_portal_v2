@@ -1,0 +1,41 @@
+// ==============================================================================
+// LIC v2 — Sous-classes concrètes d'AppError (Référentiel §4.2)
+//
+// Chaque sous-classe fige son httpStatus. La cohérence avec
+// ERROR_CATALOGUE[code].className est validée dans le constructeur d'AppError
+// (cf. app-error.ts) — un mauvais couple code/classe lève une Error native.
+//
+// Aucune sous-classe ne déclare de constructeur : elles héritent du constructeur
+// public d'AppError. La classe abstraite empêche déjà l'instanciation directe
+// d'AppError, donc `protected` sur le constructeur parent serait redondant.
+// ==============================================================================
+
+import { AppError } from "./app-error";
+
+export class NotFoundError extends AppError {
+  readonly httpStatus = 404;
+}
+
+export class ValidationError extends AppError {
+  readonly httpStatus = 400;
+}
+
+export class UnauthorizedError extends AppError {
+  readonly httpStatus = 401;
+}
+
+export class ForbiddenError extends AppError {
+  readonly httpStatus = 403;
+}
+
+export class ConflictError extends AppError {
+  readonly httpStatus = 409;
+}
+
+export class RateLimitError extends AppError {
+  readonly httpStatus = 429;
+}
+
+export class InternalError extends AppError {
+  readonly httpStatus = 500;
+}
