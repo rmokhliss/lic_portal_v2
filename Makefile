@@ -18,7 +18,7 @@
 #   (ex: `pnpm dev`, `pnpm test`, `pnpm build`, `pnpm lint`, etc.)
 # ==============================================================================
 
-.PHONY: help dev worker test test-unit test-e2e build lint typecheck format \
+.PHONY: help dev worker test test-unit test-e2e coverage build lint typecheck format \
         migrate db-generate db-seed db-studio db-reset clean docker-up \
         docker-down docker-logs install gitleaks ci
 
@@ -35,6 +35,7 @@ help:
 	@echo "  test           Tous les tests (unit + E2E)"
 	@echo "  test-unit      Tests unitaires Vitest"
 	@echo "  test-e2e       Tests E2E Playwright"
+	@echo "  coverage       Couverture v8 (Référentiel §4.6 : ≥80% domain/application)"
 	@echo ""
 	@echo "Qualité :"
 	@echo "  lint           Lint + typecheck + boundaries + gitleaks"
@@ -78,6 +79,9 @@ test-unit:
 
 test-e2e:
 	pnpm test:e2e
+
+coverage:
+	cd app && pnpm test:coverage
 
 # --- Qualité ------------------------------------------------------------------
 lint: typecheck gitleaks

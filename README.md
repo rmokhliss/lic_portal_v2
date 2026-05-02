@@ -120,7 +120,7 @@ Voir `PROJECT_CONTEXT_LIC.md` section 5 pour le détail.
 
 Le statut projet est maintenu dans `PROJECT_CONTEXT_LIC.md` section 2 (source de vérité unique selon Référentiel §4.21).
 
-**Phase actuelle** : voir `PROJECT_CONTEXT_LIC.md`.
+**Phase actuelle** : Phase 2.A — Fondations complètes (Mai 2026). 12 fondations livrées (F-01 à F-12), audit Référentiel disponible dans [`docs/AUDIT_PHASE_2A.md`](./docs/AUDIT_PHASE_2A.md).
 
 ---
 

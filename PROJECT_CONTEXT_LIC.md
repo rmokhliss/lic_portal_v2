@@ -464,17 +464,12 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 
 À distinguer de la sous-section 9 "Dette technique reportée" qui répertorie les dettes héritées de v1 (toutes traitées d'entrée).
 
-### DETTE-LIC-001 — OpenTelemetry Web non installé en Phase 1
+**Aucune dette ouverte au commit `1a7475c` (clôture Phase 2.A).**
 
-**Cause** : la page d'accueil Phase 1 est statique et ne génère aucune trace utile à observer. Installer OTel Web maintenant ajouterait du bruit sans valeur.
+### Dettes résolues
 
-**Impact** : aucune corrélation client→serveur via `traceparent` n'est possible tant que OTel Web n'est pas en place. Acceptable tant qu'aucune page applicative n'existe.
-
-**Solution future** : installer `@opentelemetry/api` + `@opentelemetry/sdk-trace-web` dès la première page applicative de la Phase 2 (probablement écran SADMIN/Settings). Configurer le provider dans un `OtelProvider` côté client, propager `traceparent` aux Server Actions.
-
-**Priorité** : moyenne (à traiter dans la première semaine de Phase 2).
-
-**Phase cible** : Phase 2 — première page applicative.
+- **DETTE-LIC-001 — OpenTelemetry Web non installé en Phase 1** → **Résolue F-10** (`@opentelemetry/api` + `sdk-trace-web` installés, `OtelProvider` actif côté client, propagation `traceparent` opérationnelle).
+- **DETTE-LIC-002 — `middleware.ts` deprecated Next.js 16** → **Sans objet (F-12)** (le middleware a été supprimé entièrement, le check auth est passé dans `(dashboard)/layout.tsx`, la dépréciation `middleware → proxy` ne s'applique plus).
 
 ---
 
