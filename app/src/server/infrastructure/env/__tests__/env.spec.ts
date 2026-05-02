@@ -72,4 +72,27 @@ describe("env", () => {
       "Voir .env.example pour la liste complète des variables attendues.",
     );
   });
+
+  it("crashes when DATABASE_URL has a non-postgres scheme", async () => {
+    process.env = {
+      ...originalEnv,
+      ...REQUIRED_VALID_ENV,
+      DATABASE_URL: "mysql://user:pass@localhost:3306/db",
+    };
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+      // silencieux pendant le test
+    });
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((_code?: number) => {
+      throw new TestExitSentinel("__test_exit__");
+    }) as never);
+
+    await expect(import("../index")).rejects.toThrow("__test_exit__");
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    const errorMessage = errorSpy.mock.calls[0]?.[0] as string;
+    expect(errorMessage).toContain(
+      "DATABASE_URL : DATABASE_URL doit commencer par postgresql:// ou postgres://",
+    );
+  });
 });

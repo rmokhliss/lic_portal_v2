@@ -26,7 +26,11 @@ const envSchema = z.object({
   NEXT_PUBLIC_PRODUCT_SUFFIX: z.string().min(1).default("PORTAL"),
 
   // --- PostgreSQL -----------------------------------------------------------
-  DATABASE_URL: z.url(),
+  DATABASE_URL: z
+    .url()
+    .refine((url) => url.startsWith("postgresql://") || url.startsWith("postgres://"), {
+      message: "DATABASE_URL doit commencer par postgresql:// ou postgres://",
+    }),
   DATABASE_POOL_SIZE: z.coerce.number().int().positive().default(10),
 
   // --- Auth.js v5 -----------------------------------------------------------
