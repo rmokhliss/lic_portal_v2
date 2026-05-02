@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="fr"
-      className={`${montserrat.variable} ${poppins.variable} ${jetbrainsMono.variable}`}
+      className={`dark ${montserrat.variable} ${poppins.variable} ${jetbrainsMono.variable}`}
     >
       <body className="font-sans antialiased">{children}</body>
     </html>

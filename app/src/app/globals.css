@@ -35,3 +35,70 @@
   /* Signature gradient */
   --gradient-spx: linear-gradient(90deg, #74ECFF 0%, #00CAFF 55%, #0006A5 100%);
 }
+
+/* ============================================================================
+ * shadcn/ui CSS variables → tokens DS SELECT-PX (F-09)
+ * Mode dark uniquement (LIC v2). Pas de .dark { } séparé : :root EST dark.
+ * Sources de vérité = tokens DS dans @theme ci-dessus. Les vars shadcn ne sont
+ * que des alias mappés via var(...) — aucune valeur littérale dupliquée.
+ * ============================================================================ */
+@layer base {
+  :root {
+    /* Surfaces */
+    --background: var(--color-surface-0);              /* page */
+    --foreground: white;                                /* texte sur background */
+    --card: var(--color-surface-1);                     /* cartes (login form, etc.) */
+    --card-foreground: white;
+    --popover: var(--color-surface-1);                  /* dialogs, sheets, drawers, dropdowns */
+    --popover-foreground: white;
+
+    /* Primary = signature SPX cyan */
+    --primary: var(--color-spx-cyan-500);
+    --primary-foreground: var(--color-spx-ink);         /* texte sombre sur cyan brillant */
+
+    /* Secondary = surface plus profonde */
+    --secondary: var(--color-surface-2);
+    --secondary-foreground: white;
+
+    /* Muted = secondary visuel mais texte atténué */
+    --muted: var(--color-surface-2);
+    --muted-foreground: oklch(1 0 0 / 0.6);             /* blanc 60% pour texte secondaire */
+
+    /* Accent = hover state (cyan sur surface-2) */
+    --accent: var(--color-surface-2);
+    --accent-foreground: var(--color-spx-cyan-500);
+
+    /* Destructive = sémantique danger */
+    --destructive: var(--color-danger);
+
+    /* Borders & inputs */
+    --border: var(--color-border-subtle);
+    --input: var(--color-border-subtle);                /* bordure des inputs */
+    --ring: var(--color-spx-cyan-500);                  /* focus ring signature SPX */
+
+    /* Radius standard shadcn = radius-md DS LIC (8px) */
+    --radius: var(--radius-md);
+  }
+}
+
+@theme inline {
+  /* Mapping CSS vars → utilities Tailwind générées (bg-primary, text-foreground, etc.) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
