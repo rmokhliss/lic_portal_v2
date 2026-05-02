@@ -1,13 +1,18 @@
 // ==============================================================================
-// LIC v2 — Adapter Postgres UserRepository (F-07)
+// LIC v2 — Adapter Postgres UserRepository (F-07, refactor F-08 DI db)
 //
 // Implémentation Drizzle des opérations exposées par UserRepository.
+// F-08 : DI optionnelle de `db` en constructor (default = singleton). Permet
+// aux tests d'intégration BD d'injecter une connexion dédiée pour le pattern
+// BEGIN/ROLLBACK (cf. infrastructure/db/test-helpers.ts).
 // ==============================================================================
 
 import { eq, sql } from "drizzle-orm";
+import type { drizzle } from "drizzle-orm/postgres-js";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 
-import { db } from "@/server/infrastructure/db/client";
+import { db as defaultDb } from "@/server/infrastructure/db/client";
+import type * as schema from "@/server/infrastructure/db/schema";
 import { users } from "@/server/modules/user/adapters/postgres/schema";
 import {
   type DbTransaction,
@@ -15,9 +20,15 @@ import {
   type UserRecord,
 } from "@/server/modules/user/ports/user.repository";
 
+type DbInstance = ReturnType<typeof drizzle<typeof schema>>;
+
 export class UserRepositoryPg extends UserRepository {
+  constructor(private readonly db: DbInstance = defaultDb) {
+    super();
+  }
+
   async findById(id: string, tx?: DbTransaction): Promise<UserRecord | null> {
-    const target = (tx as PgDatabase<never> | undefined) ?? db;
+    const target = (tx as PgDatabase<never> | undefined) ?? this.db;
 
     const rows = await target
       .select({
@@ -40,7 +51,7 @@ export class UserRepositoryPg extends UserRepository {
   }
 
   async updatePassword(id: string, newHash: string, tx?: DbTransaction): Promise<void> {
-    const target = (tx as PgDatabase<never> | undefined) ?? db;
+    const target = (tx as PgDatabase<never> | undefined) ?? this.db;
 
     await target
       .update(users)

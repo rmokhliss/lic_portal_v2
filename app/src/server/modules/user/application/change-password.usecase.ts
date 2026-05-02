@@ -1,22 +1,27 @@
 // ==============================================================================
-// LIC v2 — Use-case ChangePasswordUseCase (F-07)
+// LIC v2 — Use-case ChangePasswordUseCase (F-07, refactor F-08 option (b))
 //
 // Orchestration transactionnelle :
 //   1. findById(userId, tx)
 //   2. bcrypt.compare(currentPassword, user.passwordHash) — sinon SPX-LIC-002
 //   3. bcrypt.hash(newPassword, cost=10)
 //   4. updatePassword(userId, newHash, tx) — bump tokenVersion + must_change_password=false
-//   5. auditRecorder.record({ entity:"user", action:"PASSWORD_CHANGED", ... }, tx)
+//   5. AuditEntry.create(...) + auditRepository.save(entry, tx)
 //
 // Le tout dans une SEULE transaction : règle L3 (audit dans la même transaction
 // que la mutation) garantie.
+//
+// F-08 option (b) : injection directe de AuditRepository (pas du use-case
+// recordAuditEntry). Préserve l'isolation hexagonale (application → ports
+// uniquement, pas application → application cross-module).
 // ==============================================================================
 
 import bcryptjs from "bcryptjs";
 
 import { db } from "@/server/infrastructure/db/client";
+import { AuditEntry } from "@/server/modules/audit/domain/audit-entry.entity";
+import type { AuditRepository } from "@/server/modules/audit/ports/audit.repository";
 import { UnauthorizedError } from "@/server/modules/error";
-import type { AuditRecorder } from "@/server/modules/audit/ports/audit.recorder";
 import type { UserRepository } from "@/server/modules/user/ports/user.repository";
 
 const BCRYPT_COST = 10;
@@ -32,7 +37,7 @@ export interface ChangePasswordUseCaseInput {
 export class ChangePasswordUseCase {
   constructor(
     private readonly userRepository: UserRepository,
-    private readonly auditRecorder: AuditRecorder,
+    private readonly auditRepository: AuditRepository,
   ) {}
 
   async execute(input: ChangePasswordUseCaseInput): Promise<void> {
@@ -55,21 +60,19 @@ export class ChangePasswordUseCase {
       await this.userRepository.updatePassword(input.userId, newHash, tx);
 
       // Audit dans la MÊME transaction (règle L3). Pas de password_hash dans
-      // before/after — fuite éviter même en interne.
-      await this.auditRecorder.record(
-        {
-          entity: "user",
-          entityId: input.userId,
-          action: "PASSWORD_CHANGED",
-          beforeData: { mustChangePassword: user.mustChangePassword },
-          afterData: { mustChangePassword: false, tokenVersionBumped: true },
-          userId: input.userId,
-          userDisplay: input.userDisplay,
-          ipAddress: input.ipAddress,
-          mode: "MANUEL",
-        },
-        tx,
-      );
+      // before/after — fuite à éviter même en interne.
+      const entry = AuditEntry.create({
+        entity: "user",
+        entityId: input.userId,
+        action: "PASSWORD_CHANGED",
+        beforeData: { mustChangePassword: user.mustChangePassword },
+        afterData: { mustChangePassword: false, tokenVersionBumped: true },
+        userId: input.userId,
+        userDisplay: input.userDisplay,
+        ipAddress: input.ipAddress,
+        mode: "MANUEL",
+      });
+      await this.auditRepository.save(entry, tx);
     });
   }
 }

@@ -132,10 +132,21 @@ export default tseslint.config(
             // ports : interfaces pures, peuvent référencer domain, shared et erreurs typées
             { from: "ports", allow: ["domain", "shared", "module-error"] },
 
-            // adapters : implémentent les ports, peuvent tout sauf application directe
+            // adapters : implémentent les ports + lisent les contrats schema.ts
+            // (le leur et celui d'autres modules pour les JOIN cross-module).
+            // module-schema est la seule "surface publique" cross-adapters
+            // (cf. F-06 décision module-schema chirurgical) — le reste des
+            // adapters reste privé au module. Note F-07 reprise à F-08.
             {
               from: "adapters",
-              allow: ["domain", "ports", "shared", "infrastructure", "module-error"],
+              allow: [
+                "domain",
+                "ports",
+                "shared",
+                "infrastructure",
+                "module-error",
+                "module-schema",
+              ],
             },
 
             // module-root : composition root, peut tout dans son module + infra + erreurs

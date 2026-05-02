@@ -21,6 +21,9 @@ export type ErrorCode =
   | "SPX-LIC-001"
   | "SPX-LIC-002"
   | "SPX-LIC-003"
+  | "SPX-LIC-500"
+  | "SPX-LIC-501"
+  | "SPX-LIC-502"
   | "SPX-LIC-900"
   | "SPX-LIC-901"
   | "SPX-LIC-902"
@@ -62,6 +65,28 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     httpStatus: 403,
     defaultMessage: "Rôle insuffisant pour cette action",
     className: "ForbiddenError",
+  },
+
+  // --- Audit + journal + notifications (500-599) ---------------------------
+  "SPX-LIC-500": {
+    code: "SPX-LIC-500",
+    httpStatus: 400,
+    defaultMessage: "Données d'audit invalides",
+    className: "ValidationError",
+  },
+  "SPX-LIC-501": {
+    code: "SPX-LIC-501",
+    httpStatus: 404,
+    defaultMessage: "Entrée d'audit introuvable",
+    className: "NotFoundError",
+  },
+  // SPX-LIC-502 : co-localisé audit pour l'instant. À extraire en code générique
+  // pagination quand le helper cursor.ts servira d'autres modules (F-09+).
+  "SPX-LIC-502": {
+    code: "SPX-LIC-502",
+    httpStatus: 400,
+    defaultMessage: "Cursor de pagination invalide",
+    className: "ValidationError",
   },
 
   // --- Système + erreurs génériques transverses (900-999) ------------------

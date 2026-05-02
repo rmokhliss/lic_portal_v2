@@ -1,45 +1,63 @@
 // ==============================================================================
-// LIC v2 — Test d'intégration ChangePasswordUseCase (F-07)
+// LIC v2 — Test d'intégration ChangePasswordUseCase (F-07, refactor F-08)
 //
 // 2 cas couverts :
 //   1. Cas nominal : hash change + must_change_password=false + token_version+1
 //      + 1 ligne audit log (action=PASSWORD_CHANGED)
 //   2. currentPassword KO : throw UnauthorizedError SPX-LIC-002 + AUCUN
 //      side-effect BD (transaction rollback)
+//
+// F-08 : pattern BEGIN/ROLLBACK via test-helpers (vs TRUNCATE de F-07).
+// Les adapters reçoivent ctx.db en injection pour participer à la transaction
+// du test (règle DI optionnelle).
+//
+// Note : le ChangePasswordUseCase ouvre `db.transaction()` en interne (singleton
+// `db`, pas notre ctx.db). Pour que cette transaction interne participe à
+// notre BEGIN/ROLLBACK, il faudrait injecter `db` dans le use-case aussi —
+// scope F-09+ (refactor du use-case pour DI db). À F-08, on accepte que la
+// transaction interne du use-case échappe à notre BEGIN/ROLLBACK et on fait
+// un cleanup TRUNCATE manuel après chaque test.
 // ==============================================================================
 
-import "../../../../../scripts/load-env";
-
 import bcryptjs from "bcryptjs";
-import postgres from "postgres";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
 
-// Les adapters importent transitively client.ts qui charge `server-only`.
 vi.mock("server-only", () => ({}));
 
-import { AuditRecorderPg } from "../../audit/adapters/postgres/audit.recorder.pg";
+import "../../../../../scripts/load-env";
+
+import { AuditRepositoryPg } from "../../audit/adapters/postgres/audit.repository.pg";
 import { UserRepositoryPg } from "../adapters/postgres/user.repository.pg";
 import { ChangePasswordUseCase } from "../application/change-password.usecase";
 
-let sql: postgres.Sql;
-let useCase: ChangePasswordUseCase;
+import postgres from "postgres";
+
 const TEST_USER_ID = "01928c8e-cccc-dddd-eeee-ffff00000001";
 const TEST_OLD_PASSWORD = "OldPassword-Test-12chars!";
 const TEST_NEW_PASSWORD = "NewPassword-Test-12chars-A!";
+
+// Connexion dédiée pour les SELECT de vérif après l'exécution du use-case.
+// Le use-case lui-même utilise le `db` singleton de prod (transaction interne).
+let sql: postgres.Sql;
+let useCase: ChangePasswordUseCase;
 
 beforeAll(() => {
   const url = process.env.DATABASE_URL;
   if (url === undefined || url === "") {
     // eslint-disable-next-line no-restricted-syntax -- test fixture, pré-condition de runtime
-    throw new Error("DATABASE_URL absent — vérifier .env à la racine du repo");
+    throw new Error("DATABASE_URL absent — vérifier app/.env");
   }
   sql = postgres(url, { max: 1 });
-  useCase = new ChangePasswordUseCase(new UserRepositoryPg(), new AuditRecorderPg());
+  // Use-case construit avec les repos par défaut (utilisent le db singleton).
+  useCase = new ChangePasswordUseCase(new UserRepositoryPg(), new AuditRepositoryPg());
 });
 
 afterEach(async () => {
+  // Cleanup post-test : TRUNCATE (le use-case a commit sa transaction interne
+  // sur le singleton `db`, échappant à un éventuel BEGIN/ROLLBACK externe).
+  // Re-seed SYSTEM pour préserver l'invariant cross-fichiers.
   await sql`TRUNCATE TABLE lic_audit_log, lic_users CASCADE`;
   await sql`
     INSERT INTO lic_users (
@@ -94,9 +112,7 @@ describe("ChangePasswordUseCase — cas nominal", () => {
     expect(userRows).toHaveLength(1);
     expect(userRows[0]?.must_change_password).toBe(false);
     expect(userRows[0]?.token_version).toBe(1);
-    // Le nouveau hash doit matcher le NEW password
     expect(await bcryptjs.compare(TEST_NEW_PASSWORD, userRows[0]?.password_hash ?? "")).toBe(true);
-    // Et NE doit PAS matcher l'OLD
     expect(await bcryptjs.compare(TEST_OLD_PASSWORD, userRows[0]?.password_hash ?? "")).toBe(false);
 
     // Audit log inséré dans la même transaction
@@ -122,7 +138,6 @@ describe("ChangePasswordUseCase — currentPassword incorrect", () => {
       }),
     ).rejects.toMatchObject({ code: "SPX-LIC-002" });
 
-    // Vérif : aucun changement BD (hash inchangé, token_version inchangée, audit vide)
     const userRows = await sql<
       {
         password_hash: string;
