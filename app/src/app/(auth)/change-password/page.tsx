@@ -1,8 +1,12 @@
 // ==============================================================================
-// LIC v2 — Page /profile/change-password (F-09 refactor shadcn/ui + DS overrides)
+// LIC v2 — Page /change-password (déplacé sous (auth)/ en F-12 fix)
 //
 // Server Component. Utilise requireAuthForChangePassword (variante sans le
 // redirect mustChangePassword pour éviter une boucle infinie sur cette page).
+//
+// Emplacement (auth)/ et non (dashboard)/ : le change-password forcé est un
+// flow d'authentification (l'user ne peut accéder à rien d'autre tant qu'il
+// n'a pas changé son mdp). Pas de sidebar/header dashboard ici.
 // ==============================================================================
 
 import { BrandLockup } from "@/components/brand/BrandLockup";

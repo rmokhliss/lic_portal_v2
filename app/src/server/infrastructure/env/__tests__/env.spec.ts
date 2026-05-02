@@ -1,17 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// Sentinel error used to short-circuit the `process.exit(1)` mock so that
-// `import("../index")` rejects instead of returning. We use a dedicated class
-// rather than `new Error()` (forbidden by the project's no-restricted-syntax
-// rule that mandates typed errors with SPX-LIC-NNN codes in production code).
-class TestExitSentinel extends Error {}
-
 const REQUIRED_VALID_ENV: NodeJS.ProcessEnv = {
   NODE_ENV: "test",
   DATABASE_URL: "postgresql://lic_portal:lic_portal_dev@localhost:5432/lic_portal",
   AUTH_SECRET: "a".repeat(32),
   APP_MASTER_KEY: "b".repeat(32),
 };
+
+// Helper : importe ../index et capture l'erreur thrown au top-level du module.
+// Depuis le retrait de process.exit(1) (Edge-runtime safe, voir env/index.ts),
+// le module throw directement un Error avec le message complet — le test asserte
+// sur message via .toContain.
+async function importEnvAndCatch(): Promise<Error> {
+  let caught: unknown;
+  try {
+    await import("../index");
+  } catch (e) {
+    caught = e;
+  }
+  if (!(caught instanceof Error)) {
+    // eslint-disable-next-line no-restricted-syntax -- test infra : sentinel pour signaler un setup invalide, pas une erreur métier
+    throw new Error("expected env import to throw an Error, got " + String(caught));
+  }
+  return caught;
+}
 
 describe("env", () => {
   const originalEnv = process.env;
@@ -47,28 +59,17 @@ describe("env", () => {
 
   it("crashes with explicit message when required variables are missing", async () => {
     // On part d'un env propre où les variables critiques sont absentes.
-    const cleanEnv: NodeJS.ProcessEnv = { NODE_ENV: "test" };
-    process.env = cleanEnv;
+    process.env = { NODE_ENV: "test" };
 
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
-      // silencieux pendant le test
-    });
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((_code?: number) => {
-      throw new TestExitSentinel("__test_exit__");
-    }) as never);
+    const error = await importEnvAndCatch();
 
-    await expect(import("../index")).rejects.toThrow("__test_exit__");
-
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    expect(errorSpy).toHaveBeenCalledTimes(1);
-    const errorMessage = errorSpy.mock.calls[0]?.[0] as string;
-    expect(errorMessage).toContain(
+    expect(error.message).toContain(
       "[env] Configuration invalide. Le serveur ne peut pas démarrer.",
     );
-    expect(errorMessage).toContain("DATABASE_URL : Required (manquante)");
-    expect(errorMessage).toContain("AUTH_SECRET");
-    expect(errorMessage).toContain("APP_MASTER_KEY");
-    expect(errorMessage).toContain(
+    expect(error.message).toContain("DATABASE_URL : Required (manquante)");
+    expect(error.message).toContain("AUTH_SECRET");
+    expect(error.message).toContain("APP_MASTER_KEY");
+    expect(error.message).toContain(
       "Voir .env.example pour la liste complète des variables attendues.",
     );
   });
@@ -80,18 +81,9 @@ describe("env", () => {
       DATABASE_URL: "mysql://user:pass@localhost:3306/db",
     };
 
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
-      // silencieux pendant le test
-    });
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((_code?: number) => {
-      throw new TestExitSentinel("__test_exit__");
-    }) as never);
+    const error = await importEnvAndCatch();
 
-    await expect(import("../index")).rejects.toThrow("__test_exit__");
-
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    const errorMessage = errorSpy.mock.calls[0]?.[0] as string;
-    expect(errorMessage).toContain(
+    expect(error.message).toContain(
       "DATABASE_URL : DATABASE_URL doit commencer par postgresql:// ou postgres://",
     );
   });
@@ -122,17 +114,10 @@ describe("env", () => {
       // PASSWORD et MATRICULE volontairement absents → état partiel ambigu
     };
 
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((_code?: number) => {
-      throw new TestExitSentinel("__test_exit__");
-    }) as never);
+    const error = await importEnvAndCatch();
 
-    await expect(import("../index")).rejects.toThrow("__test_exit__");
-
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    const errorMessage = errorSpy.mock.calls[0]?.[0] as string;
-    expect(errorMessage).toContain("INITIAL_ADMIN_*");
-    expect(errorMessage).toContain("TOUS présents OU TOUS absents");
+    expect(error.message).toContain("INITIAL_ADMIN_*");
+    expect(error.message).toContain("TOUS présents OU TOUS absents");
   });
 
   it("crashes when INITIAL_ADMIN_MATRICULE doesn't match MAT-NNN", async () => {
@@ -144,17 +129,10 @@ describe("env", () => {
       INITIAL_ADMIN_MATRICULE: "MAT-1", // 1 chiffre au lieu de 3
     };
 
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((_code?: number) => {
-      throw new TestExitSentinel("__test_exit__");
-    }) as never);
+    const error = await importEnvAndCatch();
 
-    await expect(import("../index")).rejects.toThrow("__test_exit__");
-
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    const errorMessage = errorSpy.mock.calls[0]?.[0] as string;
-    expect(errorMessage).toContain("INITIAL_ADMIN_MATRICULE");
-    expect(errorMessage).toContain("MAT-NNN");
+    expect(error.message).toContain("INITIAL_ADMIN_MATRICULE");
+    expect(error.message).toContain("MAT-NNN");
   });
 
   it("crashes when INITIAL_ADMIN_PASSWORD is shorter than 12 chars", async () => {
@@ -166,15 +144,8 @@ describe("env", () => {
       INITIAL_ADMIN_MATRICULE: "MAT-001",
     };
 
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((_code?: number) => {
-      throw new TestExitSentinel("__test_exit__");
-    }) as never);
+    const error = await importEnvAndCatch();
 
-    await expect(import("../index")).rejects.toThrow("__test_exit__");
-
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    const errorMessage = errorSpy.mock.calls[0]?.[0] as string;
-    expect(errorMessage).toContain("INITIAL_ADMIN_PASSWORD");
+    expect(error.message).toContain("INITIAL_ADMIN_PASSWORD");
   });
 });

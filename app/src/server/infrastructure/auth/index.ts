@@ -57,7 +57,7 @@ export async function requireAuth(): Promise<AuthUser> {
 }
 
 /** Server Components. Pas de session → redirect /login. mustChangePassword
- *  → redirect /profile/change-password (sauf si déjà sur cette page : utiliser
+ *  → redirect /change-password (sauf si déjà sur cette page : utiliser
  *  requireAuthForChangePassword à la place pour cette route précise). */
 export async function requireAuthPage(): Promise<AuthUser> {
   const session = await auth();
@@ -65,12 +65,12 @@ export async function requireAuthPage(): Promise<AuthUser> {
     redirect("/login");
   }
   if (session.user.mustChangePassword) {
-    redirect("/profile/change-password");
+    redirect("/change-password");
   }
   return session.user;
 }
 
-/** Variante pour la page /profile/change-password elle-même.
+/** Variante pour la page /change-password elle-même.
  *  Ne fait PAS le redirect mustChangePassword (sinon boucle infinie).
  *  À utiliser EXCLUSIVEMENT dans cette page. */
 export async function requireAuthForChangePassword(): Promise<AuthUser> {

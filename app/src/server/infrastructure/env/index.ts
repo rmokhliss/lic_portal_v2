@@ -110,7 +110,19 @@ if (!parsed.success) {
     return `- ${path} : ${message}`;
   });
 
-  console.error(
+  // Throw au lieu de process.exit(1) pour rester Edge-runtime safe (le module
+  // peut être tiré dans un bundle Edge via une chaîne d'imports — route
+  // handlers Edge, futurs proxy/middleware, etc.). Le throw au top-level
+  // d'un module ESM crash le boot Node avec exit code 1 tout en restant
+  // compatible Edge runtime.
+  //
+  // Exception à la règle "pas de new Error" : ce code s'exécute au boot du
+  // module ESM, AVANT que le serveur ne soit prêt. Aucun consommateur (UI, HTTP,
+  // catalogue d'erreurs) n'est encore initialisé. Le message va directement sur
+  // stderr du process parent. Introduire ici une AppError typée ajouterait
+  // une dépendance fragile (cycle potentiel env ← error) sans bénéfice.
+  // eslint-disable-next-line no-restricted-syntax -- bootstrap-time, voir commentaire ci-dessus
+  throw new Error(
     [
       "[env] Configuration invalide. Le serveur ne peut pas démarrer.",
       "",
@@ -120,7 +132,6 @@ if (!parsed.success) {
       "Voir .env.example pour la liste complète des variables attendues.",
     ].join("\n"),
   );
-  process.exit(1);
 }
 
 export const env: Env = parsed.data;

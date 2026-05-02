@@ -125,13 +125,13 @@ describe("requireAuthPage", () => {
     await expect(requireAuthPage()).rejects.toMatchObject({ to: "/login" });
   });
 
-  it("redirect /profile/change-password quand mustChangePassword=true", async () => {
+  it("redirect /change-password quand mustChangePassword=true", async () => {
     authMock.mockResolvedValueOnce({
       user: { ...SAMPLE_USER, mustChangePassword: true },
     });
     const { requireAuthPage } = await import("../index");
     await expect(requireAuthPage()).rejects.toMatchObject({
-      to: "/profile/change-password",
+      to: "/change-password",
     });
   });
 });

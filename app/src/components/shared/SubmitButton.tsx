@@ -5,7 +5,7 @@
 // Affiche un loader + disabled pendant la soumission d'un Server Action.
 // Réutilisable par toutes les pages avec <form action={action}> :
 //   - /login (loginAction)
-//   - /profile/change-password (changePasswordAction)
+//   - /change-password (changePasswordAction)
 //   - F-10+ Server Actions à venir
 // ==============================================================================
 
