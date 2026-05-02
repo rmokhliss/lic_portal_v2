@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Montserrat, Poppins, JetBrains_Mono } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 
 import "./globals.css";
 import { OtelProvider } from "@/components/shared/OtelProvider";
@@ -30,14 +32,25 @@ export const metadata: Metadata = {
   description: "SELECT-PX · Portail de gestion des licences S2M",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  // next-intl 4.x : getLocale() lit le cookie NEXT_LOCALE (ou fallback FR)
+  // via la config app/src/i18n/request.ts. getMessages() charge le JSON
+  // de la locale active. Ordre wrappers : OtelProvider extérieur (observabilité
+  // d'abord) → NextIntlClientProvider intérieur (i18n pour tous les composants).
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
     <html
-      lang="fr"
+      lang={locale}
       className={`dark ${montserrat.variable} ${poppins.variable} ${jetbrainsMono.variable}`}
     >
       <body className="font-sans antialiased">
-        <OtelProvider>{children}</OtelProvider>
+        <OtelProvider>
+          <NextIntlClientProvider locale={locale} messages={messages}>
+            {children}
+          </NextIntlClientProvider>
+        </OtelProvider>
       </body>
     </html>
   );

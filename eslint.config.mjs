@@ -70,6 +70,10 @@ export default tseslint.config(
         // Next.js 16 instrumentation hook (boot Node runtime, exécuté UNE fois).
         { type: "instrumentation", pattern: "app/src/instrumentation.ts" },
 
+        // Next.js middleware (Edge runtime). Point d'entrée routage avant les
+        // pages : check session Auth.js + détection locale next-intl.
+        { type: "middleware", pattern: "app/src/middleware.ts" },
+
         // Composition root : SEUL fichier autorisé à câbler les modules cross-module.
         // Garde les <X>.module.ts fermés (DI intra-module uniquement) et rend le
         // graphe de dépendances cross-module auditable en un seul endroit.
@@ -184,6 +188,15 @@ export default tseslint.config(
             // composition-root pour ça.
             {
               from: "instrumentation",
+              allow: ["infrastructure", "module-error", "shared"],
+            },
+
+            // middleware : point d'entrée routage Next.js (Edge runtime).
+            // Importe auth() depuis infrastructure/auth (décode JWT cookie,
+            // pas d'appel BD — compatible Edge). N'importe PAS les modules
+            // métier (pas de logique métier dans le middleware).
+            {
+              from: "middleware",
               allow: ["infrastructure", "module-error", "shared"],
             },
 

@@ -1,0 +1,77 @@
+{
+  "_meta": {
+    "comment": "Structure nested (vs flat préconisé Référentiel §4.17) : namespacing par module métier (auth.login.title, nav.dashboard, etc.) permet une meilleure organisation à l'échelle de LIC v2 (14 écrans). Convention de clé : <module>.<action>.<result> (Référentiel §4.17). Source FR (libellés métier MA/TN/CI), EN traduit. Fallback EN si clé manquante (configuré next-intl)."
+  },
+  "common": {
+    "actions": {
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "confirm": "Confirmer",
+      "delete": "Supprimer"
+    },
+    "loading": "Chargement…",
+    "noResults": "Aucun résultat",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "nav": {
+    "groups": {
+      "management": "Gestion",
+      "monitoring": "Surveillance",
+      "reports": "Rapports",
+      "system": "Système",
+      "settings": "Paramétrage"
+    },
+    "items": {
+      "dashboard": "Tableau de bord",
+      "clients": "Clients",
+      "licences": "Licences",
+      "articles": "Articles",
+      "renewals": "Renouvellements",
+      "alerts": "Alertes",
+      "notifications": "Notifications",
+      "reportsList": "Rapports",
+      "files": "Fichiers",
+      "auditLog": "Journal",
+      "batches": "Batchs",
+      "settings": "Paramétrage"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Connexion",
+      "subtitle": "Accès au portail de gestion des licences",
+      "emailLabel": "Email",
+      "passwordLabel": "Mot de passe",
+      "emailPlaceholder": "vous@s2m.ma",
+      "submitButton": "Se connecter",
+      "submitButtonPending": "Envoi…"
+    },
+    "logout": {
+      "label": "Déconnexion"
+    },
+    "changePassword": {
+      "title": "Changer le mot de passe",
+      "currentPasswordLabel": "Mot de passe actuel",
+      "newPasswordLabel": "Nouveau mot de passe (≥ 12 caractères)",
+      "confirmPasswordLabel": "Confirmer le nouveau mot de passe",
+      "submitButton": "Changer le mot de passe",
+      "submitButtonPending": "Envoi…",
+      "forcedNotice": "Vous devez changer votre mot de passe avant de continuer.",
+      "passwordMismatch": "Le nouveau mot de passe et sa confirmation ne correspondent pas"
+    }
+  },
+  "errors": {
+    "SPX-LIC-001": "Session expirée ou inexistante",
+    "SPX-LIC-002": "Identifiants invalides",
+    "SPX-LIC-003": "Rôle insuffisant pour cette action",
+    "SPX-LIC-500": "Données d'audit invalides",
+    "SPX-LIC-501": "Entrée d'audit introuvable",
+    "SPX-LIC-502": "Cursor de pagination invalide",
+    "SPX-LIC-900": "Erreur interne du serveur",
+    "SPX-LIC-901": "Données fournies invalides",
+    "SPX-LIC-902": "Ressource introuvable",
+    "SPX-LIC-903": "Conflit détecté avec l'état actuel de la ressource",
+    "SPX-LIC-904": "Trop de requêtes, veuillez réessayer plus tard"
+  }
+}

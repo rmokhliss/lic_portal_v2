@@ -1,0 +1,77 @@
+{
+  "_meta": {
+    "comment": "Translated from FR (source of truth, Référentiel §4.17). Keep in sync with fr.json — snapshot test enforces no orphan keys (cf. __tests__/messages.spec.ts)."
+  },
+  "common": {
+    "actions": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "confirm": "Confirm",
+      "delete": "Delete"
+    },
+    "loading": "Loading…",
+    "noResults": "No results",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "nav": {
+    "groups": {
+      "management": "Management",
+      "monitoring": "Monitoring",
+      "reports": "Reports",
+      "system": "System",
+      "settings": "Settings"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "clients": "Clients",
+      "licences": "Licences",
+      "articles": "Articles",
+      "renewals": "Renewals",
+      "alerts": "Alerts",
+      "notifications": "Notifications",
+      "reportsList": "Reports",
+      "files": "Files",
+      "auditLog": "Audit log",
+      "batches": "Batches",
+      "settings": "Settings"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Access to the licence management portal",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "emailPlaceholder": "you@s2m.ma",
+      "submitButton": "Sign in",
+      "submitButtonPending": "Submitting…"
+    },
+    "logout": {
+      "label": "Sign out"
+    },
+    "changePassword": {
+      "title": "Change password",
+      "currentPasswordLabel": "Current password",
+      "newPasswordLabel": "New password (≥ 12 characters)",
+      "confirmPasswordLabel": "Confirm new password",
+      "submitButton": "Change password",
+      "submitButtonPending": "Submitting…",
+      "forcedNotice": "You must change your password before continuing.",
+      "passwordMismatch": "The new password and its confirmation do not match"
+    }
+  },
+  "errors": {
+    "SPX-LIC-001": "Session expired or missing",
+    "SPX-LIC-002": "Invalid credentials",
+    "SPX-LIC-003": "Insufficient role for this action",
+    "SPX-LIC-500": "Invalid audit data",
+    "SPX-LIC-501": "Audit entry not found",
+    "SPX-LIC-502": "Invalid pagination cursor",
+    "SPX-LIC-900": "Internal server error",
+    "SPX-LIC-901": "Invalid data provided",
+    "SPX-LIC-902": "Resource not found",
+    "SPX-LIC-903": "Conflict with the current state of the resource",
+    "SPX-LIC-904": "Too many requests, please try again later"
+  }
+}
