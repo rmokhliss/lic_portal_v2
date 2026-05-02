@@ -119,8 +119,12 @@ export default tseslint.config(
               allow: ["domain", "application", "ports", "adapters", "shared", "infrastructure"],
             },
 
-            // infrastructure : plomberie, peut shared
-            { from: "infrastructure", allow: ["shared"] },
+            // infrastructure : plomberie, peut shared + autres briques infrastructure.
+            // Les briques infrastructure (env, logger, db, auth, observability) se composent
+            // entre elles : logger lit env.LOG_LEVEL, db lit env.DATABASE_URL, etc.
+            // Cette autorisation est différente du fourre-tout services/helpers/utils
+            // interdit par §4.11 dans les modules métier.
+            { from: "infrastructure", allow: ["shared", "infrastructure"] },
 
             // jobs : peuvent appeler les modules via leur module-root + infra + shared
             {

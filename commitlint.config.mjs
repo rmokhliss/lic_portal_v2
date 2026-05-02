@@ -32,7 +32,7 @@ export default {
         "renewal", "audit", "catalog", "team-member", "user", "batch",
         "report", "settings", "crypto", "sandbox", "demo", "email", "error",
         // Infrastructure
-        "auth", "db", "logger", "env", "observability", "jobs",
+        "auth", "db", "env", "infrastructure", "jobs", "logger", "observability",
         // Frontend
         "ui", "components", "hooks", "i18n", "design",
         // Transverse
