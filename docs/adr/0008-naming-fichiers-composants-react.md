@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted — Mai 2026
+Accepted — Avril 2026.
+
+**Note (Mai 2026)** : cette règle est désormais intégrée au Référentiel S2M v2.0 §4.5 (suite à la remontée R-07). Cet ADR reste en place pour mémoire de la décision pilote mais n'apporte plus de dérogation : il acte un **alignement** avec le Référentiel.
 
 ## Context
 
@@ -54,7 +56,7 @@ S'applique partout dans `app/src/components/`, `app/src/app/(*)/_components/`, e
 
 **Mauvaises**
 
-- Écart documenté vs Référentiel §4.5 littéral. Remonté dans `docs/referentiel-feedback.md` (R-07) pour précision dans une version v3.0 du Référentiel.
+- Écart initial vs Référentiel v2.0 §4.5 littéral, remonté dans `docs/referentiel-feedback.md` (R-07) et désormais intégré au Référentiel v2.0 (Mai 2026). Cette conséquence est résolue.
 - Hétérogénéité de casse au sein d'un même dossier (ex: `app/src/components/brand/` contient `BrandLockup.tsx` et pourrait contenir demain `brand-config.ts` si on extrait une constante non-composant). Acceptable car la règle est claire (PascalCase ⇔ composant).
 
 **Neutres**

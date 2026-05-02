@@ -31,6 +31,7 @@
 > Ces règles ne se contournent **jamais sans validation explicite humain**. Toute violation casse le build (lint/CI) ou le code review.
 
 ### MUST (rappel Référentiel §4.2 + spécifique LIC)
+
 - **MUST** utiliser `logger` Pino partout — pas de `console.log` en code applicatif
 - **MUST** utiliser des erreurs typées (`app/src/server/modules/error/`) avec codes `SPX-LIC-NNN`
 - **MUST** valider toute entrée utilisateur par Zod avant d'atteindre un use-case (schémas dans `shared/src/schemas/`)
@@ -43,6 +44,7 @@
 - **MUST** maintenir la couverture tests ≥80% sur `domain/` et `application/`
 
 ### MUST NOT (rappel Référentiel §4.2 + spécifique LIC)
+
 - **MUST NOT** utiliser `any` — préférer `unknown` + narrowing
 - **MUST NOT** utiliser `new Error("...")` ni `throw "string"`
 - **MUST NOT** utiliser SQL en string brut — toujours Drizzle query builder ou SQL tagged template
@@ -57,6 +59,7 @@
 - **MUST NOT** inventer un visuel — toute couleur/taille/radius/composant vient du DS SELECT-PX (`docs/design/`)
 
 ### N/A pour LIC v2 (mono-tenant, pas de monnaie)
+
 - ~~Multi-tenant `tenant_id` + RLS~~ — N/A, voir règle L1
 - ~~`decimal.js` pour montants~~ — N/A, voir règle L2 (volumes = entiers)
 - ~~Redis / NATS / Outbox~~ — N/A
@@ -67,7 +70,9 @@
 ## 4. Conventions spécifiques LIC v2
 
 ### Codes erreur
+
 Format `SPX-LIC-NNN`. Numérotation par domaine, ranges :
+
 - `SPX-LIC-001 à 099` : auth + sessions
 - `SPX-LIC-100 à 199` : clients + entités
 - `SPX-LIC-200 à 299` : licences + produits + articles
@@ -79,12 +84,15 @@ Format `SPX-LIC-NNN`. Numérotation par domaine, ranges :
 - `SPX-LIC-900 à 999` : système + jobs + batchs
 
 ### Modules (bounded contexts)
+
 Un dossier par domaine sous `app/src/server/modules/<X>/` avec structure stricte `domain/`, `application/`, `ports/`, `adapters/postgres/`, `<X>.module.ts`.
 
 Modules prévus : `client`, `licence`, `article`, `volume`, `alert`, `notification`, `renewal`, `audit`, `catalog`, `team-member`, `user`, `batch`, `report`, `settings`, `crypto`, `sandbox`, `demo`, `email`, `error`.
 
 ### Règles spécifiques LIC (L1-L16)
+
 Voir `PROJECT_CONTEXT_LIC.md` section 6. Les plus critiques :
+
 - **L1** Mono-tenant — pas de `tenant_id` ni RLS
 - **L2** Volumes = entiers `number` validés `.int().positive()`
 - **L3** Audit obligatoire dans la même transaction
@@ -95,6 +103,7 @@ Voir `PROJECT_CONTEXT_LIC.md` section 6. Les plus critiques :
 - **L16** Sandbox SADMIN sans persistance
 
 ### Conventions BD
+
 - Tables : `lic_*` snake_case pluriel
 - Exports Drizzle : camelCase **sans** préfixe `lic_` (`clients`, `licences`)
 - IDs : **`uuidv7`** PG 18 partout (ADR 0005)
@@ -153,7 +162,9 @@ import { requireRole } from "@/server/infrastructure/auth";
 import { createClientUseCase } from "@/server/modules/client/client.module";
 import { toDTO } from "@/server/modules/client/adapters/postgres/client.mapper";
 
-export async function createClientAction(input: z.infer<typeof CreateClientSchema>): Promise<ClientDTO> {
+export async function createClientAction(
+  input: z.infer<typeof CreateClientSchema>,
+): Promise<ClientDTO> {
   await requireRole(["ADMIN", "SADMIN"]);
   const dto = CreateClientSchema.parse(input);
   const client = await createClientUseCase.execute(dto);
@@ -166,20 +177,21 @@ export async function createClientAction(input: z.infer<typeof CreateClientSchem
 
 ## 7. Commandes unifiées (Référentiel §4.10)
 
-| Commande | Effet |
-|---|---|
-| `make dev` | Démarre app + worker + Postgres Docker |
-| `make test` | Tests unitaires + intégration + E2E |
-| `make build` | Build prod tous workspaces |
-| `make lint` | Lint + typecheck + boundaries + gitleaks |
-| `make migrate` | Applique migrations Drizzle Kit |
-| `make clean` | Nettoie builds + arrête conteneurs |
+| Commande       | Effet                                    |
+| -------------- | ---------------------------------------- |
+| `make dev`     | Démarre app + worker + Postgres Docker   |
+| `make test`    | Tests unitaires + intégration + E2E      |
+| `make build`   | Build prod tous workspaces               |
+| `make lint`    | Lint + typecheck + boundaries + gitleaks |
+| `make migrate` | Applique migrations Drizzle Kit          |
+| `make clean`   | Nettoie builds + arrête conteneurs       |
 
 ---
 
 ## 8. Mise à jour des contextes
 
 Référentiel §4.8 :
+
 - Toute évolution structurelle (nouveau module, nouvelle convention, nouveau pattern) → mettre à jour le **CLAUDE.md du workspace concerné**
 - À chaque session significative → mettre à jour `PROJECT_CONTEXT_LIC.md` (champ "Phase actuelle" + nouveaux ADR)
 - Quand Claude Code se trompe → consigner immédiatement la correction dans le CLAUDE.md concerné
@@ -207,4 +219,4 @@ Référentiel §4.8 :
 - **Design system** : `docs/design/index.html` + `gallery.html` (tokens + 8 templates)
 - **Spec format F2** : `docs/integration/F2_FORMATS.md`
 - **ADR fondateurs** : `docs/adr/0001-*.md` à `0006-*.md`
-- **Référence v1** (lecture seule) : `E:\DevIA\spx-lic\lic-portal`
+- **Référence v1** (lecture seule) : repo Git interne S2M

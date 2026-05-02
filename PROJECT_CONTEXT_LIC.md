@@ -20,7 +20,7 @@
 | Branding         | `NEXT_PUBLIC_PRODUCT_CODE=LIC`, `NEXT_PUBLIC_PRODUCT_NAME="Licence Manager"`, `NEXT_PUBLIC_PRODUCT_SUFFIX="Portal"` |
 | Wordmark affiché | `SELECT-PX                                                                                                          | LIC_PORTAL` |
 | Codes erreur     | `SPX-LIC-NNN` (format Référentiel §4.5)                                                                             |
-| Repo cible       | `E:\DevIA\spx-lic\lic-portal-v2` (nouveau, branche `main`)                                                          |
+| Repo cible       | https://github.com/rmokhliss/lic_portal_v2 (branche `main`)                                                         |
 | Type             | **Mono-tenant** (les "clients" sont des données, pas des tenants)                                                   |
 | Audience         | Équipes commerciales et finance S2M (interne)                                                                       |
 | Statut           | **Projet pilote** du Référentiel S2M v2.0                                                                           |
@@ -45,7 +45,7 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 **Phase actuelle** : Phase 1 — Bootstrap complétée. Phase 2 (référentiels SADMIN) prochaine.
 
-**Référence amont** : LIC v1 (`E:\DevIA\spx-lic\lic-portal`) en production avec 11 sprints livrés, ~445 tests verts. Sert de **référence fonctionnelle** uniquement (besoins métier, écrans, workflows). LIC v2 n'est **pas une migration** : c'est un projet greenfield.
+**Référence amont** : LIC v1 (repo Git interne S2M, accessible sur l'organisation S2M) en production avec 11 sprints livrés, ~445 tests verts. Sert de **référence fonctionnelle** uniquement (besoins métier, écrans, workflows). LIC v2 n'est **pas une migration** : c'est un projet greenfield.
 
 ### Phase 1 — Bootstrap (prochain jalon)
 
@@ -185,7 +185,6 @@ s2m-lic/
 ├── app/                        ◀ workspace Next.js (frontend + backend)
 │   ├── package.json
 │   ├── next.config.ts
-│   ├── tailwind.config.ts      minimal (theming dans @theme globals.css)
 │   ├── tsconfig.json
 │   ├── Dockerfile
 │   ├── CLAUDE.md               règles spécifiques workspace app
@@ -459,7 +458,27 @@ Bonnes / mauvaises / neutres
 
 ---
 
-## 10. Design system SELECT-PX (alignement Référentiel §4.4)
+## 10. Dette technique LIC v2 (en cours)
+
+Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à corriger ultérieurement (à ne pas confondre avec un ADR qui acte une décision permanente).
+
+À distinguer de la sous-section 9 "Dette technique reportée" qui répertorie les dettes héritées de v1 (toutes traitées d'entrée).
+
+### DETTE-LIC-001 — OpenTelemetry Web non installé en Phase 1
+
+**Cause** : la page d'accueil Phase 1 est statique et ne génère aucune trace utile à observer. Installer OTel Web maintenant ajouterait du bruit sans valeur.
+
+**Impact** : aucune corrélation client→serveur via `traceparent` n'est possible tant que OTel Web n'est pas en place. Acceptable tant qu'aucune page applicative n'existe.
+
+**Solution future** : installer `@opentelemetry/api` + `@opentelemetry/sdk-trace-web` dès la première page applicative de la Phase 2 (probablement écran SADMIN/Settings). Configurer le provider dans un `OtelProvider` côté client, propager `traceparent` aux Server Actions.
+
+**Priorité** : moyenne (à traiter dans la première semaine de Phase 2).
+
+**Phase cible** : Phase 2 — première page applicative.
+
+---
+
+## 11. Design system SELECT-PX (alignement Référentiel §4.4)
 
 ### Source locale
 
@@ -535,7 +554,7 @@ Installation : `pnpm dlx shadcn@latest add button input badge table card dialog 
 
 ---
 
-## 11. Workflow Claude Code
+## 12. Workflow Claude Code
 
 ### En début de session
 
@@ -586,7 +605,7 @@ Adapté du Référentiel §4.9 :
 
 ---
 
-## 12. Glossaire métier
+## 13. Glossaire métier
 
 | Terme                           | Définition                                                                                                                                                                                          |
 | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -608,7 +627,7 @@ Adapté du Référentiel §4.9 :
 
 ---
 
-## 13. Sources de vérité et références
+## 14. Sources de vérité et références
 
 | Source                             | Emplacement                                             | Rôle                                                                        |
 | ---------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------- |
@@ -620,4 +639,4 @@ Adapté du Référentiel §4.9 :
 | **Spec format F2**                 | `docs/integration/F2_FORMATS.md`                        | Spec binaire `.lic` + `.hc` + snippets Node.js / Web Crypto                 |
 | **Architecture**                   | `docs/architecture.md`                                  | Vue d'ensemble (renvoi vers ADR)                                            |
 | **CLAUDE.md** workspace            | `app/CLAUDE.md`, `app/src/server/modules/<X>/CLAUDE.md` | Règles locales par workspace/module                                         |
-| **Référence v1**                   | Repo `E:\DevIA\spx-lic\lic-portal` (lecture seule)      | Référence fonctionnelle (besoins, écrans, workflows). Pas de copie de code. |
+| **Référence v1**                   | Repo Git interne S2M (lecture seule)                    | Référence fonctionnelle (besoins, écrans, workflows). Pas de copie de code. |

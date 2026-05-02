@@ -1,10 +1,48 @@
-# Référentiel S2M — Remontées capitalisées par LIC v2
+# Feedback Référentiel S2M — Archive de remontées (capitalisation close)
 
-> Document de **capitalisation continue** des points à améliorer dans le Référentiel Technique S2M v2.0, identifiés pendant la mise en œuvre de LIC v2 (projet pilote).
->
-> **Méthode** : on consigne ici **au fil de l'eau** chaque remarque issue de la pratique, sans modifier le Référentiel. À la fin du projet (ou à un jalon majeur), on regroupe et on transmet **en bloc** à l'équipe Référentiel pour intégration en v3.0.
->
-> **Format** : `R-NN` = remarque numérotée. Statut `Open` (à traiter), `Acknowledged` (équipe Référentiel a vu), `Integrated` (corrigé en v3.0), `Wontfix` (rejeté avec motif).
+> **Statut** : Capitalisation close (Mai 2026).
+> 15 des 23 remontées ont été intégrées dans le Référentiel S2M v2.0 (livraison Mai 2026).
+> 8 sont hors scope du Référentiel ; certaines ont fait l'objet de capitalisations locales dans LIC v2 (voir tableau ci-dessous).
+> Conserver ce fichier en archive pour traçabilité.
+
+---
+
+## Statuts (Mai 2026 — retour Master Référentiel)
+
+### Intégrées dans Référentiel v2.0 (15)
+
+| ID   | Sort       | Localisation Référentiel v2.0                 |
+| ---- | ---------- | --------------------------------------------- |
+| R-01 | Integrated | §3.2 + §4.18 (`.nvmrc` version exacte)        |
+| R-02 | Integrated | §1.1 + §4.18 (`packageManager` + Corepack)    |
+| R-04 | Integrated | §1.3 (pas de `tailwind.config.ts`)            |
+| R-05 | Integrated | §4.4 (casse `NEXT_PUBLIC_PRODUCT_*`)          |
+| R-06 | Integrated | §4.7 (Stop & Validate)                        |
+| R-07 | Integrated | §4.5 (PascalCase composants React)            |
+| R-08 | Integrated | §4.18 (gitignore exception `.pem`)            |
+| R-09 | Integrated | §3.3 (template ADR)                           |
+| R-10 | Integrated | §4.21 (PROJECT_CONTEXT.md formalisé)          |
+| R-11 | Integrated | §4.13.2 (justification `abstract class`)      |
+| R-13 | Integrated | §4.12 (variantes architecturales A/B)         |
+| R-14 | Integrated | §4.2 (tags Critique / Universel / Contextuel) |
+| R-19 | Integrated | §4.18 (config-type `no-restricted-imports`)   |
+| R-22 | Integrated | §4.13.6 (template Server Action Next.js)      |
+| R-23 | Integrated | §4.17 (architecture next-intl)                |
+
+### Hors scope du Référentiel (8)
+
+Ces remarques sont valides mais ne relèvent pas d'un référentiel technique pur (gouvernance, portfolio, processus opérationnel). Certaines ont été capitalisées localement dans LIC v2 (voir colonne "Traitement").
+
+| ID   | Sort         | Traitement                                                                      |
+| ---- | ------------ | ------------------------------------------------------------------------------- |
+| R-03 | Out of scope | À recapitaliser dans `docs/setup-windows.md` LIC (optionnel)                    |
+| R-12 | Out of scope | Affaire S2M-direction-technique (futur `S2M_GOVERNANCE.md`)                     |
+| R-15 | Out of scope | Repo `s2m-portfolio` (futur, hors LIC)                                          |
+| R-16 | Out of scope | À traiter dans `PROJECT_CONTEXT_LIC.md` projet par projet                       |
+| R-17 | Out of scope | **Capitalisé** : section "Dette technique LIC v2" dans `PROJECT_CONTEXT_LIC.md` |
+| R-18 | Out of scope | **Capitalisé** : `docs/audit/` LIC pour archiver les rapports                   |
+| R-20 | Out of scope | **Capitalisé** : `docs/peer-deps-tracker.md` LIC                                |
+| R-21 | Out of scope | À traiter ad-hoc dans `PROJECT_CONTEXT_LIC.md` (note convention)                |
 
 ---
 
@@ -601,38 +639,4 @@ Ajouter §4.16bis "Architecture next-intl" avec une recommandation cadrée :
 
 ---
 
-## Remarques résolues / intégrées
-
-_(vide pour le moment — sera rempli au fur et à mesure que l'équipe Référentiel acquitte ou intègre)_
-
----
-
-## Format pour ajouter une nouvelle remarque
-
-Quand un nouveau point apparaît au cours d'une phase, ajouter ci-dessous :
-
-```markdown
-### R-NN — Titre court
-
-**Statut** : Open
-**Référentiel concerné** : §X.Y (Section)
-**Phase LIC** : Phase N — Nom
-
-**Constat** :
-Description du problème rencontré ou de la lacune identifiée.
-
-**Proposition** :
-Action concrète à intégrer dans le Référentiel v3.0.
-```
-
----
-
-## Méthode de remontée à l'équipe Référentiel
-
-À la fin du projet LIC v2 (ou à un jalon majeur, à arbitrer) :
-
-1. Relire ce fichier dans son intégralité
-2. Filtrer les remarques `Open` (les autres sont déjà traitées)
-3. Présenter en bloc à l'équipe Référentiel avec des exemples concrets tirés du repo LIC v2
-4. Itérer pour clarifier les points si besoin
-5. Mettre à jour les statuts au retour de l'équipe Référentiel
+_Fin de l'archive. Capitalisation close en Mai 2026._

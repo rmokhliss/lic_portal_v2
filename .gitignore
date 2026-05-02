@@ -163,8 +163,9 @@ storybook-static/
 .next/analyze/
 
 # --- Local files développeur --------------------------------------------------
-# Notes perso, brouillons
+# Notes perso, brouillons (chemins absolus poste, infos non portables)
 NOTES.md
+NOTES.local.md
 TODO.local.md
 .claude-local/
 *.local.md

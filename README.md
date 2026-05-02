@@ -22,11 +22,15 @@ Portail back-office S2M de gestion des licences contractuelles **SELECT-PX**.
 ## Démarrage rapide
 
 ### Prérequis
+
 - Node.js 24+ (via [nvm](https://github.com/nvm-sh/nvm) : `nvm use`)
 - pnpm 9+ (`npm install -g pnpm`)
 - Docker Desktop (pour PostgreSQL local)
 
 ### Installation
+
+> **Note Phase 1** : la commande `pnpm db:migrate` n'est opérationnelle qu'à partir de la Phase 5 (premier schéma BD). En Phase 1 / Phase 2, ignorer cette étape — elle échouera car le script `migrate.ts` n'est pas encore implémenté. Idem pour `pnpm db:seed`, `pnpm db:studio`, `pnpm db:reset`.
+
 ```bash
 # Cloner le repo
 git clone <url> lic-portal-v2
@@ -59,16 +63,16 @@ L'application est disponible sur [http://localhost:3000](http://localhost:3000).
 
 ## Commandes principales
 
-| Commande | Effet |
-|---|---|
-| `pnpm dev` | App Next.js en dev |
+| Commande          | Effet                           |
+| ----------------- | ------------------------------- |
+| `pnpm dev`        | App Next.js en dev              |
 | `pnpm worker:dev` | Worker pg-boss (jobs planifiés) |
-| `pnpm test` | Tests unitaires + intégration |
-| `pnpm test:e2e` | Tests E2E Playwright |
-| `pnpm lint` | Lint + typecheck + boundaries |
-| `pnpm build` | Build production |
-| `pnpm db:studio` | Drizzle Studio (UI BD) |
-| `pnpm db:reset` | Drop + migrate + seed (DEV) |
+| `pnpm test`       | Tests unitaires + intégration   |
+| `pnpm test:e2e`   | Tests E2E Playwright            |
+| `pnpm lint`       | Lint + typecheck + boundaries   |
+| `pnpm build`      | Build production                |
+| `pnpm db:studio`  | Drizzle Studio (UI BD)          |
+| `pnpm db:reset`   | Drop + migrate + seed (DEV)     |
 
 Équivalents `make` (Référentiel §4.10) : `make dev`, `make test`, `make build`, `make lint`, `make migrate`, `make clean`.
 
@@ -76,14 +80,14 @@ L'application est disponible sur [http://localhost:3000](http://localhost:3000).
 
 ## Documentation
 
-| Document | Contenu |
-|---|---|
-| [`CLAUDE.md`](./CLAUDE.md) | Règles condensées Claude Code (≤300 lignes) |
-| [`PROJECT_CONTEXT_LIC.md`](./PROJECT_CONTEXT_LIC.md) | État projet, périmètre, écrans, ADR |
+| Document                                                 | Contenu                                             |
+| -------------------------------------------------------- | --------------------------------------------------- |
+| [`CLAUDE.md`](./CLAUDE.md)                               | Règles condensées Claude Code (≤300 lignes)         |
+| [`PROJECT_CONTEXT_LIC.md`](./PROJECT_CONTEXT_LIC.md)     | État projet, périmètre, écrans, ADR                 |
 | [`docs/REFERENTIEL_S2M.pdf`](./docs/REFERENTIEL_S2M.pdf) | Référentiel Technique S2M v2.0 (règles transverses) |
-| [`docs/adr/`](./docs/adr/) | Architecture Decision Records |
-| [`docs/design/index.html`](./docs/design/index.html) | Design system SELECT-PX (tokens, brand) |
-| [`docs/design/gallery.html`](./docs/design/gallery.html) | 8 templates de référence |
+| [`docs/adr/`](./docs/adr/)                               | Architecture Decision Records                       |
+| [`docs/design/index.html`](./docs/design/index.html)     | Design system SELECT-PX (tokens, brand)             |
+| [`docs/design/gallery.html`](./docs/design/gallery.html) | 8 templates de référence                            |
 
 ---
 
@@ -114,10 +118,9 @@ Voir `PROJECT_CONTEXT_LIC.md` section 5 pour le détail.
 
 ## Statut
 
-**Phase 0 — Cadrage terminé** (Avril 2026).
-**Phase 1 — Bootstrap** : en cours.
+Le statut projet est maintenu dans `PROJECT_CONTEXT_LIC.md` section 2 (source de vérité unique selon Référentiel §4.21).
 
-Voir `PROJECT_CONTEXT_LIC.md` section 2 pour le plan complet (13 phases).
+**Phase actuelle** : voir `PROJECT_CONTEXT_LIC.md`.
 
 ---
 
