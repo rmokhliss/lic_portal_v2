@@ -1,9 +1,48 @@
-// LIC v2 — /settings/info (Phase 2.B étape 6/7, contenu rempli étape 7)
+// ==============================================================================
+// LIC v2 — /settings/info (Phase 2.B étape 7/7)
+//
+// Server Component lecture seule : version app, runtime Node, dernier commit
+// Git (env BUILD_SHA injectée par CI — fallback "dev" en local), uptime
+// process. Pas de mutation, pas de form.
+// ==============================================================================
+
+import appPackage from "../../../../../package.json" with { type: "json" };
 
 export default function SettingsInfoPage() {
+  const buildSha = process.env.BUILD_SHA ?? "dev";
+  const uptimeSec = Math.floor(process.uptime());
+  const bootedAt = new Date(Date.now() - uptimeSec * 1000);
+
+  const rows: readonly { label: string; value: string }[] = [
+    { label: "Application", value: appPackage.name },
+    { label: "Version", value: appPackage.version },
+    { label: "Runtime Node", value: process.version },
+    { label: "Plateforme", value: `${process.platform}/${process.arch}` },
+    { label: "Stack", value: "Next.js 16 + Drizzle 0.45 + Auth.js v5 + Tailwind 4" },
+    { label: "Build SHA", value: buildSha },
+    { label: "Démarré le", value: bootedAt.toISOString() },
+    { label: "Uptime", value: formatUptime(uptimeSec) },
+  ];
+
   return (
-    <div className="text-muted-foreground text-sm">
-      {/* Contenu réel — version app, build, statut système — étape 7. */}
-    </div>
+    <dl className="divide-border divide-y rounded-md border">
+      {rows.map((r) => (
+        <div key={r.label} className="grid grid-cols-3 gap-4 px-4 py-3">
+          <dt className="text-muted-foreground text-sm">{r.label}</dt>
+          <dd className="col-span-2 font-mono text-sm">{r.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
+}
+
+function formatUptime(sec: number): string {
+  const days = Math.floor(sec / 86400);
+  const hours = Math.floor((sec % 86400) / 3600);
+  const minutes = Math.floor((sec % 3600) / 60);
+  const seconds = sec % 60;
+  if (days > 0) return `${String(days)}j ${String(hours)}h ${String(minutes)}m`;
+  if (hours > 0) return `${String(hours)}h ${String(minutes)}m`;
+  if (minutes > 0) return `${String(minutes)}m ${String(seconds)}s`;
+  return `${String(seconds)}s`;
 }

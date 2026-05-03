@@ -96,3 +96,10 @@ export {
   toggleTeamMemberUseCase,
   updateTeamMemberUseCase,
 } from "@/server/modules/team-members/team-members.module";
+
+// --- Phase 2.B 7/7 : settings (table technique, pas d'audit R-27) ----------
+
+export {
+  listSettingsUseCase,
+  updateSettingsUseCase,
+} from "@/server/modules/settings/settings.module";

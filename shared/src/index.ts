@@ -24,3 +24,7 @@ export {
 // --- Schémas auth (F-07) ----------------------------------------------------
 export { ChangePasswordSchema, LoginSchema } from "./schemas/auth.schema";
 export type { ChangePasswordInput, LoginInput } from "./schemas/auth.schema";
+
+// --- Schémas settings (Phase 2.B étape 7/7) ---------------------------------
+export { SETTINGS_GENERAL_KEYS, SettingsGeneralSchema } from "./schemas/settings.schema";
+export type { SettingsGeneralInput, SettingsGeneralKey } from "./schemas/settings.schema";
