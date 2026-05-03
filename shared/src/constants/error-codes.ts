@@ -39,6 +39,9 @@ export type ErrorCode =
   | "SPX-LIC-712"
   | "SPX-LIC-713"
   | "SPX-LIC-714"
+  | "SPX-LIC-715"
+  | "SPX-LIC-716"
+  | "SPX-LIC-717"
   | "SPX-LIC-900"
   | "SPX-LIC-901"
   | "SPX-LIC-902"
@@ -196,6 +199,24 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     code: "SPX-LIC-714",
     httpStatus: 400,
     defaultMessage: "Données type de contact invalides",
+    className: "ValidationError",
+  },
+  "SPX-LIC-715": {
+    code: "SPX-LIC-715",
+    httpStatus: 404,
+    defaultMessage: "Membre d'équipe introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-716": {
+    code: "SPX-LIC-716",
+    httpStatus: 409,
+    defaultMessage: "Identité de membre déjà utilisée",
+    className: "ConflictError",
+  },
+  "SPX-LIC-717": {
+    code: "SPX-LIC-717",
+    httpStatus: 400,
+    defaultMessage: "Données membre d'équipe invalides",
     className: "ValidationError",
   },
 
