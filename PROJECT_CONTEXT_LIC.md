@@ -43,7 +43,15 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : Phase 2.A close (10/10 fondations F-01 à F-12, commit `cc310e7`) + **Phase 2.A.bis — Alignement Référentiel v2.1 livrée (Mai 2026)** : ADR 0009 (Variante B), CI GitHub Actions bloquante (F-14), headers HTTP de sécurité §4.16 (F-15). **Phase 2.B en cours — étape 1/7 livrée** : schéma Drizzle des 6 tables référentiels SADMIN (`lic_regions_ref`, `lic_pays_ref`, `lic_devises_ref`, `lic_langues_ref`, `lic_types_contact_ref`, `lic_team_members`) + migration bootstrap idempotente (3 régions, 5 devises, 2 langues, 3 types contacts) + ADR 0017 (PK serial, exception bornée à ADR 0005).
+**Phase actuelle** : **Phase 2.B complète (Mai 2026)** — 7/7 étapes livrées, écran EC-13 Paramétrage opérationnel, 447/447 tests verts.
+
+- Étape 1/7 : 6 schémas Drizzle référentiels SADMIN + migration bootstrap idempotente + **ADR 0017** (PK serial, exception bornée à ADR 0005).
+- Étapes 2-4/7 : 6 modules hexagonaux complets (regions, pays, devises, langues, types-contact, team-members) — 30 use-cases, exclus de l'audit obligatoire (R-27, ADR 0017).
+- Étape 5/7 (commit `5ab9392`) : composition-root cross-module + script `pnpm db:seed` enrichi (8 régions, 31 pays, 15 devises, 5 langues, 6 types contact, 6 team members, 5 users BO, 9 settings — DEV-only) + R-29 (isolation seed vs tests).
+- Étape 6/7 (commit `73edc08`) : layout `/settings` + 9 onglets (3 réels + 6 PhaseStub) + i18n FR/EN + R-30 (Tabs shadcn asChild+Link).
+- Étape 7/7 (commit `95496c8` + fix `6e148be`) : module settings hexagonal + onglets general/team/info opérationnels + 13 Server Actions SADMIN + R-31 (DTOs app-route dupliqués).
+
+**Phase 2.A close** : 10/10 fondations F-01 à F-12 (commit `cc310e7`). **Phase 2.A.bis — Alignement Référentiel v2.1 (Mai 2026)** : ADR 0009 (Variante B), CI GitHub Actions bloquante (F-14), headers HTTP de sécurité §4.16 (F-15).
 
 **Référence amont** : LIC v1 (repo Git interne S2M, accessible sur l'organisation S2M) en production avec 11 sprints livrés, ~445 tests verts. Sert de **référence fonctionnelle** uniquement (besoins métier, écrans, workflows). LIC v2 n'est **pas une migration** : c'est un projet greenfield.
 
@@ -470,6 +478,8 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 - **DETTE-LIC-003 — `app/scripts/load-env.ts` throw `ENOENT` si `app/.env` absent** : `process.loadEnvFile(".env")` (Node 21.7+) crashe quand le fichier est absent, alors que les variables peuvent déjà être présentes dans `process.env`. Le loader devrait être permissif dans ce cas. **Priorité** : moyenne. **Workaround actuel** : générer un `app/.env` (peuplé depuis le job `env:` block) en step CI avant `pnpm db:migrate` (cf. `.github/workflows/ci.yml`). À traiter Phase 2.B+.
 - **DETTE-LIC-004 — CSP avec `'unsafe-inline'` + `'unsafe-eval'`** : la CSP appliquée en F-15 (`app/next.config.ts`) autorise `'unsafe-inline'` (scripts + styles) et `'unsafe-eval'` (Turbopack dev). Le durcissement vers une CSP nonce-based requiert la réintroduction d'un middleware Next.js (régression vs F-12 qui l'a justement supprimé). Le retrait conditionnel de `'unsafe-eval'` en prod (uniquement requis par Turbopack en dev) est inclus dans cette dette. **Priorité** : basse. **Phase** : 13 (durcissement sécurité prod).
 - **DETTE-LIC-005 — i18n namespace `files.*` manquant** : `AppSidebar` rend déjà l'item `nav.items.files` (clé existante) mais aucune clé `files.*` n'est définie pour le futur écran EC-Files. À ajouter quand la Phase 10 introduira la page `/files`. **Priorité** : basse. **Phase** : 10 (fichiers + génération `.lic`).
+- **DETTE-LIC-006 — UI Edit absente sur les 6 référentiels SADMIN (`/settings/team`)** : les use-cases `update*UseCase` existent côté backend (Phase 2.B étapes 2-4) et sont ré-exportés via `composition-root.ts`, mais l'onglet team n'expose que Create + Toggle (pas de bouton Edit par row). Limitation acceptée pour le périmètre étape 7 — Edit modal Dialog identique au pattern Create + Server Action `update*Action`. **Priorité** : basse. **Phase** : post-MVP (12 ou jalon dédié refinement /settings).
+- **DETTE-LIC-007 — `BUILD_SHA` non injecté en CI** : `/settings/info` lit `process.env.BUILD_SHA` avec fallback `"dev"`. Aucune step CI (`.github/workflows/ci.yml`) ne calcule `git rev-parse --short HEAD` au build et ne l'injecte. Conséquence : en prod l'écran info affichera "dev" au lieu du SHA réel. **Priorité** : basse. **Phase** : 13 (durcissement déploiement) ou avant si déploiement préprod plus tôt.
 
 ### Dettes résolues
 
