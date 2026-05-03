@@ -42,6 +42,10 @@ export type ErrorCode =
   | "SPX-LIC-715"
   | "SPX-LIC-716"
   | "SPX-LIC-717"
+  | "SPX-LIC-720"
+  | "SPX-LIC-721"
+  | "SPX-LIC-722"
+  | "SPX-LIC-723"
   | "SPX-LIC-900"
   | "SPX-LIC-901"
   | "SPX-LIC-902"
@@ -218,6 +222,33 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     httpStatus: 400,
     defaultMessage: "Données membre d'équipe invalides",
     className: "ValidationError",
+  },
+
+  // --- Utilisateurs back-office EC-08 (720-729) -----------------------------
+  // 718-719 réservés (extension future référentiels paramétrables).
+  "SPX-LIC-720": {
+    code: "SPX-LIC-720",
+    httpStatus: 404,
+    defaultMessage: "Utilisateur introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-721": {
+    code: "SPX-LIC-721",
+    httpStatus: 409,
+    defaultMessage: "Identifiant utilisateur déjà utilisé (matricule ou email)",
+    className: "ConflictError",
+  },
+  "SPX-LIC-722": {
+    code: "SPX-LIC-722",
+    httpStatus: 400,
+    defaultMessage: "Données utilisateur invalides",
+    className: "ValidationError",
+  },
+  "SPX-LIC-723": {
+    code: "SPX-LIC-723",
+    httpStatus: 409,
+    defaultMessage: "Un administrateur ne peut pas se désactiver lui-même",
+    className: "ConflictError",
   },
 
   // --- Système + erreurs génériques transverses (900-999) ------------------

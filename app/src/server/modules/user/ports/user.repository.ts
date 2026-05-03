@@ -1,13 +1,28 @@
 // ==============================================================================
-// LIC v2 — Port UserRepository (F-07)
+// LIC v2 — Port UserRepository (F-07 + extension EC-08 Phase 2.B.bis)
 //
-// Contrat d'accès aux users. F-07 ne couvre que ce dont change-password a
-// besoin (findById + updatePassword). F-08+ enrichira (search, list, soft
-// delete, etc.) sans casser l'interface.
+// Deux surfaces parallèles :
 //
-// `tx` optionnel : permet au use-case d'inscrire la lecture/écriture dans la
-// même transaction que l'audit (règle L3 PROJECT_CONTEXT).
+//   Legacy F-07/F-08 (consommée par change-password.usecase.ts — intouché Q3) :
+//     - findById(id, tx?)         → UserRecord | null  (interface plate)
+//     - updatePassword(id, hash, tx?) → pose must_change_password=FALSE
+//
+//   EC-08 Phase 2.B.bis (consommée par les 4 nouveaux use-cases) :
+//     - findByIdEntity(id, tx?)   → PersistedUser | null
+//     - findAll(opts?, tx?)
+//     - findByMatricule(m, tx?)
+//     - findByEmail(e, tx?)
+//     - save(user, hash, tx?)     → INSERT (must_change_password=TRUE forcé)
+//     - updateProfile(persisted, tx?) → UPDATE nom/prenom/role
+//     - updateActif(id, actif, tx?)
+//     - resetPassword(id, hash, tx?) → pose must_change_password=TRUE +
+//                                     bump tokenVersion (révocation sessions)
+//
+// `tx` optionnel : permet aux use-cases EC-08 d'inscrire la lecture/écriture
+// dans la même transaction que l'audit (règle L3 PROJECT_CONTEXT).
 // ==============================================================================
+
+import type { PersistedUser, User, UserRole } from "../domain/user.entity";
 
 export interface UserRecord {
   readonly id: string;
@@ -18,19 +33,52 @@ export interface UserRecord {
   readonly passwordHash: string;
   readonly mustChangePassword: boolean;
   readonly tokenVersion: number;
-  readonly role: "SADMIN" | "ADMIN" | "USER";
+  readonly role: UserRole;
   readonly actif: boolean;
 }
 
 /** Transaction Drizzle (typage opaque, voir audit.recorder pour détail). */
 export type DbTransaction = unknown;
 
+export interface FindAllUsersOptions {
+  readonly actif?: boolean;
+}
+
 export abstract class UserRepository {
+  // --- Legacy F-07 (change-password) --------------------------------------
+
   abstract findById(id: string, tx?: DbTransaction): Promise<UserRecord | null>;
 
-  /** Update atomique du mot de passe :
-   *  - password_hash = newHash
-   *  - must_change_password = false
-   *  - token_version = token_version + 1 (révocation des sessions actives) */
+  /** Update mot de passe initié par l'user lui-même : pose
+   *  must_change_password = FALSE + bump token_version. */
   abstract updatePassword(id: string, newHash: string, tx?: DbTransaction): Promise<void>;
+
+  // --- EC-08 (nouveaux use-cases) -----------------------------------------
+
+  abstract findByIdEntity(id: string, tx?: DbTransaction): Promise<PersistedUser | null>;
+
+  abstract findAll(
+    opts?: FindAllUsersOptions,
+    tx?: DbTransaction,
+  ): Promise<readonly PersistedUser[]>;
+
+  abstract findByMatricule(matricule: string, tx?: DbTransaction): Promise<PersistedUser | null>;
+
+  abstract findByEmail(email: string, tx?: DbTransaction): Promise<PersistedUser | null>;
+
+  /** INSERT. Pose must_change_password=TRUE (création admin → user doit le
+   *  changer au premier login). Retourne PersistedUser avec id + dateCreation
+   *  BD-générés. */
+  abstract save(user: User, passwordHash: string, tx?: DbTransaction): Promise<PersistedUser>;
+
+  /** UPDATE nom + prenom + role. Email + matricule immuables (cf. EC-08). */
+  abstract updateProfile(user: PersistedUser, tx?: DbTransaction): Promise<void>;
+
+  /** UPDATE actif boolean. */
+  abstract updateActif(id: string, actif: boolean, tx?: DbTransaction): Promise<void>;
+
+  /** Reset par admin : pose must_change_password=TRUE + bump token_version
+   *  (révoque les sessions actives). Distinct d'updatePassword (qui pose
+   *  must_change_password=FALSE pour le change-password user-initié). */
+  abstract resetPassword(id: string, newHash: string, tx?: DbTransaction): Promise<void>;
 }

@@ -29,6 +29,10 @@ import { GetAuditEntryByIdUseCase } from "@/server/modules/audit/application/get
 import { RecordAuditEntryUseCase } from "@/server/modules/audit/application/record-audit-entry.usecase";
 import { SearchAuditLogUseCase } from "@/server/modules/audit/application/search-audit-log.usecase";
 import { ChangePasswordUseCase } from "@/server/modules/user/application/change-password.usecase";
+import { CreateUserUseCase } from "@/server/modules/user/application/create-user.usecase";
+import { ResetUserPasswordUseCase } from "@/server/modules/user/application/reset-user-password.usecase";
+import { ToggleUserActiveUseCase } from "@/server/modules/user/application/toggle-user-active.usecase";
+import { UpdateUserUseCase } from "@/server/modules/user/application/update-user.usecase";
 import { userRepository } from "@/server/modules/user/user.module";
 
 // --- F-07/F-08 : auth + audit ----------------------------------------------
@@ -36,6 +40,23 @@ import { userRepository } from "@/server/modules/user/user.module";
 // Use-case user qui orchestre user + audit dans une seule transaction (règle L3).
 // Reçoit auditRepository directement (option (b) Stop #1 F-08).
 export const changePasswordUseCase = new ChangePasswordUseCase(userRepository, auditRepository);
+
+// --- Phase 2.B.bis EC-08 : 4 use-cases user mutateurs ----------------------
+// Tous orchestrent user + audit dans une seule transaction (règle L3).
+// Pattern F-08 option (b) : injection AuditRepository directe (pas du
+// RecordAuditEntryUseCase) pour préserver l'isolation hexagonale.
+// Le ListUsersUseCase est read-only et reste câblé dans user.module.ts
+// (pas de dépendance audit). listUsersUseCase est ré-exporté plus bas.
+
+export const createUserUseCase = new CreateUserUseCase(userRepository, auditRepository);
+export const updateUserUseCase = new UpdateUserUseCase(userRepository, auditRepository);
+export const toggleUserActiveUseCase = new ToggleUserActiveUseCase(userRepository, auditRepository);
+export const resetUserPasswordUseCase = new ResetUserPasswordUseCase(
+  userRepository,
+  auditRepository,
+);
+
+export { listUsersUseCase } from "@/server/modules/user/user.module";
 
 // Use-cases audit standalone — exposés pour Phase 11 EC-06 (Server Actions
 // audit). Non câblés dans d'autres use-cases internes (option (b)).

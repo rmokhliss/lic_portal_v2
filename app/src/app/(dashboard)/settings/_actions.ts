@@ -21,9 +21,10 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { SettingsGeneralSchema } from "@s2m-lic/shared";
+import { CreateUserSchema, SettingsGeneralSchema, UpdateUserSchema } from "@s2m-lic/shared";
 
 import { requireRole } from "@/server/infrastructure/auth";
+import { createChildLogger } from "@/server/infrastructure/logger";
 import {
   createDeviseUseCase,
   createLangueUseCase,
@@ -31,14 +32,20 @@ import {
   createRegionUseCase,
   createTeamMemberUseCase,
   createTypeContactUseCase,
+  createUserUseCase,
+  resetUserPasswordUseCase,
   toggleDeviseUseCase,
   toggleLangueUseCase,
   togglePaysUseCase,
   toggleRegionUseCase,
   toggleTeamMemberUseCase,
   toggleTypeContactUseCase,
+  toggleUserActiveUseCase,
   updateSettingsUseCase,
+  updateUserUseCase,
 } from "@/server/composition-root";
+
+const userActionsLogger = createChildLogger("settings/users");
 
 // --- Onglet general ---------------------------------------------------------
 
@@ -174,4 +181,76 @@ export async function toggleTeamMemberAction(input: unknown): Promise<void> {
   const { id } = z.object({ id: z.number().int().positive() }).parse(input);
   await toggleTeamMemberUseCase.execute(id);
   revalidatePath("/settings/team");
+}
+
+// ============================================================================
+// EC-08 Users — Phase 2.B.bis
+// ============================================================================
+//
+// 4 Server Actions back-office utilisateurs. Toutes garde SADMIN (règle L11
+// — doublée par le requireRolePage du settings/layout.tsx).
+// Les use-cases retournent UserDTO (toDTO appliqué dans application/), pas
+// d'entité — type-safe sur le wire Server Action ↔ Client Component.
+//
+// Log Pino { event: "user_password_to_communicate" } posé ICI (côté action,
+// pas côté use-case — règle Stop 4) après création / reset, pour traçabilité
+// du flow MDP transitoire (en attendant la Phase 8 qui introduira l'envoi
+// email réel).
+//
+// Erreurs use-case (SPX-LIC-720..723) propagées telles quelles ; le caller
+// UI (Client Component) les attrape et les affiche.
+
+const UserIdSchema = z.object({ userId: z.uuid() });
+
+export async function createUserAction(input: unknown) {
+  const actor = await requireRole(["SADMIN"]);
+  const parsed = CreateUserSchema.parse(input);
+  const result = await createUserUseCase.execute(parsed, actor.id);
+  userActionsLogger.info(
+    {
+      event: "user_password_to_communicate",
+      userId: result.user.id,
+      email: result.user.email,
+      actorId: actor.id,
+      reason: "admin_create",
+    },
+    "Mot de passe utilisateur à transmettre par canal sécurisé",
+  );
+  revalidatePath("/settings/users");
+  return result;
+}
+
+export async function updateUserAction(input: unknown) {
+  const actor = await requireRole(["SADMIN"]);
+  const parsed = UpdateUserSchema.parse(input);
+  const { userId, ...patch } = parsed;
+  const result = await updateUserUseCase.execute({ userId, ...patch }, actor.id);
+  revalidatePath("/settings/users");
+  return result;
+}
+
+export async function toggleUserActiveAction(input: unknown) {
+  const actor = await requireRole(["SADMIN"]);
+  const { userId } = UserIdSchema.parse(input);
+  const result = await toggleUserActiveUseCase.execute({ userId }, actor.id);
+  revalidatePath("/settings/users");
+  return result;
+}
+
+export async function resetUserPasswordAction(input: unknown) {
+  const actor = await requireRole(["SADMIN"]);
+  const { userId } = UserIdSchema.parse(input);
+  const result = await resetUserPasswordUseCase.execute({ userId }, actor.id);
+  userActionsLogger.info(
+    {
+      event: "user_password_to_communicate",
+      userId: result.user.id,
+      email: result.user.email,
+      actorId: actor.id,
+      reason: "admin_reset",
+    },
+    "Mot de passe utilisateur à transmettre par canal sécurisé",
+  );
+  revalidatePath("/settings/users");
+  return result;
 }

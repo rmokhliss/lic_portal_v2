@@ -136,6 +136,13 @@ export class CreateClientUseCase {
 }
 ```
 
+### Pattern actorId (use-cases mutateurs — Phase 2.B.bis+)
+
+Les use-cases mutateurs reçoivent `actorId: string` en paramètre distinct de l'input métier.
+Le `userDisplay` est résolu **dans le use-case** via `formatL9(actor)` (règle L9).
+Ne pas passer `userDisplay` en input (pattern legacy F-07/F-08 toléré uniquement pour
+`change-password.usecase.ts` existant — ne pas répliquer sur les nouveaux use-cases).
+
 ---
 
 ## Composition root — règle stricte
