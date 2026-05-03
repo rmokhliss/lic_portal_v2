@@ -43,13 +43,14 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phase 2.B complète (Mai 2026)** — 7/7 étapes livrées, écran EC-13 Paramétrage opérationnel, 447/447 tests verts.
+**Phase actuelle** : **Phase 2.B + Phase 2.B.bis EC-08 Users complètes (Mai 2026)** — écran EC-13 Paramétrage opérationnel (4 onglets réels + 5 PhaseStub), 462/462 tests verts.
 
 - Étape 1/7 : 6 schémas Drizzle référentiels SADMIN + migration bootstrap idempotente + **ADR 0017** (PK serial, exception bornée à ADR 0005).
 - Étapes 2-4/7 : 6 modules hexagonaux complets (regions, pays, devises, langues, types-contact, team-members) — 30 use-cases, exclus de l'audit obligatoire (R-27, ADR 0017).
 - Étape 5/7 (commit `5ab9392`) : composition-root cross-module + script `pnpm db:seed` enrichi (8 régions, 31 pays, 15 devises, 5 langues, 6 types contact, 6 team members, 5 users BO, 9 settings — DEV-only) + R-29 (isolation seed vs tests).
 - Étape 6/7 (commit `73edc08`) : layout `/settings` + 9 onglets (3 réels + 6 PhaseStub) + i18n FR/EN + R-30 (Tabs shadcn asChild+Link).
 - Étape 7/7 (commit `95496c8` + fix `6e148be`) : module settings hexagonal + onglets general/team/info opérationnels + 13 Server Actions SADMIN + R-31 (DTOs app-route dupliqués).
+- **Phase 2.B.bis EC-08 Users (commit `b51195a`)** : module user hexagonal complété (domain/entity/errors/password + 5 use-cases list/create/update/toggle/reset + mapper) + 15 tests (TRUNCATE+reseed pattern R-28) + UI `/settings/users` réel (SettingsUsersTable + UserDialog + PasswordRevealDialog verrouillé Radix + ConfirmResetPasswordDialog) + 4 Server Actions SADMIN + log Pino `user_password_to_communicate` + codes SPX-LIC-720..723 + audit USER\_\* (CREATED/UPDATED/ROLE_CHANGED/ACTIVATED/DEACTIVATED/PASSWORD_RESET_BY_ADMIN). Onglet `users` retiré des stubs : 5 PhaseStub restants (security, smtp, catalogues, sandbox, demo).
 
 **Phase 2.A close** : 10/10 fondations F-01 à F-12 (commit `cc310e7`). **Phase 2.A.bis — Alignement Référentiel v2.1 (Mai 2026)** : ADR 0009 (Variante B), CI GitHub Actions bloquante (F-14), headers HTTP de sécurité §4.16 (F-15).
 
