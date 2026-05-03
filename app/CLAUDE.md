@@ -8,6 +8,7 @@
 ## Périmètre du workspace
 
 Ce workspace contient **toute** l'application LIC v2 :
+
 - **Frontend** : `src/app/` (Next.js App Router), `src/components/`, `src/hooks/`, `src/lib/`, `src/i18n/`
 - **Backend** : `src/server/modules/`, `src/server/infrastructure/`, `src/server/jobs/`
 
@@ -18,6 +19,7 @@ Le workspace `shared/` est utilisé pour les **schémas Zod partagés** UI ↔ s
 ## Règles structurantes
 
 ### 1. Hexagonal strict dans `src/server/modules/<X>/`
+
 ```
 modules/
 └── <domain>/
@@ -34,6 +36,7 @@ modules/
 Vérifié par `eslint-plugin-boundaries` au pre-commit + CI.
 
 ### 2. Server Actions = controllers
+
 - Un fichier `_actions.ts` par page Next.js dans `src/app/(dashboard)/<X>/`
 - Pattern obligatoire :
   ```ts
@@ -47,13 +50,16 @@ Vérifié par `eslint-plugin-boundaries` au pre-commit + CI.
 - **Aucune logique métier** dans une Server Action
 
 ### 3. Schémas Zod **toujours** dans `../shared/src/schemas/`
+
 Une mutation = un schéma Zod dans `shared/`. Server Action et use-case lisent le **même schéma**.
 
 ### 4. Pas de Drizzle hors des adapters
+
 - `application/` n'importe **jamais** `drizzle-orm` ni `db`
 - Seuls `adapters/postgres/` et `infrastructure/db/` connaissent Drizzle
 
 ### 5. Tests obligatoires
+
 - **Tests unitaires** Vitest sur `domain/` (pures, sans BD)
 - **Tests d'intégration** Vitest sur `application/` (DB éphémère via testkit)
 - **Tests E2E** Playwright sur les flows critiques (auth, création licence, génération `.lic`, healthcheck dry-run)
@@ -63,17 +69,18 @@ Une mutation = un schéma Zod dans `shared/`. Server Action et use-case lisent l
 
 ## Conventions de fichiers
 
-| Type | Pattern |
-|---|---|
-| Use-case | `<verb>-<entity>.usecase.ts` (ex: `create-licence.usecase.ts`) |
-| Port (interface) | `<entity>.repository.ts`, `<entity>.recorder.ts` |
-| Adapter Drizzle | `<entity>.repository.pg.ts` |
-| Mapper | `<entity>.mapper.ts` |
-| Composition root | `<domain>.module.ts` |
-| Schéma Drizzle | `infrastructure/db/schema/<domain>.ts` |
-| Server Action | `_actions.ts` co-localisé avec `page.tsx` |
-| Composant page-spécifique | `_components/<kebab-case>.tsx` |
-| Tests | `__tests__/<file>.spec.ts` |
+| Type                      | Pattern                                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Use-case                  | `<verb>-<entity>.usecase.ts` (ex: `create-licence.usecase.ts`)                                                  |
+| Port (interface)          | `<entity>.repository.ts`, `<entity>.recorder.ts`                                                                |
+| Adapter Drizzle           | `<entity>.repository.pg.ts`                                                                                     |
+| Mapper                    | `<entity>.mapper.ts`                                                                                            |
+| Composition root          | `<domain>.module.ts`                                                                                            |
+| Schéma Drizzle            | `modules/<X>/adapters/postgres/schema.ts` (surface publique cross-module — règle ESLint `module-schema`)        |
+| Barrel schémas            | `infrastructure/db/schema/index.ts` ré-exporte les tables — consommé par `client.ts` et le wildcard Drizzle Kit |
+| Server Action             | `_actions.ts` co-localisé avec `page.tsx`                                                                       |
+| Composant page-spécifique | `_components/<kebab-case>.tsx`                                                                                  |
+| Tests                     | `__tests__/<file>.spec.ts`                                                                                      |
 
 ---
 
@@ -89,9 +96,7 @@ import { requireRole } from "@/server/infrastructure/auth";
 import { createClientUseCase } from "@/server/modules/client/client.module";
 import { toDTO } from "@/server/modules/client/adapters/postgres/client.mapper";
 
-export async function createClientAction(
-  input: unknown
-): Promise<ClientDTO> {
+export async function createClientAction(input: unknown): Promise<ClientDTO> {
   await requireRole(["ADMIN", "SADMIN"]);
   const parsed = CreateClientSchema.parse(input);
   const client = await createClientUseCase.execute(parsed);
@@ -114,7 +119,7 @@ import type { CreateClientInput } from "@/shared/schemas/client.schema";
 export class CreateClientUseCase {
   constructor(
     private readonly clientRepository: ClientRepository,
-    private readonly auditRecorder: AuditRecorder
+    private readonly auditRecorder: AuditRecorder,
   ) {}
 
   async execute(input: CreateClientInput): Promise<Client> {
@@ -130,6 +135,29 @@ export class CreateClientUseCase {
   }
 }
 ```
+
+---
+
+## Schéma seul — cas transitoire
+
+Quand un module métier n'a pas encore ses `domain/`, `application/`, `ports/` (Phase N introduit le schéma, Phase N+1 le reste — cas Phase 2.B référentiels) :
+
+- **Créer** uniquement `modules/<X>/adapters/postgres/schema.ts`.
+- **Ne pas créer** de `<X>.module.ts` qui ré-exporterait juste le schéma — le couple `module-root → module-schema` n'est pas autorisé par `eslint-plugin-boundaries` (cf. `eslint.config.mjs:158`). Le `<X>.module.ts` viendra avec sa vraie surface (singletons repository, use-cases) à la phase suivante.
+- **Ré-exporter** la table dans `infrastructure/db/schema/index.ts` (couple `infrastructure → module-schema` autorisé en `eslint.config.mjs:178`). Drizzle Kit lit le wildcard, le runtime importe via le barrel.
+
+---
+
+## Migrations Drizzle Kit + seed bootstrap
+
+Pour une étape qui livre des tables ET un seed minimal (référentiels, enums BD, …) :
+
+- **2 migrations distinctes**, jamais mélangées :
+  1. `pnpm db:generate` → migration auto-générée pour le DDL (`<NNNN>_<auto-name>.sql`).
+  2. `pnpm db:generate --custom --name <verb>_<scope>_bootstrap` → fichier SQL vide, à éditer manuellement pour le seed.
+- **Idempotence obligatoire** sur le seed : `INSERT ... ON CONFLICT (<colonne_unique_business>) DO NOTHING`. Cibler la colonne **business** (`region_code`, `code_devise`, …), pas l'`id` serial qui n'est pas figé.
+- **Pas de seed dans le DDL** : Drizzle Kit `db:generate` régénère le DDL à chaque modif schéma. Mêler du seed dedans le casserait à la prochaine régénération.
+- Les deux fichiers sont versionnés et apparaissent dans `meta/_journal.json` dans l'ordre de création — `pnpm db:migrate` les applique séquentiellement.
 
 ---
 

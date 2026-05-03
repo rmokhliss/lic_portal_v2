@@ -640,3 +640,38 @@ Ajouter §4.16bis "Architecture next-intl" avec une recommandation cadrée :
 ---
 
 _Fin de l'archive. Capitalisation close en Mai 2026._
+
+---
+
+## Cycle v2.2+ — Phase 2.B+
+
+> Entrées issues de LIC v2 Phase 2.B. Non intégrées au Référentiel v2.1.
+> À soumettre pour v2.2+.
+
+### R-24 — Schéma dans module sans `application/`/`ports/`/`domain/` (§4.11 silent)
+
+- **Type** : Convention manquante / cas transitoire
+- **Phase LIC** : Phase 2.B étape 1/7
+- **Contexte** : Le Référentiel §4.11 prescrit la structure `domain/`/`application/`/`ports/`/`adapters/` pour tout module métier, et interdit `services/helpers/utils/lib/common/managers`. Mais il ne traite pas le **cas transitoire** où un module est créé pour son schéma BD seul (ex: référentiels paramétrables livrés avant leurs use-cases — Phase 2.B livre 6 schémas en étape 1, les modules complets viennent étapes 2-7). Sans guidance, deux écueils possibles : (a) créer un `<X>.module.ts` qui ne fait que ré-exporter le schéma — ce qui est une coquille vide ET viole la règle ESLint `module-root → module-schema` (cf. R-25), (b) reporter la création du dossier module et placer le schéma ailleurs (`infrastructure/db/schema/`, `shared/`, …) — ce qui pollue les dossiers transverses.
+- **Décision LIC v2** : Créer **uniquement** `modules/<X>/adapters/postgres/schema.ts` à l'étape "tables". Aucun `<X>.module.ts`, aucun `domain/`, aucun `application/`, aucun `ports/`. Le `<X>.module.ts` sera créé à l'étape suivante avec sa vraie surface (singletons repository, use-cases). Documenté dans `app/CLAUDE.md` section « Schéma seul — cas transitoire ».
+- **Reco évolution Référentiel v2.2+** : Ajouter en §4.11 une note explicite : _« Pour un module créé pour son schéma BD avant ses use-cases, seul `adapters/postgres/schema.ts` doit exister. Ne pas créer de `<X>.module.ts` qui se contenterait de ré-exporter le schéma — il sera créé à la phase suivante. »_
+
+---
+
+### R-25 — Surface schéma cross-module : barrel `infrastructure/db/schema/index.ts`, **pas** `<X>.module.ts`
+
+- **Type** : Clarification de pattern (réinterprétation d'une divergence apparente)
+- **Phase LIC** : Phase 2.B étape 1/7
+- **Contexte** : `eslint-plugin-boundaries` LIC v2 déclare un type `module-schema` qui matche `modules/*/adapters/postgres/schema.ts` (eslint.config.mjs:55-57). La règle pour `module-root` (eslint.config.mjs:158-169) **n'autorise pas** `module-schema` dans son `allow:` — donc `<X>.module.ts` ne peut pas importer son propre `schema.ts` directement. Tentation initiale : ajouter `module-schema` à l'allow-list de `module-root`. Inutile : l'agrégation Drizzle Kit + runtime se fait par `infrastructure/db/schema/index.ts` (couple `infrastructure → module-schema` autorisé en eslint.config.mjs:178). Le `<X>.module.ts` n'a jamais besoin de connaître son schéma — il manipule des repositories qui passent par les adapters (couple `module-root → adapters` autorisé) qui eux-mêmes importent le schéma (couple `adapters → module-schema` autorisé en eslint.config.mjs:154).
+- **Décision LIC v2** : La **surface schéma cross-module passe par le barrel `infrastructure/db/schema/index.ts`**, jamais par les `<X>.module.ts`. Aucune modif ESLint requise pour la Phase 2.B.
+- **Reco évolution Référentiel v2.2+** : Documenter explicitement en §3 ou §4.13 le rôle du barrel infrastructure schema vs le module-root. Le `<X>.module.ts` est composition root **applicative** (singletons use-cases + repositories), pas surface BD.
+
+---
+
+### R-26 — Divergence ADR 0005 `uuidv7` → PK `serial` sur référentiels paramétrables
+
+- **Type** : Divergence justifiée + élargissement de la règle ADR 0005
+- **Phase LIC** : Phase 2.B étape 1/7
+- **Contexte** : ADR 0005 fixe `uuidv7` PK pour **toutes** les tables LIC v2. Or les 6 tables référentielles paramétrables (régions/pays/devises/langues/types-contact/team-members) ont un identifiant business stable (`region_code`, `code_pays` ISO, `code_devise` ISO, etc.) — les FK reçues pointent vers ce code logique, jamais vers l'`id`. Les bénéfices `uuidv7` (non-énumérabilité, génération distribuée, future-proof réplication) ne s'appliquent pas à des codes ISO publics par construction. À l'inverse, `uuidv7` ajoute du bruit dans les seeds, dans Drizzle Studio et dans les rapprochements ISO.
+- **Décision LIC v2** : PK `serial` exclusivement pour ces 6 tables — actée dans **ADR 0017** (`docs/adr/0017-pk-serial-referentiels-parametrables.md`). Toutes les autres tables LIC v2 conservent `uuidv7` (ADR 0005 inchangé).
+- **Reco évolution Référentiel v2.2+** : Le Référentiel §4.15 (ou équivalent) devrait reconnaître la catégorie **« table référentielle paramétrable / enum versionnable BD »** comme exception légitime à la règle PK uuid (codes business stables, FK par code logique, volume <200 lignes, lecture seule pour le métier). Sans ça, chaque projet SPX devra écrire son propre ADR 0017-équivalent.

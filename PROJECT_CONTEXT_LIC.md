@@ -43,7 +43,7 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : Phase 2.A close (10/10 fondations F-01 à F-12, commit `cc310e7`) + **Phase 2.A.bis — Alignement Référentiel v2.1 livrée (Mai 2026)** : ADR 0009 (Variante B), CI GitHub Actions bloquante (F-14), headers HTTP de sécurité §4.16 (F-15). Phase 2.B (référentiels SADMIN) prochaine.
+**Phase actuelle** : Phase 2.A close (10/10 fondations F-01 à F-12, commit `cc310e7`) + **Phase 2.A.bis — Alignement Référentiel v2.1 livrée (Mai 2026)** : ADR 0009 (Variante B), CI GitHub Actions bloquante (F-14), headers HTTP de sécurité §4.16 (F-15). **Phase 2.B en cours — étape 1/7 livrée** : schéma Drizzle des 6 tables référentiels SADMIN (`lic_regions_ref`, `lic_pays_ref`, `lic_devises_ref`, `lic_langues_ref`, `lic_types_contact_ref`, `lic_team_members`) + migration bootstrap idempotente (3 régions, 5 devises, 2 langues, 3 types contacts) + ADR 0017 (PK serial, exception bornée à ADR 0005).
 
 **Référence amont** : LIC v1 (repo Git interne S2M, accessible sur l'organisation S2M) en production avec 11 sprints livrés, ~445 tests verts. Sert de **référence fonctionnelle** uniquement (besoins métier, écrans, workflows). LIC v2 n'est **pas une migration** : c'est un projet greenfield.
 
@@ -426,17 +426,18 @@ Bonnes / mauvaises / neutres
 
 ### ADR fondateurs (créés en phase 1, dans `docs/adr/`)
 
-| #        | Titre                                            | Statut   |
-| -------- | ------------------------------------------------ | -------- |
-| **0001** | Architecture single-app Next.js full-stack       | Accepted |
-| **0002** | PKI S2M : CA auto-signée + certificats clients   | Accepted |
-| **0003** | Hiérarchie Client → Entité → Licence             | Accepted |
-| **0004** | Recherche audit via Postgres FTS français        | Accepted |
-| **0005** | Identifiants `uuidv7` PG 18                      | Accepted |
-| **0006** | Catalogue commercial Produits → Articles         | Accepted |
-| **0007** | Seed démo : réutilisation v1                     | Accepted |
-| **0008** | Convention nommage fichiers composants React     | Accepted |
-| **0009** | Variante B Next.js full-stack (alignement §4.12) | Accepted |
+| #        | Titre                                                                                  | Statut   |
+| -------- | -------------------------------------------------------------------------------------- | -------- |
+| **0001** | Architecture single-app Next.js full-stack                                             | Accepted |
+| **0002** | PKI S2M : CA auto-signée + certificats clients                                         | Accepted |
+| **0003** | Hiérarchie Client → Entité → Licence                                                   | Accepted |
+| **0004** | Recherche audit via Postgres FTS français                                              | Accepted |
+| **0005** | Identifiants `uuidv7` PG 18                                                            | Accepted |
+| **0006** | Catalogue commercial Produits → Articles                                               | Accepted |
+| **0007** | Seed démo : réutilisation v1                                                           | Accepted |
+| **0008** | Convention nommage fichiers composants React                                           | Accepted |
+| **0009** | Variante B Next.js full-stack (alignement §4.12)                                       | Accepted |
+| **0017** | PK `serial` pour les 6 tables référentiels paramétrables (exception bornée à ADR 0005) | Accepted |
 
 ### ADR à créer au fil des phases (anticipé)
 

@@ -15,6 +15,20 @@
       "when": 1777742210337,
       "tag": "0001_noisy_peter_quill",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777799587014,
+      "tag": "0002_small_moon_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1777799639364,
+      "tag": "0003_seed_referentials_bootstrap",
+      "breakpoints": true
     }
   ]
 }

@@ -15,3 +15,11 @@
 export { auditLog, auditMode } from "@/server/modules/audit/adapters/postgres/schema";
 export { settings } from "@/server/modules/settings/adapters/postgres/schema";
 export { userRole, users } from "@/server/modules/user/adapters/postgres/schema";
+
+// Phase 2.B étape 1/7 : 6 référentiels paramétrables SADMIN (PK serial, ADR 0017).
+export { devisesRef } from "@/server/modules/devises/adapters/postgres/schema";
+export { languesRef } from "@/server/modules/langues/adapters/postgres/schema";
+export { paysRef } from "@/server/modules/pays/adapters/postgres/schema";
+export { regionsRef } from "@/server/modules/regions/adapters/postgres/schema";
+export { teamMembers } from "@/server/modules/team-members/adapters/postgres/schema";
+export { typesContactRef } from "@/server/modules/types-contact/adapters/postgres/schema";
