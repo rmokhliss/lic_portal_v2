@@ -1,0 +1,113 @@
+# ==============================================================================
+# LIC v2 — CI bloquante (Référentiel S2M v2.1 §4.21 — workflow type)
+#
+# Étapes obligatoires : install → typecheck → lint → migrate → test:coverage
+# → gitleaks → build. Bloquante sur PR : aucune fusion possible si une étape
+# échoue.
+#
+# Postgres 18 démarré en service car >90% des 19 tests sont en intégration BD
+# (pattern createTestDb + BEGIN/ROLLBACK dans test-helpers.ts).
+#
+# Variables AUTH_SECRET / APP_MASTER_KEY : placeholders hardcodés ≥32 chars.
+# La BD CI est éphémère (créée + détruite avec le job), aucune donnée réelle
+# n'y vit. Ne PAS utiliser GitHub Secrets pour ces clés-là (réservés aux clés
+# réelles de déploiement).
+# ==============================================================================
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Évite double-build sur push d'une branche déjà ouverte en PR.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: lic_portal
+          POSTGRES_PASSWORD: lic_portal_ci
+          POSTGRES_DB: lic_portal
+          POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+          TZ: UTC
+        ports:
+          - 5432:5432
+        # Healthcheck identique au docker-compose.yml local pour cohérence.
+        options: >-
+          --health-cmd "pg_isready -U lic_portal -d lic_portal"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # Construit depuis le service ci-dessus. Pas un secret.
+      DATABASE_URL: postgresql://lic_portal:lic_portal_ci@localhost:5432/lic_portal
+      # Placeholders ≥32 chars (BD éphémère, pas de données réelles). Voir header.
+      AUTH_SECRET: "ci-placeholder-auth-secret-not-for-prod-x32chars"
+      APP_MASTER_KEY: "ci-placeholder-master-key-not-for-prod-x32chars"
+      AUTH_TRUST_HOST: "true"
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      # `pnpm db:migrate` (et drizzle-kit) chargent app/.env via process.loadEnvFile
+      # (cf. app/scripts/load-env.ts:16). Cette API Node 21.7+ throw ENOENT si le
+      # fichier est absent. On le génère depuis les vars du job env: (table de vérité).
+      # Les vars déjà présentes dans process.env ne sont pas écrasées par loadEnvFile.
+      # Permissivité ENOENT côté load-env = DETTE-LIC-003 (à traiter Phase 2.B+).
+      - name: Generate app/.env (required by db:migrate via load-env script)
+        run: |
+          cat > app/.env <<EOF
+          DATABASE_URL=$DATABASE_URL
+          AUTH_SECRET=$AUTH_SECRET
+          APP_MASTER_KEY=$APP_MASTER_KEY
+          AUTH_TRUST_HOST=$AUTH_TRUST_HOST
+          NODE_ENV=$NODE_ENV
+          EOF
+
+      # Migrations Drizzle obligatoires AVANT tests : les *.spec.ts d'intégration
+      # supposent les tables lic_* présentes (pattern createTestDb + BEGIN/ROLLBACK).
+      - name: Run database migrations
+        run: pnpm db:migrate
+
+      - name: Tests + coverage (seuils ≥80% domain/application)
+        run: pnpm test:coverage
+
+      # gitleaks/gitleaks-action@v2 : gratuit pour comptes perso et repos publics.
+      # Si bascule en org GitHub privée : ajouter
+      # `with: { license: ${{ secrets.GITLEAKS_LICENSE }} }`.
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        run: pnpm build

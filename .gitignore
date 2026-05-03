@@ -170,6 +170,11 @@ TODO.local.md
 .claude-local/
 *.local.md
 
+# Fichier de travail (extraction texte du PDF Référentiel pour grep).
+# Régénéré localement via `pdftotext -layout docs/REFERENTIEL_S2M.pdf docs/_ref_extracted.txt`,
+# jamais commité.
+docs/_ref_extracted.txt
+
 # --- Fichiers temporaires -----------------------------------------------------
 *.tmp
 *.bak

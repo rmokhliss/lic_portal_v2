@@ -43,7 +43,7 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : Phase 1 — Bootstrap complétée. Phase 2 (référentiels SADMIN) prochaine.
+**Phase actuelle** : Phase 2.A close (10/10 fondations F-01 à F-12, commit `cc310e7`) + **Phase 2.A.bis — Alignement Référentiel v2.1 livrée (Mai 2026)** : ADR 0009 (Variante B), CI GitHub Actions bloquante (F-14), headers HTTP de sécurité §4.16 (F-15). Phase 2.B (référentiels SADMIN) prochaine.
 
 **Référence amont** : LIC v1 (repo Git interne S2M, accessible sur l'organisation S2M) en production avec 11 sprints livrés, ~445 tests verts. Sert de **référence fonctionnelle** uniquement (besoins métier, écrans, workflows). LIC v2 n'est **pas une migration** : c'est un projet greenfield.
 
@@ -59,7 +59,7 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 ### Phases suivantes (indicatif, à affiner par cadrage de phase)
 
-- **Phase 2** : référentiels SADMIN (catalogues + équipe) + écran `/settings`
+- **Phase 2.B** : référentiels SADMIN (catalogues + équipe) + écran `/settings`
 - **Phase 3** : crypto PKI (CA + certifs clients + sandbox)
 - **Phase 4** : domaine clients/entités/contacts (EC-Clients)
 - **Phase 5** : domaine licences (EC-02, EC-03, wizard EC-03c)
@@ -426,20 +426,20 @@ Bonnes / mauvaises / neutres
 
 ### ADR fondateurs (créés en phase 1, dans `docs/adr/`)
 
-| #        | Titre                                          | Statut   |
-| -------- | ---------------------------------------------- | -------- |
-| **0001** | Architecture single-app Next.js full-stack     | Accepted |
-| **0002** | PKI S2M : CA auto-signée + certificats clients | Accepted |
-| **0003** | Hiérarchie Client → Entité → Licence           | Accepted |
-| **0004** | Recherche audit via Postgres FTS français      | Accepted |
-| **0005** | Identifiants `uuidv7` PG 18                    | Accepted |
-| **0006** | Catalogue commercial Produits → Articles       | Accepted |
+| #        | Titre                                            | Statut   |
+| -------- | ------------------------------------------------ | -------- |
+| **0001** | Architecture single-app Next.js full-stack       | Accepted |
+| **0002** | PKI S2M : CA auto-signée + certificats clients   | Accepted |
+| **0003** | Hiérarchie Client → Entité → Licence             | Accepted |
+| **0004** | Recherche audit via Postgres FTS français        | Accepted |
+| **0005** | Identifiants `uuidv7` PG 18                      | Accepted |
+| **0006** | Catalogue commercial Produits → Articles         | Accepted |
+| **0007** | Seed démo : réutilisation v1                     | Accepted |
+| **0008** | Convention nommage fichiers composants React     | Accepted |
+| **0009** | Variante B Next.js full-stack (alignement §4.12) | Accepted |
 
 ### ADR à créer au fil des phases (anticipé)
 
-- 0007 : Workflow healthcheck dry-run (preview → confirm/cancel)
-- 0008 : Sandbox SADMIN sans persistance
-- 0009 : i18n FR + EN avec next-intl
 - 0010 : Suivi fichiers centralisé `lic_fichiers_log`
 - 0011 : Détail licence à 4 tabs (refonte vs 6 tabs v1)
 - 0012 : Wizard licence 3 étapes (vs 4)
@@ -464,7 +464,10 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 
 À distinguer de la sous-section 9 "Dette technique reportée" qui répertorie les dettes héritées de v1 (toutes traitées d'entrée).
 
-**Aucune dette ouverte au commit `1a7475c` (clôture Phase 2.A).**
+### Dettes ouvertes
+
+- **DETTE-LIC-003 — `app/scripts/load-env.ts` throw `ENOENT` si `app/.env` absent** : `process.loadEnvFile(".env")` (Node 21.7+) crashe quand le fichier est absent, alors que les variables peuvent déjà être présentes dans `process.env`. Le loader devrait être permissif dans ce cas. **Priorité** : moyenne. **Workaround actuel** : générer un `app/.env` (peuplé depuis le job `env:` block) en step CI avant `pnpm db:migrate` (cf. `.github/workflows/ci.yml`). À traiter Phase 2.B+.
+- **DETTE-LIC-004 — CSP avec `'unsafe-inline'` + `'unsafe-eval'`** : la CSP appliquée en F-15 (`app/next.config.ts`) autorise `'unsafe-inline'` (scripts + styles) et `'unsafe-eval'` (Turbopack dev). Le durcissement vers une CSP nonce-based requiert la réintroduction d'un middleware Next.js (régression vs F-12 qui l'a justement supprimé). Le retrait conditionnel de `'unsafe-eval'` en prod (uniquement requis par Turbopack en dev) est inclus dans cette dette. **Priorité** : basse. **Phase** : 13 (durcissement sécurité prod).
 
 ### Dettes résolues
 
