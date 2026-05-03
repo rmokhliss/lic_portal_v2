@@ -79,6 +79,15 @@
     /* Radius standard shadcn = radius-md DS LIC (8px) */
     --radius: var(--radius-md);
   }
+
+  /* Couleurs par défaut du body : sans cette règle, le texte brut (pas de
+   * classe text-* explicite) hérite du noir navigateur sur fond sombre →
+   * invisible (bug observé étape 7 sur /settings/info <dd>, valeurs <Input>
+   * et <TableCell>). Pattern shadcn standard absent par oubli en F-09. */
+  body {
+    color: var(--foreground);
+    background-color: var(--background);
+  }
 }
 
 @theme inline {
