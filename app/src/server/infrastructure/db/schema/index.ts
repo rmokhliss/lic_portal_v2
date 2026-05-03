@@ -23,3 +23,8 @@ export { paysRef } from "@/server/modules/pays/adapters/postgres/schema";
 export { regionsRef } from "@/server/modules/regions/adapters/postgres/schema";
 export { teamMembers } from "@/server/modules/team-members/adapters/postgres/schema";
 export { typesContactRef } from "@/server/modules/types-contact/adapters/postgres/schema";
+
+// Phase 4 étape 4.A : 3 tables métier EC-Clients (PK uuidv7, ADR 0005).
+export { clients, clientStatut } from "@/server/modules/client/adapters/postgres/schema";
+export { contactsClients } from "@/server/modules/contact/adapters/postgres/schema";
+export { entites } from "@/server/modules/entite/adapters/postgres/schema";

@@ -29,6 +29,13 @@
       "when": 1777799639364,
       "tag": "0003_seed_referentials_bootstrap",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1777848681816,
+      "tag": "0004_blue_nextwave",
+      "breakpoints": true
     }
   ]
 }

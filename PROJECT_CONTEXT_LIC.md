@@ -482,6 +482,17 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 - **DETTE-LIC-006 — UI Edit absente sur les 6 référentiels SADMIN (`/settings/team`)** : les use-cases `update*UseCase` existent côté backend (Phase 2.B étapes 2-4) et sont ré-exportés via `composition-root.ts`, mais l'onglet team n'expose que Create + Toggle (pas de bouton Edit par row). Limitation acceptée pour le périmètre étape 7 — Edit modal Dialog identique au pattern Create + Server Action `update*Action`. **Priorité** : basse. **Phase** : post-MVP (12 ou jalon dédié refinement /settings).
 - **DETTE-LIC-007 — `BUILD_SHA` non injecté en CI** : `/settings/info` lit `process.env.BUILD_SHA` avec fallback `"dev"`. Aucune step CI (`.github/workflows/ci.yml`) ne calcule `git rev-parse --short HEAD` au build et ne l'injecte. Conséquence : en prod l'écran info affichera "dev" au lieu du SHA réel. **Priorité** : basse. **Phase** : 13 (durcissement déploiement) ou avant si déploiement préprod plus tôt.
 
+### DETTE-LIC-008 — PKI absente à la création client (Phase 4 avant Phase 3)
+
+> Numéro alloué `008` (et non `002` comme suggéré au brief 4.A) — `DETTE-LIC-002` est déjà utilisé par l'historique « middleware.ts deprecated Next.js 16 — Sans objet F-12 ». Conservation de la chronologie.
+
+- **Cause** : Phase 4 (clients) livrée avant Phase 3 (PKI/ADR 0002).
+- **Impact** : `createClientUseCase` ne génère pas de paire RSA ni de certificat X.509 à la création. Impossible de générer un `.lic` signé pour les clients Phase 4 tant que Phase 3 est absente.
+- **TODO dans le code** : commentaire `// TODO Phase 3 — ADR 0002 : generateClientKeyPair + signCertificateByCA dans cette transaction` à poser dans `create-client.usecase.ts` lors de la livraison 4.B.
+- **Solution future** : refactor `createClientUseCase` Phase 3 + job one-shot pour clients déjà créés sans certificat.
+- **Priorité** : haute (bloquant première génération `.lic`).
+- **Phase cible** : Phase 3.
+
 ### Dettes résolues
 
 - **DETTE-LIC-001 — OpenTelemetry Web non installé en Phase 1** → **Résolue F-10** (`@opentelemetry/api` + `sdk-trace-web` installés, `OtelProvider` actif côté client, propagation `traceparent` opérationnelle).
