@@ -46,6 +46,11 @@ export type ErrorCode =
   | "SPX-LIC-721"
   | "SPX-LIC-722"
   | "SPX-LIC-723"
+  | "SPX-LIC-724"
+  | "SPX-LIC-725"
+  | "SPX-LIC-726"
+  | "SPX-LIC-727"
+  | "SPX-LIC-728"
   | "SPX-LIC-900"
   | "SPX-LIC-901"
   | "SPX-LIC-902"
@@ -248,6 +253,39 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     code: "SPX-LIC-723",
     httpStatus: 409,
     defaultMessage: "Un administrateur ne peut pas se désactiver lui-même",
+    className: "ConflictError",
+  },
+
+  // --- Clients EC-Clients Phase 4 (724-729) ---------------------------------
+  // 729 réservé (extension future module client / entité / contact).
+  "SPX-LIC-724": {
+    code: "SPX-LIC-724",
+    httpStatus: 404,
+    defaultMessage: "Client introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-725": {
+    code: "SPX-LIC-725",
+    httpStatus: 409,
+    defaultMessage: "Code client déjà utilisé",
+    className: "ConflictError",
+  },
+  "SPX-LIC-726": {
+    code: "SPX-LIC-726",
+    httpStatus: 400,
+    defaultMessage: "Données client invalides",
+    className: "ValidationError",
+  },
+  "SPX-LIC-727": {
+    code: "SPX-LIC-727",
+    httpStatus: 409,
+    defaultMessage: "Transition de statut client interdite",
+    className: "ConflictError",
+  },
+  "SPX-LIC-728": {
+    code: "SPX-LIC-728",
+    httpStatus: 409,
+    defaultMessage: "Conflit de version client (modification concurrente)",
     className: "ConflictError",
   },
 

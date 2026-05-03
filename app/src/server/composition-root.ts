@@ -28,6 +28,10 @@ import { auditRepository } from "@/server/modules/audit/audit.module";
 import { GetAuditEntryByIdUseCase } from "@/server/modules/audit/application/get-audit-entry-by-id.usecase";
 import { RecordAuditEntryUseCase } from "@/server/modules/audit/application/record-audit-entry.usecase";
 import { SearchAuditLogUseCase } from "@/server/modules/audit/application/search-audit-log.usecase";
+import { ChangeClientStatusUseCase } from "@/server/modules/client/application/change-client-status.usecase";
+import { CreateClientUseCase } from "@/server/modules/client/application/create-client.usecase";
+import { UpdateClientUseCase } from "@/server/modules/client/application/update-client.usecase";
+import { clientRepository } from "@/server/modules/client/client.module";
 import { ChangePasswordUseCase } from "@/server/modules/user/application/change-password.usecase";
 import { CreateUserUseCase } from "@/server/modules/user/application/create-user.usecase";
 import { ResetUserPasswordUseCase } from "@/server/modules/user/application/reset-user-password.usecase";
@@ -124,3 +128,27 @@ export {
   listSettingsUseCase,
   updateSettingsUseCase,
 } from "@/server/modules/settings/settings.module";
+
+// --- Phase 4 étape 4.B : module client (audit obligatoire — entité métier) -
+// Pattern F-08 option (b) : injection AuditRepository directe + UserRepository
+// pour résolution actor L9.
+// Les use-cases read-only (get, list) sont câblés dans client.module.ts et
+// ré-exportés ici pour la surface app-route.
+
+export const createClientUseCase = new CreateClientUseCase(
+  clientRepository,
+  userRepository,
+  auditRepository,
+);
+export const updateClientUseCase = new UpdateClientUseCase(
+  clientRepository,
+  userRepository,
+  auditRepository,
+);
+export const changeClientStatusUseCase = new ChangeClientStatusUseCase(
+  clientRepository,
+  userRepository,
+  auditRepository,
+);
+
+export { getClientUseCase, listClientsUseCase } from "@/server/modules/client/client.module";
