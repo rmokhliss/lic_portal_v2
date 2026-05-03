@@ -45,3 +45,25 @@ export type {
   CreateClientInput,
   UpdateClientInput,
 } from "./schemas/client.schema";
+
+// --- Schémas entite + contact EC-Clients (Phase 4.C) -----------------------
+export {
+  CreateEntiteSchema,
+  ToggleEntiteActiveSchema,
+  UpdateEntiteSchema,
+} from "./schemas/entite.schema";
+export type {
+  CreateEntiteInput,
+  ToggleEntiteActiveInput,
+  UpdateEntiteInput,
+} from "./schemas/entite.schema";
+export {
+  CreateContactSchema,
+  DeleteContactSchema,
+  UpdateContactSchema,
+} from "./schemas/contact.schema";
+export type {
+  CreateContactInput,
+  DeleteContactInput,
+  UpdateContactInput,
+} from "./schemas/contact.schema";

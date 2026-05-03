@@ -713,3 +713,16 @@ _Fin de l'archive. Capitalisation close en Mai 2026._
 - **Contexte** : Le Référentiel §4.2 prescrit `setupTransactionalTests` (BEGIN/ROLLBACK) pour l'isolation des tests d'intégration BD. Mais il ne traite pas le cas où une BD locale dev contient des données seedées (via `pnpm db:seed`) qui survivent au ROLLBACK et cassent les assertions de count/contenu (23 tests cassés confirmés en Phase 2.B étape 5 — la bascule "seed → tests" rend le suite rouge sans modification de code, simplement parce que les comptes attendus en bootstrap ne correspondent plus).
 - **Décision LIC v2** : Le seed dev est strictement séparé des migrations CI. Avertissement explicite en tête de `seed.ts` (« DEV / DÉMO UNIQUEMENT — NE PAS LANCER SUR LA BD UTILISÉE PAR LES TESTS »). La BD de tests doit être en état bootstrap-only (drop + migrate sans seed). Documenté dans `app/CLAUDE.md` section « Tests d'intégration use-case ».
 - **Reco évolution Référentiel v2.2+** : Ajouter en §4.2 : _« Le script seed dev ne doit jamais être exécuté sur la BD utilisée par les tests d'intégration. Les tests sont écrits contre l'état post-migrations uniquement. »_
+
+---
+
+### R-33 — `clientId` audit nécessite `clientDisplay` (validation AuditEntry)
+
+- **Type** : Couplage AuditEntry → résolution display (round-trip) ; clarification
+- **Phase LIC** : Phase 4 étape 4.C
+- **Contexte** : `AuditEntry.create()` (audit/domain/audit-entry.entity.ts:155-159) impose `clientDisplay !== undefined` quand `clientId !== undefined`. Légitime côté lisibilité audit, mais oblige le caller à effectuer un round-trip BD (`clientRepository.findById(clientId)`) juste pour formatter `${codeClient} — ${raisonSociale}`. Pour les use-cases entite/contact, je n'ai pas le client en main (juste son `clientId`), donc fournir `clientDisplay` impose ce round-trip systématique.
+- **Décision LIC v2** : `clientId` **omis** des AuditEntry entite/contact 4.C. Le clientId reste tracé indirectement :
+  - Pour entite : via `afterData.clientId` dans `entite.toAuditSnapshot()`, ou via `entityId` (qui est l'entiteId) → `lic_entites.client_id` en JOIN audit query.
+  - Pour contact : via `entityId` → `lic_contacts_clients.entite_id` → `lic_entites.client_id` (2 JOIN).
+- **Impact pratique** : recherche `WHERE audit.client_id = X` ne capture pas les actions sur entite/contact. Acceptable pour 4.C (recherches FTS textuelles via `search_vector` couvrent les noms). À reconsidérer si la Phase 7 (Journal des modifications EC-06) requiert le filtre direct par client.
+- **Reco évolution Référentiel v2.2+** : soit (a) rendre `clientDisplay` optionnel quand `clientId` est fourni (et générer un fallback `<unresolved>`), soit (b) imposer un helper `resolveClientDisplay(clientId)` côté infrastructure pour éviter le round-trip explicite côté use-case. Préférence pour (a) — simple, sans coupler audit à un repo externe.

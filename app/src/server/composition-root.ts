@@ -32,6 +32,14 @@ import { ChangeClientStatusUseCase } from "@/server/modules/client/application/c
 import { CreateClientUseCase } from "@/server/modules/client/application/create-client.usecase";
 import { UpdateClientUseCase } from "@/server/modules/client/application/update-client.usecase";
 import { clientRepository } from "@/server/modules/client/client.module";
+import { CreateContactUseCase } from "@/server/modules/contact/application/create-contact.usecase";
+import { DeleteContactUseCase } from "@/server/modules/contact/application/delete-contact.usecase";
+import { UpdateContactUseCase } from "@/server/modules/contact/application/update-contact.usecase";
+import { contactRepository } from "@/server/modules/contact/contact.module";
+import { CreateEntiteUseCase } from "@/server/modules/entite/application/create-entite.usecase";
+import { ToggleEntiteActiveUseCase } from "@/server/modules/entite/application/toggle-entite-active.usecase";
+import { UpdateEntiteUseCase } from "@/server/modules/entite/application/update-entite.usecase";
+import { entiteRepository } from "@/server/modules/entite/entite.module";
 import { ChangePasswordUseCase } from "@/server/modules/user/application/change-password.usecase";
 import { CreateUserUseCase } from "@/server/modules/user/application/create-user.usecase";
 import { ResetUserPasswordUseCase } from "@/server/modules/user/application/reset-user-password.usecase";
@@ -152,3 +160,47 @@ export const changeClientStatusUseCase = new ChangeClientStatusUseCase(
 );
 
 export { getClientUseCase, listClientsUseCase } from "@/server/modules/client/client.module";
+
+// --- Phase 4 étape 4.C : modules entite + contact (audit obligatoire) ------
+
+export const createEntiteUseCase = new CreateEntiteUseCase(
+  entiteRepository,
+  userRepository,
+  auditRepository,
+);
+export const updateEntiteUseCase = new UpdateEntiteUseCase(
+  entiteRepository,
+  userRepository,
+  auditRepository,
+);
+export const toggleEntiteActiveUseCase = new ToggleEntiteActiveUseCase(
+  entiteRepository,
+  userRepository,
+  auditRepository,
+);
+
+export {
+  getEntiteUseCase,
+  listEntitesByClientUseCase,
+} from "@/server/modules/entite/entite.module";
+
+export const createContactUseCase = new CreateContactUseCase(
+  contactRepository,
+  userRepository,
+  auditRepository,
+);
+export const updateContactUseCase = new UpdateContactUseCase(
+  contactRepository,
+  userRepository,
+  auditRepository,
+);
+export const deleteContactUseCase = new DeleteContactUseCase(
+  contactRepository,
+  userRepository,
+  auditRepository,
+);
+
+export {
+  getContactUseCase,
+  listContactsByEntiteUseCase,
+} from "@/server/modules/contact/contact.module";

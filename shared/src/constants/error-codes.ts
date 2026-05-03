@@ -51,6 +51,11 @@ export type ErrorCode =
   | "SPX-LIC-726"
   | "SPX-LIC-727"
   | "SPX-LIC-728"
+  | "SPX-LIC-730"
+  | "SPX-LIC-731"
+  | "SPX-LIC-732"
+  | "SPX-LIC-733"
+  | "SPX-LIC-734"
   | "SPX-LIC-900"
   | "SPX-LIC-901"
   | "SPX-LIC-902"
@@ -287,6 +292,41 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     httpStatus: 409,
     defaultMessage: "Conflit de version client (modification concurrente)",
     className: "ConflictError",
+  },
+
+  // --- Entites EC-Clients Phase 4.C (730-732) -------------------------------
+  // 729 réservé.
+  "SPX-LIC-730": {
+    code: "SPX-LIC-730",
+    httpStatus: 404,
+    defaultMessage: "Entité introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-731": {
+    code: "SPX-LIC-731",
+    httpStatus: 409,
+    defaultMessage: "Une entité avec ce nom existe déjà pour ce client",
+    className: "ConflictError",
+  },
+  "SPX-LIC-732": {
+    code: "SPX-LIC-732",
+    httpStatus: 400,
+    defaultMessage: "Données entité invalides",
+    className: "ValidationError",
+  },
+
+  // --- Contacts EC-Clients Phase 4.C (733-734) ------------------------------
+  "SPX-LIC-733": {
+    code: "SPX-LIC-733",
+    httpStatus: 404,
+    defaultMessage: "Contact introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-734": {
+    code: "SPX-LIC-734",
+    httpStatus: 400,
+    defaultMessage: "Données contact invalides",
+    className: "ValidationError",
   },
 
   // --- Système + erreurs génériques transverses (900-999) ------------------
