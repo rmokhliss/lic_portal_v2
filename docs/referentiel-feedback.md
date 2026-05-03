@@ -703,3 +703,13 @@ _Fin de l'archive. Capitalisation close en Mai 2026._
   1. `setupTransactionalTests` fonctionne pour les tests de **repository** (qui n'ouvrent jamais `db.transaction()` interne — pattern audit Phase 2.A) et pour les tests de **use-case sans transaction interne** (cas référentiels Phase 2.B post-R-27).
   2. Pour les use-cases qui ouvrent `db.transaction()` interne (audit obligatoire dans la même tx), basculer sur **TRUNCATE+reseed** dans `afterEach` (pattern `change-password.usecase.spec.ts` Phase 2.A).
 - **Reco évolution Référentiel v2.2+** : Le commentaire de `test-helpers.ts:49-50` est trompeur en l'état. Soit corriger le commentaire pour mentionner la condition (« uniquement si la transaction interne est ouverte par un caller déjà dans la transaction racine Drizzle »), soit faire évoluer le helper pour réserver une connexion postgres-js dédiée et exposer une API `withTestTx(test => ...)` qui force tous les `db.transaction()` à utiliser la connexion réservée. À traiter en F-13+ (refactor tests d'intégration).
+
+---
+
+### R-29 — Isolation seed dev vs BD de tests d'intégration
+
+- **Type** : Zone floue / règle manquante
+- **Phase LIC** : Phase 2.B étape 5/7
+- **Contexte** : Le Référentiel §4.2 prescrit `setupTransactionalTests` (BEGIN/ROLLBACK) pour l'isolation des tests d'intégration BD. Mais il ne traite pas le cas où une BD locale dev contient des données seedées (via `pnpm db:seed`) qui survivent au ROLLBACK et cassent les assertions de count/contenu (23 tests cassés confirmés en Phase 2.B étape 5 — la bascule "seed → tests" rend le suite rouge sans modification de code, simplement parce que les comptes attendus en bootstrap ne correspondent plus).
+- **Décision LIC v2** : Le seed dev est strictement séparé des migrations CI. Avertissement explicite en tête de `seed.ts` (« DEV / DÉMO UNIQUEMENT — NE PAS LANCER SUR LA BD UTILISÉE PAR LES TESTS »). La BD de tests doit être en état bootstrap-only (drop + migrate sans seed). Documenté dans `app/CLAUDE.md` section « Tests d'intégration use-case ».
+- **Reco évolution Référentiel v2.2+** : Ajouter en §4.2 : _« Le script seed dev ne doit jamais être exécuté sur la BD utilisée par les tests d'intégration. Les tests sont écrits contre l'état post-migrations uniquement. »_

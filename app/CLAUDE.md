@@ -160,6 +160,10 @@ Le helper `setupTransactionalTests(ctx)` enveloppe chaque test dans `BEGIN ... R
 
 **Pour les modules sans audit obligatoire** (référentiels paramétrables ADR 0017) — pas de `db.transaction()` interne nécessaire, les tests utilisent le pattern `setupTransactionalTests` standard.
 
+- BD de tests = état bootstrap-only (migrations 000N uniquement, jamais `db:seed`).
+  `pnpm db:seed` insère des données committées qui survivent au ROLLBACK et cassent
+  les assertions count/contenu. Si la BD locale est polluée : drop + migrate.
+
 ---
 
 ## Schéma seul — cas transitoire
