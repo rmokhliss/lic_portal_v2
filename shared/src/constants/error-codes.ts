@@ -27,6 +27,18 @@ export type ErrorCode =
   | "SPX-LIC-700"
   | "SPX-LIC-701"
   | "SPX-LIC-702"
+  | "SPX-LIC-703"
+  | "SPX-LIC-704"
+  | "SPX-LIC-705"
+  | "SPX-LIC-706"
+  | "SPX-LIC-707"
+  | "SPX-LIC-708"
+  | "SPX-LIC-709"
+  | "SPX-LIC-710"
+  | "SPX-LIC-711"
+  | "SPX-LIC-712"
+  | "SPX-LIC-713"
+  | "SPX-LIC-714"
   | "SPX-LIC-900"
   | "SPX-LIC-901"
   | "SPX-LIC-902"
@@ -112,6 +124,78 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     code: "SPX-LIC-702",
     httpStatus: 400,
     defaultMessage: "Données région invalides",
+    className: "ValidationError",
+  },
+  "SPX-LIC-703": {
+    code: "SPX-LIC-703",
+    httpStatus: 404,
+    defaultMessage: "Pays introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-704": {
+    code: "SPX-LIC-704",
+    httpStatus: 409,
+    defaultMessage: "Code pays déjà utilisé",
+    className: "ConflictError",
+  },
+  "SPX-LIC-705": {
+    code: "SPX-LIC-705",
+    httpStatus: 400,
+    defaultMessage: "Données pays invalides",
+    className: "ValidationError",
+  },
+  "SPX-LIC-706": {
+    code: "SPX-LIC-706",
+    httpStatus: 404,
+    defaultMessage: "Devise introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-707": {
+    code: "SPX-LIC-707",
+    httpStatus: 409,
+    defaultMessage: "Code devise déjà utilisé",
+    className: "ConflictError",
+  },
+  "SPX-LIC-708": {
+    code: "SPX-LIC-708",
+    httpStatus: 400,
+    defaultMessage: "Données devise invalides",
+    className: "ValidationError",
+  },
+  "SPX-LIC-709": {
+    code: "SPX-LIC-709",
+    httpStatus: 404,
+    defaultMessage: "Langue introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-710": {
+    code: "SPX-LIC-710",
+    httpStatus: 409,
+    defaultMessage: "Code langue déjà utilisé",
+    className: "ConflictError",
+  },
+  "SPX-LIC-711": {
+    code: "SPX-LIC-711",
+    httpStatus: 400,
+    defaultMessage: "Données langue invalides",
+    className: "ValidationError",
+  },
+  "SPX-LIC-712": {
+    code: "SPX-LIC-712",
+    httpStatus: 404,
+    defaultMessage: "Type de contact introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-713": {
+    code: "SPX-LIC-713",
+    httpStatus: 409,
+    defaultMessage: "Code type de contact déjà utilisé",
+    className: "ConflictError",
+  },
+  "SPX-LIC-714": {
+    code: "SPX-LIC-714",
+    httpStatus: 400,
+    defaultMessage: "Données type de contact invalides",
     className: "ValidationError",
   },
 
