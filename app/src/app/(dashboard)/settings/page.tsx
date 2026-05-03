@@ -1,10 +1,7 @@
-// LIC v2 — Placeholder /settings (F-12, vrai écran Phase 2.B EC-13)
+// LIC v2 — /settings (racine) : redirige vers /settings/general (Phase 2.B étape 6/7)
 
-export default function SettingsPage() {
-  return (
-    <div className="p-8">
-      <h1 className="font-display text-foreground text-2xl">Paramétrage</h1>
-      <p className="text-muted-foreground mt-2">Écran à venir (Phase 2.B).</p>
-    </div>
-  );
+import { redirect } from "next/navigation";
+
+export default function SettingsRootPage(): never {
+  redirect("/settings/general");
 }

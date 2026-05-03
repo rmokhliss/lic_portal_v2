@@ -469,6 +469,7 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 
 - **DETTE-LIC-003 — `app/scripts/load-env.ts` throw `ENOENT` si `app/.env` absent** : `process.loadEnvFile(".env")` (Node 21.7+) crashe quand le fichier est absent, alors que les variables peuvent déjà être présentes dans `process.env`. Le loader devrait être permissif dans ce cas. **Priorité** : moyenne. **Workaround actuel** : générer un `app/.env` (peuplé depuis le job `env:` block) en step CI avant `pnpm db:migrate` (cf. `.github/workflows/ci.yml`). À traiter Phase 2.B+.
 - **DETTE-LIC-004 — CSP avec `'unsafe-inline'` + `'unsafe-eval'`** : la CSP appliquée en F-15 (`app/next.config.ts`) autorise `'unsafe-inline'` (scripts + styles) et `'unsafe-eval'` (Turbopack dev). Le durcissement vers une CSP nonce-based requiert la réintroduction d'un middleware Next.js (régression vs F-12 qui l'a justement supprimé). Le retrait conditionnel de `'unsafe-eval'` en prod (uniquement requis par Turbopack en dev) est inclus dans cette dette. **Priorité** : basse. **Phase** : 13 (durcissement sécurité prod).
+- **DETTE-LIC-005 — i18n namespace `files.*` manquant** : `AppSidebar` rend déjà l'item `nav.items.files` (clé existante) mais aucune clé `files.*` n'est définie pour le futur écran EC-Files. À ajouter quand la Phase 10 introduira la page `/files`. **Priorité** : basse. **Phase** : 10 (fichiers + génération `.lic`).
 
 ### Dettes résolues
 

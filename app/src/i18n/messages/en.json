@@ -61,6 +61,48 @@
       "passwordMismatch": "The new password and its confirmation do not match"
     }
   },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Portal-wide configuration (SADMIN only)",
+    "tabs": {
+      "general": "General",
+      "security": "Security",
+      "smtp": "SMTP",
+      "catalogues": "Catalogues",
+      "team": "Team",
+      "users": "Users",
+      "sandbox": "Sandbox",
+      "demo": "Demo",
+      "info": "Info"
+    },
+    "stub": {
+      "available": "Available in Phase {phase}",
+      "security": {
+        "label": "PKI Security",
+        "description": "Internal CA generation, client certificates, rotation and revocation."
+      },
+      "smtp": {
+        "label": "SMTP & notifications",
+        "description": "SMTP server configuration, email templates and alert scheduler."
+      },
+      "catalogues": {
+        "label": "Article catalogues",
+        "description": "Reference list of SELECT-PX articles sold to clients (POS, ATM, cards)."
+      },
+      "users": {
+        "label": "BO account management",
+        "description": "Available in the next tab of this phase."
+      },
+      "sandbox": {
+        "label": "Crypto sandbox",
+        "description": "End-to-end encryption testing with no DB persistence (rule L16)."
+      },
+      "demo": {
+        "label": "Demo data",
+        "description": "Generation of fictitious data sets for client demos and training."
+      }
+    }
+  },
   "errors": {
     "SPX-LIC-001": "Session expired or missing",
     "SPX-LIC-002": "Invalid credentials",

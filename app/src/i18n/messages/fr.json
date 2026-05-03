@@ -61,6 +61,48 @@
       "passwordMismatch": "Le nouveau mot de passe et sa confirmation ne correspondent pas"
     }
   },
+  "settings": {
+    "title": "Paramétrage",
+    "subtitle": "Configuration globale du portail (SADMIN uniquement)",
+    "tabs": {
+      "general": "Général",
+      "security": "Sécurité",
+      "smtp": "SMTP",
+      "catalogues": "Catalogues",
+      "team": "Équipe",
+      "users": "Utilisateurs",
+      "sandbox": "Sandbox",
+      "demo": "Démo",
+      "info": "Info"
+    },
+    "stub": {
+      "available": "Disponible Phase {phase}",
+      "security": {
+        "label": "Sécurité PKI",
+        "description": "Génération CA interne, certificats clients, rotation et révocation."
+      },
+      "smtp": {
+        "label": "SMTP & notifications",
+        "description": "Configuration serveur SMTP, templates emails et planificateur d'alertes."
+      },
+      "catalogues": {
+        "label": "Catalogues articles",
+        "description": "Référentiel des articles SELECT-PX vendus aux clients (TPE, GAB, cartes)."
+      },
+      "users": {
+        "label": "Gestion des comptes BO",
+        "description": "Disponible dans l'onglet suivant de cette phase."
+      },
+      "sandbox": {
+        "label": "Sandbox crypto",
+        "description": "Test des fonctions de chiffrement de bout en bout sans persistance BD (règle L16)."
+      },
+      "demo": {
+        "label": "Données de démo",
+        "description": "Génération de jeux de données fictifs pour démos clients et formations."
+      }
+    }
+  },
   "errors": {
     "SPX-LIC-001": "Session expirée ou inexistante",
     "SPX-LIC-002": "Identifiants invalides",
