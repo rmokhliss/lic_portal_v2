@@ -24,6 +24,9 @@ export type ErrorCode =
   | "SPX-LIC-500"
   | "SPX-LIC-501"
   | "SPX-LIC-502"
+  | "SPX-LIC-700"
+  | "SPX-LIC-701"
+  | "SPX-LIC-702"
   | "SPX-LIC-900"
   | "SPX-LIC-901"
   | "SPX-LIC-902"
@@ -86,6 +89,29 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     code: "SPX-LIC-502",
     httpStatus: 400,
     defaultMessage: "Cursor de pagination invalide",
+    className: "ValidationError",
+  },
+
+  // --- Settings + utilisateurs + référentiels (700-799) --------------------
+  // Phase 2.B étape 2/7 : module regions (référentiel paramétrable). Pattern
+  // répliqué pour pays/devises/langues/types-contact/team-members aux étapes
+  // suivantes — codes équivalents alloués au fur et à mesure dans la même range.
+  "SPX-LIC-700": {
+    code: "SPX-LIC-700",
+    httpStatus: 404,
+    defaultMessage: "Région introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-701": {
+    code: "SPX-LIC-701",
+    httpStatus: 409,
+    defaultMessage: "Code région déjà utilisé",
+    className: "ConflictError",
+  },
+  "SPX-LIC-702": {
+    code: "SPX-LIC-702",
+    httpStatus: 400,
+    defaultMessage: "Données région invalides",
     className: "ValidationError",
   },
 

@@ -138,6 +138,30 @@ export class CreateClientUseCase {
 
 ---
 
+## Composition root — règle stricte
+
+Deux niveaux de composition root :
+
+- **`<X>.module.ts`** (intra-module) : instancie le `<X>RepositoryPg` et expose `<x>Repository` + les use-cases qui ne dépendent QUE de ce repo (typiquement les read-only `list`, `get`). ESLint boundaries autorise `module-root → adapters/application/ports/infrastructure/shared/module-error`. Pas de cross-module.
+- **`composition-root.ts`** (cross-module) : SEUL fichier autorisé à importer plusieurs `<X>.module.ts`. Câble les use-cases qui ont besoin de plusieurs repos (ex: `ChangePasswordUseCase` reçoit `userRepository` + `auditRepository`). Surface publique du backend pour les Server Actions / jobs.
+
+**Conséquence** : un use-case mutant qui doit auditer DOIT être câblé dans `composition-root.ts` (pas dans `<X>.module.ts`) pour pouvoir injecter `auditRepository`. Exception : modules **exclus de l'audit obligatoire** (cf. ADR 0017 — référentiels paramétrables) — leurs use-cases mutants peuvent être câblés directement dans `<X>.module.ts` puisqu'ils ne dépendent pas d'audit cross-module.
+
+---
+
+## Tests d'intégration use-case — pas de db.transaction interne
+
+Le helper `setupTransactionalTests(ctx)` enveloppe chaque test dans `BEGIN ... ROLLBACK` sur la connexion `ctx.sql`. Pour que cette isolation fonctionne :
+
+- Le repo et le use-case DOIVENT opérer via `ctx.db` (qui partage `ctx.sql`).
+- Le use-case NE DOIT PAS ouvrir de `db.transaction()` interne. Drizzle voit l'appel comme top-level (le `BEGIN` manuel du helper n'est pas dans son AsyncLocalStorage), il émet `BEGIN ... COMMIT` qui fait commit la transaction racine du test → fuite cross-tests.
+
+**Si le use-case a besoin de transactionnalité multi-statements** (ex: lecture-puis-écriture atomique avec audit dans la même tx) → il OUVRE une `db.transaction()` interne ET les tests bascule sur le pattern TRUNCATE+reseed (cf. `change-password.usecase.spec.ts`). C'est plus lent mais correct.
+
+**Pour les modules sans audit obligatoire** (référentiels paramétrables ADR 0017) — pas de `db.transaction()` interne nécessaire, les tests utilisent le pattern `setupTransactionalTests` standard.
+
+---
+
 ## Schéma seul — cas transitoire
 
 Quand un module métier n'a pas encore ses `domain/`, `application/`, `ports/` (Phase N introduit le schéma, Phase N+1 le reste — cas Phase 2.B référentiels) :

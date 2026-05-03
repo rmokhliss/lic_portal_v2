@@ -675,3 +675,31 @@ _Fin de l'archive. Capitalisation close en Mai 2026._
 - **Contexte** : ADR 0005 fixe `uuidv7` PK pour **toutes** les tables LIC v2. Or les 6 tables référentielles paramétrables (régions/pays/devises/langues/types-contact/team-members) ont un identifiant business stable (`region_code`, `code_pays` ISO, `code_devise` ISO, etc.) — les FK reçues pointent vers ce code logique, jamais vers l'`id`. Les bénéfices `uuidv7` (non-énumérabilité, génération distribuée, future-proof réplication) ne s'appliquent pas à des codes ISO publics par construction. À l'inverse, `uuidv7` ajoute du bruit dans les seeds, dans Drizzle Studio et dans les rapprochements ISO.
 - **Décision LIC v2** : PK `serial` exclusivement pour ces 6 tables — actée dans **ADR 0017** (`docs/adr/0017-pk-serial-referentiels-parametrables.md`). Toutes les autres tables LIC v2 conservent `uuidv7` (ADR 0005 inchangé).
 - **Reco évolution Référentiel v2.2+** : Le Référentiel §4.15 (ou équivalent) devrait reconnaître la catégorie **« table référentielle paramétrable / enum versionnable BD »** comme exception légitime à la règle PK uuid (codes business stables, FK par code logique, volume <200 lignes, lecture seule pour le métier). Sans ça, chaque projet SPX devra écrire son propre ADR 0017-équivalent.
+
+---
+
+### R-27 — Règle audit §4.2 — exception référentiels paramétrables
+
+- **Type** : Exception à la règle "audit obligatoire sur toute mutation" + cohérence avec ADR 0017
+- **Phase LIC** : Phase 2.B étape 2/7
+- **Contexte** : Le Référentiel §4.2 (rappelé en CLAUDE.md "MUST appeler `auditLog.record()` dans la même transaction que toute mutation métier") prescrit l'audit obligatoire pour TOUTE mutation. Or les 6 référentiels paramétrables (régions/pays/devises/langues/types-contact/team-members) :
+  1. Ont une PK `serial` (ADR 0017) **incompatible** avec `lic_audit_log.entity_id uuid NOT NULL` — l'INSERT auditrait avec `String(region.id) = "1"` qui lèverait `invalid input syntax for type uuid`.
+  2. Sont éditées par le SADMIN seul via `/settings`, volume <200 lignes, traçabilité implicite via `dateCreation`.
+  3. Migrer `entity_id` en `varchar(50)` pour les supporter = dette structurelle disproportionnée pour 6 tables CRUD basiques.
+- **Décision LIC v2** : Aucun audit sur les 6 modules référentiels paramétrables. Le carve-out est explicite dans ADR 0017 §Consequences ("les référentiels paramétrables ne sont jamais audités directement"). Conséquence dans le code :
+  - Les use-cases `Create*`/`Update*`/`Toggle*` ref n'injectent PAS `AuditRepository`
+  - Les use-cases mutants ref sont câblés directement dans `<X>.module.ts` (pas via `composition-root.ts`) puisqu'ils n'ont pas de dépendance cross-module audit
+  - Les use-cases mutants ref n'ouvrent PAS de `db.transaction()` interne (la transaction servait à garantir audit-dans-la-même-tx). La cohérence pour create est fournie par la contrainte UNIQUE BD.
+- **Reco évolution Référentiel v2.2+** : Le Référentiel §4.2 devrait préciser la **catégorie d'entités exclues de l'audit obligatoire** : référentiels paramétrables / enums versionnables BD à volume figé + PK serial. Sans cette précision, chaque projet SPX devra écrire son propre ADR équivalent à 0017.
+
+---
+
+### R-28 — `setupTransactionalTests` incompatible avec `db.transaction()` interne du use-case
+
+- **Type** : Limitation documentée du pattern de test Phase 2.A + clarification d'usage
+- **Phase LIC** : Phase 2.B étape 2/7
+- **Contexte** : Le helper `app/src/server/infrastructure/db/test-helpers.ts:setupTransactionalTests` enveloppe chaque test dans `BEGIN ... ROLLBACK` sur `ctx.sql`. Le commentaire en ligne 49-50 promet : _« Drizzle `db.transaction()` au sein d'un test → SAVEPOINT (transaction imbriquée), également annulé par le ROLLBACK racine. »_ En pratique cette promesse n'est tenue **que si l'appel `db.transaction()` est issu d'une fonction qui voit déjà la transaction racine via l'AsyncLocalStorage de Drizzle**. Lorsque le use-case appelle `db.transaction()` à plat (top-level depuis le point de vue Drizzle, même si on est dans un BEGIN manuel postgres-js), Drizzle émet un nouveau `BEGIN ... COMMIT` qui **commit définitivement** la transaction racine du test → fuites cross-tests observées en étape 2 (8 régions `TEST_*` accumulées en BD avant débogage).
+- **Décision LIC v2** : Documenter la règle dans `app/CLAUDE.md` :
+  1. `setupTransactionalTests` fonctionne pour les tests de **repository** (qui n'ouvrent jamais `db.transaction()` interne — pattern audit Phase 2.A) et pour les tests de **use-case sans transaction interne** (cas référentiels Phase 2.B post-R-27).
+  2. Pour les use-cases qui ouvrent `db.transaction()` interne (audit obligatoire dans la même tx), basculer sur **TRUNCATE+reseed** dans `afterEach` (pattern `change-password.usecase.spec.ts` Phase 2.A).
+- **Reco évolution Référentiel v2.2+** : Le commentaire de `test-helpers.ts:49-50` est trompeur en l'état. Soit corriger le commentaire pour mentionner la condition (« uniquement si la transaction interne est ouverte par un caller déjà dans la transaction racine Drizzle »), soit faire évoluer le helper pour réserver une connexion postgres-js dédiée et exposer une API `withTestTx(test => ...)` qui force tous les `db.transaction()` à utiliser la connexion réservée. À traiter en F-13+ (refactor tests d'intégration).
