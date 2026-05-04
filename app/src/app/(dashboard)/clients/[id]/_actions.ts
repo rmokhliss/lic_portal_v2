@@ -21,6 +21,7 @@ import { z } from "zod";
 import {
   CreateContactSchema,
   CreateEntiteSchema,
+  CreateLicenceSchema,
   DeleteContactSchema,
   ToggleEntiteActiveSchema,
   UpdateContactSchema,
@@ -31,6 +32,7 @@ import { requireRole } from "@/server/infrastructure/auth";
 import {
   createContactUseCase,
   createEntiteUseCase,
+  createLicenceUseCase,
   deleteContactUseCase,
   toggleEntiteActiveUseCase,
   updateContactUseCase,
@@ -39,7 +41,7 @@ import {
 
 const ClientIdSchema = z.object({ clientId: z.uuid() });
 
-function pathFor(clientId: string, tab: "entites" | "contacts"): string {
+function pathFor(clientId: string, tab: "entites" | "contacts" | "licences"): string {
   return `/clients/${clientId}/${tab}`;
 }
 
@@ -100,4 +102,28 @@ export async function deleteContactAction(input: unknown, clientIdContext: unkno
   const { clientId } = ClientIdSchema.parse(clientIdContext);
   await deleteContactUseCase.execute(parsed, actor.id);
   revalidatePath(pathFor(clientId, "contacts"));
+}
+
+// --- Licences (Phase 5.E) ---------------------------------------------------
+
+export async function createLicenceAction(input: unknown, clientIdContext: unknown) {
+  const actor = await requireRole(["ADMIN", "SADMIN"]);
+  const parsed = CreateLicenceSchema.parse(input);
+  const { clientId } = ClientIdSchema.parse(clientIdContext);
+  // Conversion ISO string → Date (le schéma Zod vérifie le format ISO).
+  const result = await createLicenceUseCase.execute(
+    {
+      clientId: parsed.clientId,
+      entiteId: parsed.entiteId,
+      dateDebut: new Date(parsed.dateDebut),
+      dateFin: new Date(parsed.dateFin),
+      ...(parsed.commentaire !== undefined ? { commentaire: parsed.commentaire } : {}),
+      ...(parsed.renouvellementAuto !== undefined
+        ? { renouvellementAuto: parsed.renouvellementAuto }
+        : {}),
+    },
+    actor.id,
+  );
+  revalidatePath(pathFor(clientId, "licences"));
+  return result;
 }

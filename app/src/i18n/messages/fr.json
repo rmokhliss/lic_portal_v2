@@ -231,6 +231,31 @@
           "cancel": "Annuler"
         }
       },
+      "licencesTab": {
+        "section": "Licences du client",
+        "newLicence": "Nouvelle licence",
+        "table": {
+          "reference": "Référence",
+          "entite": "Entité",
+          "status": "Statut",
+          "dateDebut": "Début",
+          "dateFin": "Fin",
+          "actions": "Actions"
+        },
+        "viewDetail": "Détail →",
+        "empty": "Aucune licence pour ce client.",
+        "dialog": {
+          "createTitle": "Nouvelle licence",
+          "entiteId": "Entité propriétaire",
+          "dateDebut": "Date de début",
+          "dateFin": "Date de fin",
+          "commentaire": "Commentaire (optionnel)",
+          "renouvellementAuto": "Renouvellement automatique",
+          "submitCreate": "Créer",
+          "creating": "Création…",
+          "cancel": "Annuler"
+        }
+      },
       "contacts": {
         "section": "Contacts par entité",
         "selectEntite": "Entité :",

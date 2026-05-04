@@ -1,16 +1,47 @@
-// LIC v2 — /clients/[id]/licences (Phase 4 étape 4.F, stub Phase 5)
+// ==============================================================================
+// LIC v2 — /clients/[id]/licences (Phase 5 étape 5.E — était stub Phase 5)
+//
+// Server Component : fetch entités + licences du client, rend LicencesTab.
+// ==============================================================================
 
-import { getTranslations } from "next-intl/server";
+import { notFound } from "next/navigation";
 
-import { PhaseStub } from "@/components/shared/PhaseStub";
+import { isAppError } from "@/server/modules/error";
+import { requireAuthPage } from "@/server/infrastructure/auth";
+import {
+  getClientUseCase,
+  listEntitesByClientUseCase,
+  listLicencesByClientUseCase,
+} from "@/server/composition-root";
 
-export default async function ClientLicencesPage() {
-  const t = await getTranslations("clients.detail.tabs");
+import { LicencesTab } from "../_components/LicencesTab";
+
+interface PageProps {
+  readonly params: Promise<{ readonly id: string }>;
+}
+
+export default async function ClientLicencesPage({ params }: PageProps) {
+  const user = await requireAuthPage();
+  const { id } = await params;
+
+  try {
+    await getClientUseCase.execute(id);
+  } catch (err) {
+    if (isAppError(err) && err.code === "SPX-LIC-724") notFound();
+    throw err;
+  }
+
+  const [entites, licencesPage] = await Promise.all([
+    listEntitesByClientUseCase.execute(id),
+    listLicencesByClientUseCase.execute({ clientId: id, limit: 100 }),
+  ]);
+
   return (
-    <PhaseStub
-      phase="5"
-      label={t("licences")}
-      description="Gestion du contrat de licence (référence, période, statut, modules autorisés)."
+    <LicencesTab
+      clientId={id}
+      entites={entites}
+      licences={licencesPage.items}
+      canEdit={user.role === "ADMIN" || user.role === "SADMIN"}
     />
   );
 }

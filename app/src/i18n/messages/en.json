@@ -231,6 +231,31 @@
           "cancel": "Cancel"
         }
       },
+      "licencesTab": {
+        "section": "Client licences",
+        "newLicence": "New licence",
+        "table": {
+          "reference": "Reference",
+          "entite": "Entity",
+          "status": "Status",
+          "dateDebut": "Start",
+          "dateFin": "End",
+          "actions": "Actions"
+        },
+        "viewDetail": "Details →",
+        "empty": "No licence for this client.",
+        "dialog": {
+          "createTitle": "New licence",
+          "entiteId": "Owner entity",
+          "dateDebut": "Start date",
+          "dateFin": "End date",
+          "commentaire": "Comment (optional)",
+          "renouvellementAuto": "Auto-renewal",
+          "submitCreate": "Create",
+          "creating": "Creating…",
+          "cancel": "Cancel"
+        }
+      },
       "contacts": {
         "section": "Contacts by entity",
         "selectEntite": "Entity:",
