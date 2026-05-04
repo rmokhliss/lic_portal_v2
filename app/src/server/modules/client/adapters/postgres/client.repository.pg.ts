@@ -244,4 +244,28 @@ export class ClientRepositoryPg extends ClientRepository {
     }
     return rowToEntity(updatedRow);
   }
+
+  // Phase 3.D — UPDATE des 3 colonnes PKI ajoutées en migration 0010. Pas de
+  // bump version : ces colonnes sont gérées hors du modèle métier optimistic-
+  // locking (issuance + renouvellement de cert ne participent pas au lifecycle
+  // métier client).
+  async attachCertificate(
+    clientId: string,
+    data: {
+      readonly privateKeyEnc: string;
+      readonly certificatePem: string;
+      readonly expiresAt: Date;
+    },
+    tx?: DbTransaction,
+  ): Promise<void> {
+    const conn = (tx ?? this.db) as DbInstance;
+    await conn
+      .update(clients)
+      .set({
+        clientPrivateKeyEnc: data.privateKeyEnc,
+        clientCertificatePem: data.certificatePem,
+        clientCertificateExpiresAt: data.expiresAt,
+      })
+      .where(eq(clients.id, clientId));
+  }
 }

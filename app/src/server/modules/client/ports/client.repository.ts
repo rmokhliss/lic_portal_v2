@@ -91,4 +91,18 @@ export abstract class ClientRepository {
     actorId: string,
     tx?: DbTransaction,
   ): Promise<PersistedClient>;
+
+  /** Phase 3.D — Attache un certificat client (3 colonnes Phase 3.B) sur un
+   *  client existant. UPDATE simple : pas de bump version (les colonnes PKI
+   *  sont gérées hors du modèle métier optimistic-lock). `tx` permet d'inclure
+   *  cet UPDATE dans la même transaction que `saveWithSiegeEntite` + audit. */
+  abstract attachCertificate(
+    clientId: string,
+    data: {
+      readonly privateKeyEnc: string;
+      readonly certificatePem: string;
+      readonly expiresAt: Date;
+    },
+    tx?: DbTransaction,
+  ): Promise<void>;
 }

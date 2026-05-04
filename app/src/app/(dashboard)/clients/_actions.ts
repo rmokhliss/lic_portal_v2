@@ -19,6 +19,7 @@ import { revalidatePath } from "next/cache";
 import { ChangeClientStatusSchema, CreateClientSchema, UpdateClientSchema } from "@s2m-lic/shared";
 
 import { requireRole } from "@/server/infrastructure/auth";
+import { env } from "@/server/infrastructure/env";
 import {
   changeClientStatusUseCase,
   createClientUseCase,
@@ -28,7 +29,11 @@ import {
 export async function createClientAction(input: unknown) {
   const actor = await requireRole(["ADMIN", "SADMIN"]);
   const parsed = CreateClientSchema.parse(input);
-  const result = await createClientUseCase.execute(parsed, actor.id);
+  // Phase 3.D : appMasterKey injecté par la Server Action (frontière infra/env)
+  // pour permettre au use-case de chiffrer la clé privée client AES-256-GCM.
+  const result = await createClientUseCase.execute(parsed, actor.id, {
+    appMasterKey: env.APP_MASTER_KEY,
+  });
   revalidatePath("/clients");
   return result;
 }

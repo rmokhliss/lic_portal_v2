@@ -1,28 +1,35 @@
 // ==============================================================================
-// LIC v2 — CreateClientUseCase (Phase 4 étape 4.B — EC-Clients)
+// LIC v2 — CreateClientUseCase (Phase 4.B + Phase 3.D — refactor PKI)
 //
 // Orchestration transactionnelle (règle L3 — audit dans même tx) :
 //   1. Client.create(input) → throw SPX-LIC-726 si validation
-//   2. db.transaction:
+//   2. Pré-check CA hors tx — throw SPX-LIC-411 si CA absente
+//   3. Génération paire RSA-4096 client + cert client signé par la CA (hors tx)
+//   4. db.transaction:
 //      a. findByCode(codeClient) → throw SPX-LIC-725 si conflit
-//      b. saveWithSiegeEntite(client, { nom: siegeNom ?? raisonSociale })
-//         → INSERT lic_clients + INSERT lic_entites « Siège » dans la
-//         même tx (1 client ⇒ 1 entité Siège, invariant métier)
-//      c. findById(actorId) → format L9 → audit CLIENT_CREATED
+//      b. saveWithSiegeEntite(client, ...)
+//      c. attachCertificate(clientId, { privateKeyEnc, certPem, expiresAt }, tx)
+//      d. audit CLIENT_CREATED + audit CERTIFICATE_ISSUED dans la même tx
 //
-// TODO Phase 3 (DETTE-LIC-008, ADR 0002) — à insérer ICI une fois Phase 3
-// livrée :
-//      d. const { publicKeyPem, privateKeyPem } = generateClientKeyPair();
-//      e. const cert = signCertificateByCA(publicKeyPem, codeClient);
-//      f. clientCertificateRepository.save({ clientId, cert, privateKeyEnc }, tx);
-// Sans ces 3 étapes, impossible de générer un .lic signé pour ce client.
-// Cf. PROJECT_CONTEXT_LIC.md §10 DETTE-LIC-008.
+// Phase 3.D : DETTE-LIC-008 résolue. Le client est créé avec son cert dès
+// l'INSERT — plus besoin de backfill ultérieur. Le backfill (3.E) reste utile
+// pour les clients préexistants antérieurs à Phase 3.
 // ==============================================================================
 
 import { db } from "@/server/infrastructure/db/client";
 import { AuditEntry } from "@/server/modules/audit/domain/audit-entry.entity";
 import type { AuditRepository } from "@/server/modules/audit/ports/audit.repository";
+import {
+  CA_SETTING_KEY,
+  isCARecord,
+  unwrapCAPrivateKey,
+} from "@/server/modules/crypto/application/__shared/ca-storage";
+import { encryptAes256Gcm } from "@/server/modules/crypto/domain/aes";
+import { generateRsaKeyPair } from "@/server/modules/crypto/domain/rsa";
+import { generateClientCert, getCertExpiry } from "@/server/modules/crypto/domain/x509";
+import { caAbsentOrInvalid } from "@/server/modules/crypto/domain/x509.errors";
 import { InternalError } from "@/server/modules/error";
+import type { SettingRepository } from "@/server/modules/settings/ports/setting.repository";
 import type { UserRepository } from "@/server/modules/user/ports/user.repository";
 
 import { toDTO, type ClientDTO } from "../adapters/postgres/client.mapper";
@@ -35,10 +42,19 @@ export interface CreateClientUseCaseInput extends CreateClientDomainInput {
   readonly siegeNom?: string;
 }
 
+export interface CreateClientUseCaseOptions {
+  /** Clé maîtresse AES-256 base64 — `env.APP_MASTER_KEY`. Injectée par le caller
+   *  (Server Action) pour éviter une dépendance application/ → infrastructure/env. */
+  readonly appMasterKey: string;
+}
+
 export interface CreateClientUseCaseOutput {
   readonly client: ClientDTO;
-  /** id uuid de l'entité Siège créée. */
   readonly siegeEntiteId: string;
+  /** PEM du certificat client généré, ou null si PKI désactivée (tests legacy). */
+  readonly clientCertificatePem: string | null;
+  /** Expiration cert client, ou null si PKI désactivée. */
+  readonly certificateExpiresAt: Date | null;
 }
 
 export class CreateClientUseCase {
@@ -46,15 +62,54 @@ export class CreateClientUseCase {
     private readonly clientRepository: ClientRepository,
     private readonly userRepository: UserRepository,
     private readonly auditRepository: AuditRepository,
+    /** Phase 3.D : optionnel pour rétrocompat tests d'intégration legacy.
+     *  Composition-root le câble systématiquement en prod. Si absent → skip PKI
+     *  (mode test legacy uniquement). */
+    private readonly settingRepository?: SettingRepository,
   ) {}
 
   async execute(
     input: CreateClientUseCaseInput,
     actorId: string,
+    options?: CreateClientUseCaseOptions,
   ): Promise<CreateClientUseCaseOutput> {
-    // Validation domaine en amont — pas de tx ouverte si invalide.
     const candidate = Client.create(input);
     const siegeNom = input.siegeNom ?? input.raisonSociale;
+
+    // Phase 3.D : PKI activée seulement si settingRepository ET options injectés.
+    // Sinon on retombe sur le chemin legacy (création client sans cert) — mode
+    // strictement réservé aux tests d'intégration qui ne testent pas la PKI.
+    // En prod (composition-root) ces deux conditions sont toujours vraies.
+    const settingRepo = this.settingRepository;
+    let clientPrivateKeyEnc: string | null = null;
+    let clientCertPem: string | null = null;
+    let certificateExpiresAt: Date | null = null;
+
+    if (settingRepo !== undefined && options !== undefined) {
+      const settings = await settingRepo.findAll();
+      const caSetting = settings.find((s) => s.key === CA_SETTING_KEY);
+      if (caSetting === undefined || !isCARecord(caSetting.value)) {
+        throw caAbsentOrInvalid(
+          "CA S2M non générée. Générer la CA dans /settings/sécurité avant de créer des clients.",
+        );
+      }
+      const caRecord = caSetting.value;
+      const caPrivateKeyPem = unwrapCAPrivateKey(caRecord, options.appMasterKey);
+
+      const clientKeys = generateRsaKeyPair();
+      clientCertPem = await generateClientCert({
+        clientPublicKeyPem: clientKeys.publicKeyPem,
+        caPrivateKeyPem,
+        caCertPem: caRecord.certificatePem,
+        subject: {
+          commonName: candidate.raisonSociale,
+          org: "S2M",
+          serialNumber: candidate.codeClient,
+        },
+      });
+      certificateExpiresAt = getCertExpiry(clientCertPem);
+      clientPrivateKeyEnc = encryptAes256Gcm(clientKeys.privateKeyPem, options.appMasterKey);
+    }
 
     const result = await db.transaction(async (tx) => {
       const existing = await this.clientRepository.findByCode(candidate.codeClient, tx);
@@ -70,6 +125,18 @@ export class CreateClientUseCase {
           tx,
         );
 
+      if (clientPrivateKeyEnc !== null && clientCertPem !== null && certificateExpiresAt !== null) {
+        await this.clientRepository.attachCertificate(
+          persistedClient.id,
+          {
+            privateKeyEnc: clientPrivateKeyEnc,
+            certificatePem: clientCertPem,
+            expiresAt: certificateExpiresAt,
+          },
+          tx,
+        );
+      }
+
       const actor = await this.userRepository.findByIdEntity(actorId, tx);
       if (actor === null) {
         throw new InternalError({
@@ -78,7 +145,9 @@ export class CreateClientUseCase {
         });
       }
 
-      const entry = AuditEntry.create({
+      const clientDisplay = `${persistedClient.codeClient} — ${persistedClient.raisonSociale}`;
+
+      const createdEntry = AuditEntry.create({
         entity: "client",
         entityId: persistedClient.id,
         action: "CLIENT_CREATED",
@@ -89,14 +158,38 @@ export class CreateClientUseCase {
         userId: actor.id,
         userDisplay: actor.toDisplay(),
         clientId: persistedClient.id,
-        clientDisplay: `${persistedClient.codeClient} — ${persistedClient.raisonSociale}`,
+        clientDisplay,
         mode: "MANUEL",
       });
-      await this.auditRepository.save(entry, tx);
+      await this.auditRepository.save(createdEntry, tx);
+
+      if (clientCertPem !== null && certificateExpiresAt !== null) {
+        const certEntry = AuditEntry.create({
+          entity: "client",
+          entityId: persistedClient.id,
+          action: "CERTIFICATE_ISSUED",
+          afterData: {
+            subjectCN: persistedClient.raisonSociale,
+            serialNumber: persistedClient.codeClient,
+            expiresAt: certificateExpiresAt.toISOString(),
+          },
+          userId: actor.id,
+          userDisplay: actor.toDisplay(),
+          clientId: persistedClient.id,
+          clientDisplay,
+          mode: "MANUEL",
+        });
+        await this.auditRepository.save(certEntry, tx);
+      }
 
       return { client: persistedClient, siegeEntiteId };
     });
 
-    return { client: toDTO(result.client), siegeEntiteId: result.siegeEntiteId };
+    return {
+      client: toDTO(result.client),
+      siegeEntiteId: result.siegeEntiteId,
+      clientCertificatePem: clientCertPem,
+      certificateExpiresAt,
+    };
   }
 }
