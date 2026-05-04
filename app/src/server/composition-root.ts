@@ -341,3 +341,38 @@ export {
   listAuditByLicenceScopeUseCase,
   searchAuditUseCase,
 } from "@/server/modules/audit-query/audit-query.module";
+
+// --- Phase 8 étape 8.B : alert-config (audit obligatoire) ------------------
+
+import { CreateAlertConfigUseCase } from "@/server/modules/alert-config/application/create-alert-config.usecase";
+import { DeleteAlertConfigUseCase } from "@/server/modules/alert-config/application/delete-alert-config.usecase";
+import { UpdateAlertConfigUseCase } from "@/server/modules/alert-config/application/update-alert-config.usecase";
+import { alertConfigRepository } from "@/server/modules/alert-config/alert-config.module";
+
+export const createAlertConfigUseCase = new CreateAlertConfigUseCase(
+  alertConfigRepository,
+  userRepository,
+  auditRepository,
+);
+export const updateAlertConfigUseCase = new UpdateAlertConfigUseCase(
+  alertConfigRepository,
+  userRepository,
+  auditRepository,
+);
+export const deleteAlertConfigUseCase = new DeleteAlertConfigUseCase(
+  alertConfigRepository,
+  userRepository,
+  auditRepository,
+);
+
+export { listAlertConfigsByClientUseCase } from "@/server/modules/alert-config/alert-config.module";
+
+// --- Phase 8 étape 8.B : notifications (pas d'audit) ----------------------
+
+export {
+  createNotificationUseCase,
+  deleteOldNotificationsUseCase,
+  listNotificationsUseCase,
+  markAllNotificationsReadUseCase,
+  markNotificationReadUseCase,
+} from "@/server/modules/notification/notification.module";
