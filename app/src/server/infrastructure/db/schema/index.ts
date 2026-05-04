@@ -42,3 +42,18 @@ export { articlesRef } from "@/server/modules/article/adapters/postgres/schema";
 export { licenceProduits } from "@/server/modules/licence-produit/adapters/postgres/schema";
 export { licenceArticles } from "@/server/modules/licence-article/adapters/postgres/schema";
 export { articleVolumeHistory } from "@/server/modules/volume-history/adapters/postgres/schema";
+
+// Phase 8 étape 8.A : alertes + notifications + batchs.
+export { alertChannel, alertConfigs } from "@/server/modules/alert-config/adapters/postgres/schema";
+export {
+  notifications,
+  notifPriority,
+} from "@/server/modules/notification/adapters/postgres/schema";
+export {
+  batchDeclencheur,
+  batchExecutions,
+  batchJobs,
+  batchLogs,
+  batchStatus,
+  logLevel,
+} from "@/server/modules/batch/adapters/postgres/schema";

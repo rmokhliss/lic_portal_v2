@@ -57,6 +57,13 @@
       "when": 1777881860014,
       "tag": "0007_chunky_meteorite",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1777888952198,
+      "tag": "0008_mushy_shadowcat",
+      "breakpoints": true
     }
   ]
 }
