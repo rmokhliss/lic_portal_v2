@@ -156,3 +156,32 @@ export async function removeArticleFromLicenceAction(input: unknown, ctx: unknow
   await removeArticleFromLicenceUseCase.execute(parsed, actor.id);
   revalidatePath(`/licences/${licenceId}/articles`);
 }
+
+// ============================================================================
+// Phase 7.B — Historique licence (audit-query scope)
+// ============================================================================
+
+import { listAuditByLicenceScopeUseCase } from "@/server/composition-root";
+
+const LicenceHistoriqueQuerySchema = z
+  .object({
+    licenceId: z.uuid(),
+    cursor: z.string().max(200).optional(),
+    action: z.string().max(40).optional(),
+    acteur: z.string().max(200).optional(),
+  })
+  .strict();
+
+export async function fetchLicenceHistoriqueAction(input: unknown) {
+  await requireRole(["ADMIN", "SADMIN"]);
+  const parsed = LicenceHistoriqueQuerySchema.parse(input);
+  return listAuditByLicenceScopeUseCase.execute({
+    licenceId: parsed.licenceId,
+    filters: {
+      ...(parsed.cursor !== undefined ? { cursor: parsed.cursor } : {}),
+      ...(parsed.action !== undefined ? { action: parsed.action } : {}),
+      ...(parsed.acteur !== undefined ? { userDisplayLike: parsed.acteur } : {}),
+      limit: 50,
+    },
+  });
+}

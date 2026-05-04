@@ -127,3 +127,30 @@ export async function createLicenceAction(input: unknown, clientIdContext: unkno
   revalidatePath(pathFor(clientId, "licences"));
   return result;
 }
+
+// --- Historique (Phase 7.B) -------------------------------------------------
+
+import { listAuditByClientScopeUseCase } from "@/server/composition-root";
+
+const ClientHistoriqueQuerySchema = z
+  .object({
+    clientId: z.uuid(),
+    cursor: z.string().max(200).optional(),
+    action: z.string().max(40).optional(),
+    acteur: z.string().max(200).optional(),
+  })
+  .strict();
+
+export async function fetchClientHistoriqueAction(input: unknown) {
+  await requireRole(["ADMIN", "SADMIN"]);
+  const parsed = ClientHistoriqueQuerySchema.parse(input);
+  return listAuditByClientScopeUseCase.execute({
+    clientId: parsed.clientId,
+    filters: {
+      ...(parsed.cursor !== undefined ? { cursor: parsed.cursor } : {}),
+      ...(parsed.action !== undefined ? { action: parsed.action } : {}),
+      ...(parsed.acteur !== undefined ? { userDisplayLike: parsed.acteur } : {}),
+      limit: 50,
+    },
+  });
+}

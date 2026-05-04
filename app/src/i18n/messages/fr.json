@@ -466,5 +466,49 @@
     "SPX-LIC-902": "Ressource introuvable",
     "SPX-LIC-903": "Conflit détecté avec l'état actuel de la ressource",
     "SPX-LIC-904": "Trop de requêtes, veuillez réessayer plus tard"
+  },
+  "audit": {
+    "history": {
+      "filter": {
+        "action": "Action",
+        "actionAll": "— Toutes les actions —",
+        "acteur": "Acteur (nom ou matricule)",
+        "acteurPlaceholder": "Ex: ADMIN, MAT-001",
+        "apply": "Filtrer",
+        "applying": "Filtrage..."
+      },
+      "table": {
+        "date": "Date",
+        "acteur": "Acteur",
+        "action": "Action",
+        "entity": "Entité",
+        "mode": "Mode",
+        "actions": "Détails",
+        "drill": "Détail"
+      },
+      "empty": "Aucune entrée d’audit pour les filtres choisis.",
+      "loadMore": "Charger plus",
+      "loadMoreLoading": "Chargement...",
+      "drill": {
+        "date": "Date",
+        "acteur": "Acteur",
+        "mode": "Mode",
+        "ip": "IP",
+        "client": "Client",
+        "before": "Avant",
+        "after": "Après"
+      }
+    },
+    "page": {
+      "title": "Journal d’audit",
+      "subtitle": "Toutes les actions tracées sur la plateforme.",
+      "export": "Exporter en CSV",
+      "exporting": "Génération...",
+      "exportFailed": "Échec de l’export",
+      "fromDate": "Date début",
+      "toDate": "Date fin",
+      "entity": "Type entité",
+      "entityAll": "— Toutes —"
+    }
   }
 }

@@ -466,5 +466,49 @@
     "SPX-LIC-902": "Resource not found",
     "SPX-LIC-903": "Conflict with the current state of the resource",
     "SPX-LIC-904": "Too many requests, please try again later"
+  },
+  "audit": {
+    "history": {
+      "filter": {
+        "action": "Action",
+        "actionAll": "— All actions —",
+        "acteur": "Actor (name or matricule)",
+        "acteurPlaceholder": "e.g. ADMIN, MAT-001",
+        "apply": "Filter",
+        "applying": "Filtering..."
+      },
+      "table": {
+        "date": "Date",
+        "acteur": "Actor",
+        "action": "Action",
+        "entity": "Entity",
+        "mode": "Mode",
+        "actions": "Details",
+        "drill": "Drill"
+      },
+      "empty": "No audit entry for the chosen filters.",
+      "loadMore": "Load more",
+      "loadMoreLoading": "Loading...",
+      "drill": {
+        "date": "Date",
+        "acteur": "Actor",
+        "mode": "Mode",
+        "ip": "IP",
+        "client": "Client",
+        "before": "Before",
+        "after": "After"
+      }
+    },
+    "page": {
+      "title": "Audit log",
+      "subtitle": "All actions tracked on the platform.",
+      "export": "Export as CSV",
+      "exporting": "Generating...",
+      "exportFailed": "Export failed",
+      "fromDate": "From date",
+      "toDate": "To date",
+      "entity": "Entity type",
+      "entityAll": "— All —"
+    }
   }
 }

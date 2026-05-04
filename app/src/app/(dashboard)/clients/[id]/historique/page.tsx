@@ -1,16 +1,64 @@
-// LIC v2 — /clients/[id]/historique (Phase 4 étape 4.F, stub Phase 7)
+// ==============================================================================
+// LIC v2 — /clients/[id]/historique (Phase 7.B)
+// Tab débloquée : journal d'audit scope client (direct + indirect entités/
+// licences/contacts/renouvellements/liaisons).
+// ==============================================================================
 
-import { getTranslations } from "next-intl/server";
+import { notFound } from "next/navigation";
 
-import { PhaseStub } from "@/components/shared/PhaseStub";
+import { AuditHistoryTable } from "@/components/shared/AuditHistoryTable";
+import { requireAuthPage } from "@/server/infrastructure/auth";
+import { getClientUseCase, listAuditByClientScopeUseCase } from "@/server/composition-root";
+import { isAppError } from "@/server/modules/error";
+import { AUDIT_ACTIONS_CATALOG } from "@/server/modules/audit-query/audit-actions-catalog";
 
-export default async function ClientHistoriquePage() {
-  const t = await getTranslations("clients.detail.tabs");
+import { fetchClientHistoriqueAction } from "../_actions";
+
+interface PageProps {
+  readonly params: Promise<{ readonly id: string }>;
+}
+
+export default async function ClientHistoriquePage({ params }: PageProps) {
+  const user = await requireAuthPage();
+  const { id } = await params;
+
+  // Réservé ADMIN/SADMIN — l'historique expose des données d'audit sensibles.
+  if (user.role !== "ADMIN" && user.role !== "SADMIN") notFound();
+
+  try {
+    await getClientUseCase.execute(id);
+  } catch (err) {
+    if (isAppError(err) && err.code === "SPX-LIC-712") notFound();
+    throw err;
+  }
+
+  const initialPage = await listAuditByClientScopeUseCase.execute({
+    clientId: id,
+    filters: { limit: 50 },
+  });
+
+  const fetchPage = async (input: {
+    cursor?: string;
+    action?: string;
+    acteur?: string;
+  }): Promise<{
+    items: typeof initialPage.items;
+    nextCursor: string | null;
+  }> => {
+    "use server";
+    return fetchClientHistoriqueAction({
+      clientId: id,
+      ...(input.cursor !== undefined ? { cursor: input.cursor } : {}),
+      ...(input.action !== undefined ? { action: input.action } : {}),
+      ...(input.acteur !== undefined ? { acteur: input.acteur } : {}),
+    });
+  };
+
   return (
-    <PhaseStub
-      phase="7"
-      label={t("historique")}
-      description="Journal d'audit filtré sur ce client (création, modifications, changement de statut, contacts)."
+    <AuditHistoryTable
+      initialPage={initialPage}
+      fetchPage={fetchPage}
+      actionsCatalog={AUDIT_ACTIONS_CATALOG}
     />
   );
 }
