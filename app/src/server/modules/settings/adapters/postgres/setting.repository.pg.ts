@@ -15,7 +15,11 @@ import { db as defaultDb } from "@/server/infrastructure/db/client";
 import type * as schema from "@/server/infrastructure/db/schema";
 
 import type { Setting } from "../../domain/setting.entity";
-import { SettingRepository, type SettingUpsertEntry } from "../../ports/setting.repository";
+import {
+  SettingRepository,
+  type DbOrTx,
+  type SettingUpsertEntry,
+} from "../../ports/setting.repository";
 
 import { rowToSetting } from "./setting.mapper";
 import { settings } from "./schema";
@@ -27,19 +31,25 @@ export class SettingRepositoryPg extends SettingRepository {
     super();
   }
 
-  async findAll(): Promise<readonly Setting[]> {
-    const rows = await this.db.select().from(settings).orderBy(asc(settings.key));
+  async findAll(tx?: DbOrTx): Promise<readonly Setting[]> {
+    const conn = tx ?? this.db;
+    const rows = await conn.select().from(settings).orderBy(asc(settings.key));
     return rows.map(rowToSetting);
   }
 
-  async upsertMany(entries: readonly SettingUpsertEntry[], updatedBy: string): Promise<void> {
+  async upsertMany(
+    entries: readonly SettingUpsertEntry[],
+    updatedBy: string,
+    tx?: DbOrTx,
+  ): Promise<void> {
     if (entries.length === 0) return;
+    const conn = tx ?? this.db;
     const values = entries.map((e) => ({
       key: e.key,
       value: e.value,
       updatedBy,
     }));
-    await this.db
+    await conn
       .insert(settings)
       .values(values)
       .onConflictDoUpdate({

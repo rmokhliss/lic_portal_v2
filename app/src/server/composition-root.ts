@@ -152,10 +152,12 @@ export {
 // Les use-cases read-only (get, list) sont câblés dans client.module.ts et
 // ré-exportés ici pour la surface app-route.
 
+// Phase 3.D : injection settingRepository pour lecture CA dans createClient.
 export const createClientUseCase = new CreateClientUseCase(
   clientRepository,
   userRepository,
   auditRepository,
+  settingRepository,
 );
 export const updateClientUseCase = new UpdateClientUseCase(
   clientRepository,
@@ -430,6 +432,31 @@ export const importHealthcheckUseCase = new ImportHealthcheckUseCase(
 // --- Phase 11.A : dashboard EC-01 (lecture seule, agrégats SQL) ------------
 
 export { getDashboardStatsUseCase } from "@/server/modules/dashboard/dashboard.module";
+
+// --- Phase 3.C : CA management (PKI cross-module) --------------------------
+// Utilise settingRepository (storage technique JSONB) + auditRepository
+// (CA_GENERATED, règle L3 audit transactionnel) + userRepository (résolution
+// actor L9). APP_MASTER_KEY injecté via Server Action depuis env.
+
+import { GenerateCAUseCase } from "@/server/modules/crypto/application/generate-ca.usecase";
+import { GetCACertificateUseCase } from "@/server/modules/crypto/application/get-ca-certificate.usecase";
+import { GetCAStatusUseCase } from "@/server/modules/crypto/application/get-ca-status.usecase";
+import { settingRepository } from "@/server/modules/settings/settings.module";
+
+export const generateCAUseCase = new GenerateCAUseCase(
+  settingRepository,
+  userRepository,
+  auditRepository,
+);
+export const getCAStatusUseCase = new GetCAStatusUseCase(settingRepository);
+export const getCACertificateUseCase = new GetCACertificateUseCase(settingRepository);
+
+import { BackfillClientCertificatesUseCase } from "@/server/modules/crypto/application/backfill-client-certs.usecase";
+
+export const backfillClientCertificatesUseCase = new BackfillClientCertificatesUseCase(
+  settingRepository,
+  auditRepository,
+);
 
 // --- Phase 11.B : exports CSV rapports (cross-module) ----------------------
 
