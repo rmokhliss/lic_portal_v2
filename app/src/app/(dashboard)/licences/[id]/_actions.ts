@@ -123,6 +123,31 @@ export async function updateRenouvellementAction(input: unknown, ctx: unknown) {
 }
 
 // ============================================================================
+// Phase 10.C — Génération fichier .lic (stub PKI, signature RSA Phase 3)
+// ============================================================================
+
+import { generateLicenceFichierUseCase } from "@/server/composition-root";
+
+export async function generateLicenceFichierAction(input: unknown): Promise<{
+  contentJson: string;
+  hash: string;
+  filename: string;
+}> {
+  const actor = await requireRole(["ADMIN", "SADMIN"]);
+  const parsed = LicenceIdSchema.parse(input);
+  const result = await generateLicenceFichierUseCase.execute(
+    { licenceId: parsed.licenceId },
+    actor.id,
+  );
+  revalidatePath(pathFor(parsed.licenceId, "resume"));
+  return {
+    contentJson: result.contentJson,
+    hash: result.hash,
+    filename: `${result.content.reference}.lic`,
+  };
+}
+
+// ============================================================================
 // Phase 6.F — Tab Articles : add/remove produit, add/update/remove article
 // ============================================================================
 

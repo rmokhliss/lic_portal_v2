@@ -374,6 +374,10 @@
           "submit": "Save",
           "submitting": "Saving…",
           "cancel": "Cancel"
+        },
+        "licFile": {
+          "generate": "Generate .lic",
+          "generating": "Generating..."
         }
       },
       "renouvellements": {

@@ -374,6 +374,10 @@
           "submit": "Enregistrer",
           "submitting": "Enregistrement…",
           "cancel": "Annuler"
+        },
+        "licFile": {
+          "generate": "Générer .lic",
+          "generating": "Génération..."
         }
       },
       "renouvellements": {

@@ -391,3 +391,25 @@ export {
   logFichierGenereUseCase,
   logHealthcheckImporteUseCase,
 } from "@/server/modules/fichier-log/fichier-log.module";
+
+// --- Phase 10.C : génération .lic (cross-module : licence + client + entite
+// + licence-article + article + fichier-log). Pas d'audit (DEC-019). --------
+
+import { articleRepository as articleRepoPhase10 } from "@/server/modules/article/article.module";
+import { GenerateLicenceFichierUseCase } from "@/server/modules/fichier-log/application/generate-licence-fichier.usecase";
+import {
+  fichierLogRepository,
+  logFichierGenereUseCase as logFichierGenereSingleton,
+} from "@/server/modules/fichier-log/fichier-log.module";
+import { licenceArticleRepository as licenceArticleRepoPhase10 } from "@/server/modules/licence-article/licence-article.module";
+
+void fichierLogRepository;
+
+export const generateLicenceFichierUseCase = new GenerateLicenceFichierUseCase(
+  licenceRepository,
+  clientRepository,
+  entiteRepository,
+  licenceArticleRepoPhase10,
+  articleRepoPhase10,
+  logFichierGenereSingleton,
+);

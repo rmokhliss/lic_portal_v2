@@ -22,7 +22,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { changeLicenceStatusAction, updateLicenceAction } from "../_actions";
+import {
+  changeLicenceStatusAction,
+  generateLicenceFichierAction,
+  updateLicenceAction,
+} from "../_actions";
 import type { LicenceDTO, LicenceStatusClient } from "./licence-detail-types";
 import { LicenceStatusBadge } from "./LicenceStatusBadge";
 
@@ -51,7 +55,7 @@ export function LicenceResumeTab({
       <div className="flex items-start justify-between gap-4">
         <h2 className="font-display text-foreground text-lg">{t("section")}</h2>
         {canEdit && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               variant="outline"
@@ -69,6 +73,7 @@ export function LicenceResumeTab({
             >
               {t("changeStatus")}
             </Button>
+            <GenerateLicFileButton licenceId={licence.id} />
           </div>
         )}
       </div>
@@ -322,4 +327,47 @@ function strOpt(v: FormDataEntryValue | null): string | undefined {
   if (typeof v !== "string") return undefined;
   const s = v.trim();
   return s.length === 0 ? undefined : s;
+}
+
+// ============================================================================
+// Phase 10.C — Bouton "Générer .lic"
+//
+// Stub PKI : déclenche la Server Action, récupère le contenu JSON + hash, et
+// déclenche un download navigateur via blob URL. Pas de signature RSA — TODO
+// Phase 3 (DETTE-LIC-008).
+// ============================================================================
+
+function GenerateLicFileButton({ licenceId }: { readonly licenceId: string }) {
+  const t = useTranslations("licences.detail.resume.licFile");
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string>("");
+
+  const onGenerate = () => {
+    setError("");
+    startTransition(() => {
+      void (async () => {
+        try {
+          const result = await generateLicenceFichierAction({ licenceId });
+          const blob = new Blob([result.contentJson], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = result.filename;
+          a.click();
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Erreur");
+        }
+      })();
+    });
+  };
+
+  return (
+    <>
+      <Button type="button" variant="outline" onClick={onGenerate} disabled={pending}>
+        {pending ? t("generating") : t("generate")}
+      </Button>
+      {error !== "" && <span className="text-destructive ml-2 text-xs">{error}</span>}
+    </>
+  );
 }
