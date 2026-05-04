@@ -54,8 +54,8 @@ const envSchema = z.object({
   // --- i18n -----------------------------------------------------------------
   DEFAULT_LOCALE: z.enum(["fr", "en"]).default("fr"),
 
-  // --- Endpoint public clé CA (toggle ADR-0002) ----------------------------
-  EXPOSE_S2M_CA_PUBLIC: boolFromString.default(false),
+  // Phase 3.G : `EXPOSE_S2M_CA_PUBLIC` déplacé en setting BD (single source of
+  // truth). Toggle SADMIN via /settings/security. Plus de var d'env.
 
   // --- OpenTelemetry --------------------------------------------------------
   OTEL_EXPORTER_OTLP_ENDPOINT: z.url().optional(),

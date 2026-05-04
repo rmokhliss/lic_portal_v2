@@ -131,6 +131,8 @@ secrets/
 # dynamiquement le PEM ; le dossier ne contient PAS de fichier .pem en dur).
 !app/src/app/api/**/*.pem/
 !app/src/app/api/**/*.pem/**
+!app/src/app/.well-known/**/*.pem/
+!app/src/app/.well-known/**/*.pem/**
 
 # Exception : les certificats publics de référence si placés en docs/
 !docs/**/*.pem.example
