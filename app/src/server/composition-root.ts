@@ -383,3 +383,11 @@ export {
   markAllNotificationsReadUseCase,
   markNotificationReadUseCase,
 } from "@/server/modules/notification/notification.module";
+
+// --- Phase 10.B : fichier-log (append-only, pas d'audit DEC-019) -----------
+
+export {
+  listFichiersByLicenceUseCase,
+  logFichierGenereUseCase,
+  logHealthcheckImporteUseCase,
+} from "@/server/modules/fichier-log/fichier-log.module";
