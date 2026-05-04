@@ -28,3 +28,10 @@ export { typesContactRef } from "@/server/modules/types-contact/adapters/postgre
 export { clients, clientStatut } from "@/server/modules/client/adapters/postgres/schema";
 export { contactsClients } from "@/server/modules/contact/adapters/postgres/schema";
 export { entites } from "@/server/modules/entite/adapters/postgres/schema";
+
+// Phase 5 étape 5.A : licences + renouvellements (PK uuidv7, version L4).
+export { licences, licenceStatus } from "@/server/modules/licence/adapters/postgres/schema";
+export {
+  renewStatus,
+  renouvellements,
+} from "@/server/modules/renouvellement/adapters/postgres/schema";

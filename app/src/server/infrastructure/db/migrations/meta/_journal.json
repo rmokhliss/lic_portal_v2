@@ -43,6 +43,13 @@
       "when": 1777851861520,
       "tag": "0005_daffy_photon",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777876052629,
+      "tag": "0006_motionless_frightful_four",
+      "breakpoints": true
     }
   ]
 }
