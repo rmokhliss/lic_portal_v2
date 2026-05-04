@@ -29,12 +29,13 @@ export default {
       [
         // Modules métier
         "client", "licence", "article", "volume", "alert", "notification",
-        "renewal", "audit", "catalog", "team-member", "user", "batch",
-        "report", "settings", "crypto", "sandbox", "demo", "email", "error",
+        "renewal", "renouvellement", "audit", "catalog", "team-member", "user",
+        "batch", "report", "rapport", "fichier", "settings", "crypto", "sandbox",
+        "demo", "email", "error",
         // Infrastructure
         "auth", "db", "env", "infrastructure", "jobs", "logger", "observability",
         // Frontend
-        "ui", "components", "hooks", "i18n", "design",
+        "ui", "components", "hooks", "i18n", "design", "dashboard", "profil",
         // Transverse
         "bootstrap", "deps", "ci", "docs", "config", "release",
       ],
