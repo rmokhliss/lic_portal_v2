@@ -9,8 +9,10 @@
 // Server Action (requireRole ADMIN/SADMIN).
 // ==============================================================================
 
+import Link from "next/link";
+
 import { requireAuthPage } from "@/server/infrastructure/auth";
-import { listClientsUseCase } from "@/server/composition-root";
+import { getCAStatusUseCase, listClientsUseCase } from "@/server/composition-root";
 
 import { ClientsTable } from "./_components/ClientsTable";
 import type { ClientStatutClient } from "./_components/clients-types";
@@ -39,21 +41,50 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       ? (params.statut as ClientStatutClient)
       : undefined;
 
-  const result = await listClientsUseCase.execute({
-    ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
-    ...(params.q !== undefined && params.q.trim().length > 0 ? { q: params.q.trim() } : {}),
-    ...(statutFilter !== undefined ? { statutClient: statutFilter } : {}),
-    limit: 25,
-  });
+  const [result, caStatus] = await Promise.all([
+    listClientsUseCase.execute({
+      ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
+      ...(params.q !== undefined && params.q.trim().length > 0 ? { q: params.q.trim() } : {}),
+      ...(statutFilter !== undefined ? { statutClient: statutFilter } : {}),
+      limit: 25,
+    }),
+    getCAStatusUseCase.execute(),
+  ]);
+
+  // Phase 3.H — bandeau alerte si CA absente : la création client est bloquée
+  // (createClientUseCase throw SPX-LIC-411 sans CA). On désactive le bouton
+  // "Nouveau client" en propageant `canCreate=false` quand CA manquante.
+  const caMissing = !caStatus.exists;
+  const canCreateBase = user.role === "ADMIN" || user.role === "SADMIN";
 
   return (
-    <ClientsTable
-      rows={result.items}
-      nextCursor={result.nextCursor}
-      currentCursor={params.cursor ?? null}
-      currentQuery={params.q ?? ""}
-      currentStatut={statutFilter ?? null}
-      canCreate={user.role === "ADMIN" || user.role === "SADMIN"}
-    />
+    <div className="space-y-4">
+      {caMissing && (
+        <div
+          role="alert"
+          className="rounded-lg border border-orange-300 bg-orange-50 p-4 text-sm text-orange-900"
+        >
+          <p className="font-medium">⚠ CA S2M non générée.</p>
+          <p className="mt-1">
+            Aucun client ne peut être créé tant que la CA n&apos;est pas active.{" "}
+            <Link
+              href="/settings/security"
+              className="font-medium underline underline-offset-2 hover:text-orange-700"
+            >
+              Générer la CA
+            </Link>
+            .
+          </p>
+        </div>
+      )}
+      <ClientsTable
+        rows={result.items}
+        nextCursor={result.nextCursor}
+        currentCursor={params.cursor ?? null}
+        currentQuery={params.q ?? ""}
+        currentStatut={statutFilter ?? null}
+        canCreate={canCreateBase && !caMissing}
+      />
+    </div>
   );
 }
