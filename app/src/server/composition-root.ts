@@ -44,6 +44,10 @@ import { ChangeLicenceStatusUseCase } from "@/server/modules/licence/application
 import { CreateLicenceUseCase } from "@/server/modules/licence/application/create-licence.usecase";
 import { UpdateLicenceUseCase } from "@/server/modules/licence/application/update-licence.usecase";
 import { licenceRepository } from "@/server/modules/licence/licence.module";
+import { AnnulerRenouvellementUseCase } from "@/server/modules/renouvellement/application/annuler-renouvellement.usecase";
+import { CreateRenouvellementUseCase } from "@/server/modules/renouvellement/application/create-renouvellement.usecase";
+import { ValiderRenouvellementUseCase } from "@/server/modules/renouvellement/application/valider-renouvellement.usecase";
+import { renouvellementRepository } from "@/server/modules/renouvellement/renouvellement.module";
 import { ChangePasswordUseCase } from "@/server/modules/user/application/change-password.usecase";
 import { CreateUserUseCase } from "@/server/modules/user/application/create-user.usecase";
 import { ResetUserPasswordUseCase } from "@/server/modules/user/application/reset-user-password.usecase";
@@ -231,3 +235,27 @@ export {
   getLicenceUseCase,
   listLicencesByClientUseCase,
 } from "@/server/modules/licence/licence.module";
+
+// --- Phase 5 : renouvellements (audit obligatoire) --------------------------
+
+export const createRenouvellementUseCase = new CreateRenouvellementUseCase(
+  renouvellementRepository,
+  licenceRepository,
+  userRepository,
+  auditRepository,
+);
+export const validerRenouvellementUseCase = new ValiderRenouvellementUseCase(
+  renouvellementRepository,
+  userRepository,
+  auditRepository,
+);
+export const annulerRenouvellementUseCase = new AnnulerRenouvellementUseCase(
+  renouvellementRepository,
+  userRepository,
+  auditRepository,
+);
+
+export {
+  getRenouvellementUseCase,
+  listRenouvellementsByLicenceUseCase,
+} from "@/server/modules/renouvellement/renouvellement.module";
