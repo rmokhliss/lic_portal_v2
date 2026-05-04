@@ -21,6 +21,8 @@ export type ErrorCode =
   | "SPX-LIC-001"
   | "SPX-LIC-002"
   | "SPX-LIC-003"
+  | "SPX-LIC-400"
+  | "SPX-LIC-401"
   | "SPX-LIC-500"
   | "SPX-LIC-501"
   | "SPX-LIC-502"
@@ -123,6 +125,22 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     httpStatus: 403,
     defaultMessage: "Rôle insuffisant pour cette action",
     className: "ForbiddenError",
+  },
+
+  // --- Crypto + PKI + sandbox (400-499) ------------------------------------
+  // Phase 3.A.1 : RSA primitives (signature/vérification SHA-256, RFC8017 §8.2).
+  // Codes alloués au fur et à mesure des sous-étapes 3.A → 3.G.
+  "SPX-LIC-400": {
+    code: "SPX-LIC-400",
+    httpStatus: 400,
+    defaultMessage: "Signature invalide ou corrompue",
+    className: "ValidationError",
+  },
+  "SPX-LIC-401": {
+    code: "SPX-LIC-401",
+    httpStatus: 400,
+    defaultMessage: "Échec décodage clé RSA",
+    className: "ValidationError",
   },
 
   // --- Audit + journal + notifications (500-599) ---------------------------
