@@ -50,6 +50,13 @@
       "when": 1777876052629,
       "tag": "0006_motionless_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1777881860014,
+      "tag": "0007_chunky_meteorite",
+      "breakpoints": true
     }
   ]
 }

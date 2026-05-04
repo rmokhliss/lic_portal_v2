@@ -1,0 +1,2751 @@
+{
+  "id": "d18e6224-56e3-49b8-9ebb-f26a400821b8",
+  "prevId": "dd0b6a11-43a4-401d-b9bf-d98c2a696bee",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.lic_articles_ref": {
+      "name": "lic_articles_ref",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "produit_id": {
+          "name": "produit_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom": {
+          "name": "nom",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unite_volume": {
+          "name": "unite_volume",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'transactions'"
+        },
+        "actif": {
+          "name": "actif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {
+        "idx_articles_ref_produit": {
+          "name": "idx_articles_ref_produit",
+          "columns": [
+            {
+              "expression": "produit_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_articles_ref_actif": {
+          "name": "idx_articles_ref_actif",
+          "columns": [
+            {
+              "expression": "actif",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_articles_ref_produit_id_lic_produits_ref_id_fk": {
+          "name": "lic_articles_ref_produit_id_lic_produits_ref_id_fk",
+          "tableFrom": "lic_articles_ref",
+          "tableTo": "lic_produits_ref",
+          "columnsFrom": ["produit_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_articles_ref_produit_code": {
+          "name": "uq_articles_ref_produit_code",
+          "nullsNotDistinct": false,
+          "columns": ["produit_id", "code"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_audit_log": {
+      "name": "lic_audit_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "entity": {
+          "name": "entity",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "before_data": {
+          "name": "before_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "after_data": {
+          "name": "after_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_display": {
+          "name": "user_display",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "client_display": {
+          "name": "client_display",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "varchar(45)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mode": {
+          "name": "mode",
+          "type": "audit_mode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'MANUEL'"
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "search_vector": {
+          "name": "search_vector",
+          "type": "tsvector",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_audit_entity": {
+          "name": "idx_audit_entity",
+          "columns": [
+            {
+              "expression": "entity",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "entity_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_audit_user": {
+          "name": "idx_audit_user",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_audit_created_at": {
+          "name": "idx_audit_created_at",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_audit_log_user_id_lic_users_id_fk": {
+          "name": "lic_audit_log_user_id_lic_users_id_fk",
+          "tableFrom": "lic_audit_log",
+          "tableTo": "lic_users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_clients": {
+      "name": "lic_clients",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "code_client": {
+          "name": "code_client",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "raison_sociale": {
+          "name": "raison_sociale",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom_contact": {
+          "name": "nom_contact",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email_contact": {
+          "name": "email_contact",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tel_contact": {
+          "name": "tel_contact",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "code_pays": {
+          "name": "code_pays",
+          "type": "varchar(2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "code_devise": {
+          "name": "code_devise",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "code_langue": {
+          "name": "code_langue",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'fr'"
+        },
+        "sales_responsable": {
+          "name": "sales_responsable",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "account_manager": {
+          "name": "account_manager",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "statut_client": {
+          "name": "statut_client",
+          "type": "client_statut_enum",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ACTIF'"
+        },
+        "date_signature_contrat": {
+          "name": "date_signature_contrat",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_mise_en_prod": {
+          "name": "date_mise_en_prod",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_demarrage_support": {
+          "name": "date_demarrage_support",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prochaine_date_renouvellement_support": {
+          "name": "prochaine_date_renouvellement_support",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actif": {
+          "name": "actif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "search_vector": {
+          "name": "search_vector",
+          "type": "tsvector",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "cree_par": {
+          "name": "cree_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modifie_par": {
+          "name": "modifie_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_clients_actif": {
+          "name": "idx_clients_actif",
+          "columns": [
+            {
+              "expression": "actif",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_clients_statut": {
+          "name": "idx_clients_statut",
+          "columns": [
+            {
+              "expression": "statut_client",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_clients_code_pays": {
+          "name": "idx_clients_code_pays",
+          "columns": [
+            {
+              "expression": "code_pays",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_clients_code_devise": {
+          "name": "idx_clients_code_devise",
+          "columns": [
+            {
+              "expression": "code_devise",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_clients_code_langue": {
+          "name": "idx_clients_code_langue",
+          "columns": [
+            {
+              "expression": "code_langue",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_clients_cree_par": {
+          "name": "idx_clients_cree_par",
+          "columns": [
+            {
+              "expression": "cree_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_clients_modifie_par": {
+          "name": "idx_clients_modifie_par",
+          "columns": [
+            {
+              "expression": "modifie_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_clients_raison_sociale": {
+          "name": "idx_clients_raison_sociale",
+          "columns": [
+            {
+              "expression": "raison_sociale",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_clients_code_pays_lic_pays_ref_code_pays_fk": {
+          "name": "lic_clients_code_pays_lic_pays_ref_code_pays_fk",
+          "tableFrom": "lic_clients",
+          "tableTo": "lic_pays_ref",
+          "columnsFrom": ["code_pays"],
+          "columnsTo": ["code_pays"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_clients_code_devise_lic_devises_ref_code_devise_fk": {
+          "name": "lic_clients_code_devise_lic_devises_ref_code_devise_fk",
+          "tableFrom": "lic_clients",
+          "tableTo": "lic_devises_ref",
+          "columnsFrom": ["code_devise"],
+          "columnsTo": ["code_devise"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_clients_code_langue_lic_langues_ref_code_langue_fk": {
+          "name": "lic_clients_code_langue_lic_langues_ref_code_langue_fk",
+          "tableFrom": "lic_clients",
+          "tableTo": "lic_langues_ref",
+          "columnsFrom": ["code_langue"],
+          "columnsTo": ["code_langue"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_clients_cree_par_lic_users_id_fk": {
+          "name": "lic_clients_cree_par_lic_users_id_fk",
+          "tableFrom": "lic_clients",
+          "tableTo": "lic_users",
+          "columnsFrom": ["cree_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_clients_modifie_par_lic_users_id_fk": {
+          "name": "lic_clients_modifie_par_lic_users_id_fk",
+          "tableFrom": "lic_clients",
+          "tableTo": "lic_users",
+          "columnsFrom": ["modifie_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_clients_code": {
+          "name": "uq_clients_code",
+          "nullsNotDistinct": false,
+          "columns": ["code_client"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_contacts_clients": {
+      "name": "lic_contacts_clients",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "entite_id": {
+          "name": "entite_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type_contact_code": {
+          "name": "type_contact_code",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom": {
+          "name": "nom",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prenom": {
+          "name": "prenom",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "telephone": {
+          "name": "telephone",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actif": {
+          "name": "actif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "cree_par": {
+          "name": "cree_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modifie_par": {
+          "name": "modifie_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_contacts_clients_entite": {
+          "name": "idx_contacts_clients_entite",
+          "columns": [
+            {
+              "expression": "entite_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_contacts_clients_type": {
+          "name": "idx_contacts_clients_type",
+          "columns": [
+            {
+              "expression": "type_contact_code",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_contacts_clients_actif": {
+          "name": "idx_contacts_clients_actif",
+          "columns": [
+            {
+              "expression": "actif",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_contacts_clients_cree_par": {
+          "name": "idx_contacts_clients_cree_par",
+          "columns": [
+            {
+              "expression": "cree_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_contacts_clients_modifie_par": {
+          "name": "idx_contacts_clients_modifie_par",
+          "columns": [
+            {
+              "expression": "modifie_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_contacts_clients_entite_id_lic_entites_id_fk": {
+          "name": "lic_contacts_clients_entite_id_lic_entites_id_fk",
+          "tableFrom": "lic_contacts_clients",
+          "tableTo": "lic_entites",
+          "columnsFrom": ["entite_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "lic_contacts_clients_type_contact_code_lic_types_contact_ref_code_fk": {
+          "name": "lic_contacts_clients_type_contact_code_lic_types_contact_ref_code_fk",
+          "tableFrom": "lic_contacts_clients",
+          "tableTo": "lic_types_contact_ref",
+          "columnsFrom": ["type_contact_code"],
+          "columnsTo": ["code"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_contacts_clients_cree_par_lic_users_id_fk": {
+          "name": "lic_contacts_clients_cree_par_lic_users_id_fk",
+          "tableFrom": "lic_contacts_clients",
+          "tableTo": "lic_users",
+          "columnsFrom": ["cree_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_contacts_clients_modifie_par_lic_users_id_fk": {
+          "name": "lic_contacts_clients_modifie_par_lic_users_id_fk",
+          "tableFrom": "lic_contacts_clients",
+          "tableTo": "lic_users",
+          "columnsFrom": ["modifie_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_devises_ref": {
+      "name": "lic_devises_ref",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "code_devise": {
+          "name": "code_devise",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom": {
+          "name": "nom",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "symbole": {
+          "name": "symbole",
+          "type": "varchar(10)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actif": {
+          "name": "actif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {
+        "idx_devises_ref_actif": {
+          "name": "idx_devises_ref_actif",
+          "columns": [
+            {
+              "expression": "actif",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_devises_ref_code_devise": {
+          "name": "uq_devises_ref_code_devise",
+          "nullsNotDistinct": false,
+          "columns": ["code_devise"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_entites": {
+      "name": "lic_entites",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom": {
+          "name": "nom",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code_pays": {
+          "name": "code_pays",
+          "type": "varchar(2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actif": {
+          "name": "actif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "cree_par": {
+          "name": "cree_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modifie_par": {
+          "name": "modifie_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_entites_client": {
+          "name": "idx_entites_client",
+          "columns": [
+            {
+              "expression": "client_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_entites_code_pays": {
+          "name": "idx_entites_code_pays",
+          "columns": [
+            {
+              "expression": "code_pays",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_entites_actif": {
+          "name": "idx_entites_actif",
+          "columns": [
+            {
+              "expression": "actif",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_entites_cree_par": {
+          "name": "idx_entites_cree_par",
+          "columns": [
+            {
+              "expression": "cree_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_entites_modifie_par": {
+          "name": "idx_entites_modifie_par",
+          "columns": [
+            {
+              "expression": "modifie_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_entites_client_id_lic_clients_id_fk": {
+          "name": "lic_entites_client_id_lic_clients_id_fk",
+          "tableFrom": "lic_entites",
+          "tableTo": "lic_clients",
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_entites_code_pays_lic_pays_ref_code_pays_fk": {
+          "name": "lic_entites_code_pays_lic_pays_ref_code_pays_fk",
+          "tableFrom": "lic_entites",
+          "tableTo": "lic_pays_ref",
+          "columnsFrom": ["code_pays"],
+          "columnsTo": ["code_pays"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_entites_cree_par_lic_users_id_fk": {
+          "name": "lic_entites_cree_par_lic_users_id_fk",
+          "tableFrom": "lic_entites",
+          "tableTo": "lic_users",
+          "columnsFrom": ["cree_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_entites_modifie_par_lic_users_id_fk": {
+          "name": "lic_entites_modifie_par_lic_users_id_fk",
+          "tableFrom": "lic_entites",
+          "tableTo": "lic_users",
+          "columnsFrom": ["modifie_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_entites_client_nom": {
+          "name": "uq_entites_client_nom",
+          "nullsNotDistinct": false,
+          "columns": ["client_id", "nom"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_langues_ref": {
+      "name": "lic_langues_ref",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "code_langue": {
+          "name": "code_langue",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom": {
+          "name": "nom",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actif": {
+          "name": "actif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {
+        "idx_langues_ref_actif": {
+          "name": "idx_langues_ref_actif",
+          "columns": [
+            {
+              "expression": "actif",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_langues_ref_code_langue": {
+          "name": "uq_langues_ref_code_langue",
+          "nullsNotDistinct": false,
+          "columns": ["code_langue"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_licence_articles": {
+      "name": "lic_licence_articles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "licence_id": {
+          "name": "licence_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "article_id": {
+          "name": "article_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "volume_autorise": {
+          "name": "volume_autorise",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "volume_consomme": {
+          "name": "volume_consomme",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "cree_par": {
+          "name": "cree_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modifie_par": {
+          "name": "modifie_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_licence_articles_licence": {
+          "name": "idx_licence_articles_licence",
+          "columns": [
+            {
+              "expression": "licence_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_licence_articles_article": {
+          "name": "idx_licence_articles_article",
+          "columns": [
+            {
+              "expression": "article_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_licence_articles_cree_par": {
+          "name": "idx_licence_articles_cree_par",
+          "columns": [
+            {
+              "expression": "cree_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_licence_articles_modifie_par": {
+          "name": "idx_licence_articles_modifie_par",
+          "columns": [
+            {
+              "expression": "modifie_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_licence_articles_licence_id_lic_licences_id_fk": {
+          "name": "lic_licence_articles_licence_id_lic_licences_id_fk",
+          "tableFrom": "lic_licence_articles",
+          "tableTo": "lic_licences",
+          "columnsFrom": ["licence_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_licence_articles_article_id_lic_articles_ref_id_fk": {
+          "name": "lic_licence_articles_article_id_lic_articles_ref_id_fk",
+          "tableFrom": "lic_licence_articles",
+          "tableTo": "lic_articles_ref",
+          "columnsFrom": ["article_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_licence_articles_cree_par_lic_users_id_fk": {
+          "name": "lic_licence_articles_cree_par_lic_users_id_fk",
+          "tableFrom": "lic_licence_articles",
+          "tableTo": "lic_users",
+          "columnsFrom": ["cree_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_licence_articles_modifie_par_lic_users_id_fk": {
+          "name": "lic_licence_articles_modifie_par_lic_users_id_fk",
+          "tableFrom": "lic_licence_articles",
+          "tableTo": "lic_users",
+          "columnsFrom": ["modifie_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_licence_articles_licence_article": {
+          "name": "uq_licence_articles_licence_article",
+          "nullsNotDistinct": false,
+          "columns": ["licence_id", "article_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_licence_articles_volume_autorise_pos": {
+          "name": "ck_licence_articles_volume_autorise_pos",
+          "value": "\"lic_licence_articles\".\"volume_autorise\" >= 0"
+        },
+        "ck_licence_articles_volume_consomme_pos": {
+          "name": "ck_licence_articles_volume_consomme_pos",
+          "value": "\"lic_licence_articles\".\"volume_consomme\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.lic_licence_produits": {
+      "name": "lic_licence_produits",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "licence_id": {
+          "name": "licence_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "produit_id": {
+          "name": "produit_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_ajout": {
+          "name": "date_ajout",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "cree_par": {
+          "name": "cree_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_licence_produits_licence": {
+          "name": "idx_licence_produits_licence",
+          "columns": [
+            {
+              "expression": "licence_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_licence_produits_produit": {
+          "name": "idx_licence_produits_produit",
+          "columns": [
+            {
+              "expression": "produit_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_licence_produits_cree_par": {
+          "name": "idx_licence_produits_cree_par",
+          "columns": [
+            {
+              "expression": "cree_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_licence_produits_licence_id_lic_licences_id_fk": {
+          "name": "lic_licence_produits_licence_id_lic_licences_id_fk",
+          "tableFrom": "lic_licence_produits",
+          "tableTo": "lic_licences",
+          "columnsFrom": ["licence_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_licence_produits_produit_id_lic_produits_ref_id_fk": {
+          "name": "lic_licence_produits_produit_id_lic_produits_ref_id_fk",
+          "tableFrom": "lic_licence_produits",
+          "tableTo": "lic_produits_ref",
+          "columnsFrom": ["produit_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_licence_produits_cree_par_lic_users_id_fk": {
+          "name": "lic_licence_produits_cree_par_lic_users_id_fk",
+          "tableFrom": "lic_licence_produits",
+          "tableTo": "lic_users",
+          "columnsFrom": ["cree_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_licence_produits_licence_produit": {
+          "name": "uq_licence_produits_licence_produit",
+          "nullsNotDistinct": false,
+          "columns": ["licence_id", "produit_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_licences": {
+      "name": "lic_licences",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "reference": {
+          "name": "reference",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entite_id": {
+          "name": "entite_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_debut": {
+          "name": "date_debut",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "date_fin": {
+          "name": "date_fin",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "licence_status_enum",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ACTIF'"
+        },
+        "commentaire": {
+          "name": "commentaire",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "renouvellement_auto": {
+          "name": "renouvellement_auto",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "notif_envoyee": {
+          "name": "notif_envoyee",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "cree_par": {
+          "name": "cree_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modifie_par": {
+          "name": "modifie_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_licences_client": {
+          "name": "idx_licences_client",
+          "columns": [
+            {
+              "expression": "client_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_licences_entite": {
+          "name": "idx_licences_entite",
+          "columns": [
+            {
+              "expression": "entite_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_licences_cree_par": {
+          "name": "idx_licences_cree_par",
+          "columns": [
+            {
+              "expression": "cree_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_licences_modifie_par": {
+          "name": "idx_licences_modifie_par",
+          "columns": [
+            {
+              "expression": "modifie_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_licences_status": {
+          "name": "idx_licences_status",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_licences_date_fin": {
+          "name": "idx_licences_date_fin",
+          "columns": [
+            {
+              "expression": "date_fin",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_licences_client_id_lic_clients_id_fk": {
+          "name": "lic_licences_client_id_lic_clients_id_fk",
+          "tableFrom": "lic_licences",
+          "tableTo": "lic_clients",
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_licences_entite_id_lic_entites_id_fk": {
+          "name": "lic_licences_entite_id_lic_entites_id_fk",
+          "tableFrom": "lic_licences",
+          "tableTo": "lic_entites",
+          "columnsFrom": ["entite_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_licences_cree_par_lic_users_id_fk": {
+          "name": "lic_licences_cree_par_lic_users_id_fk",
+          "tableFrom": "lic_licences",
+          "tableTo": "lic_users",
+          "columnsFrom": ["cree_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_licences_modifie_par_lic_users_id_fk": {
+          "name": "lic_licences_modifie_par_lic_users_id_fk",
+          "tableFrom": "lic_licences",
+          "tableTo": "lic_users",
+          "columnsFrom": ["modifie_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_licences_reference": {
+          "name": "uq_licences_reference",
+          "nullsNotDistinct": false,
+          "columns": ["reference"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_licences_date_fin_apres_debut": {
+          "name": "ck_licences_date_fin_apres_debut",
+          "value": "\"lic_licences\".\"date_fin\" > \"lic_licences\".\"date_debut\""
+        },
+        "ck_licences_reference_format": {
+          "name": "ck_licences_reference_format",
+          "value": "\"lic_licences\".\"reference\" ~ '^LIC-[0-9]{4}-[0-9]{3,}$'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.lic_pays_ref": {
+      "name": "lic_pays_ref",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "code_pays": {
+          "name": "code_pays",
+          "type": "varchar(2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom": {
+          "name": "nom",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "region_code": {
+          "name": "region_code",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actif": {
+          "name": "actif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "date_creation": {
+          "name": "date_creation",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_pays_ref_region_code": {
+          "name": "idx_pays_ref_region_code",
+          "columns": [
+            {
+              "expression": "region_code",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_pays_ref_actif": {
+          "name": "idx_pays_ref_actif",
+          "columns": [
+            {
+              "expression": "actif",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_pays_ref_region_code_lic_regions_ref_region_code_fk": {
+          "name": "lic_pays_ref_region_code_lic_regions_ref_region_code_fk",
+          "tableFrom": "lic_pays_ref",
+          "tableTo": "lic_regions_ref",
+          "columnsFrom": ["region_code"],
+          "columnsTo": ["region_code"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_pays_ref_code_pays": {
+          "name": "uq_pays_ref_code_pays",
+          "nullsNotDistinct": false,
+          "columns": ["code_pays"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_produits_ref": {
+      "name": "lic_produits_ref",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom": {
+          "name": "nom",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actif": {
+          "name": "actif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {
+        "idx_produits_ref_actif": {
+          "name": "idx_produits_ref_actif",
+          "columns": [
+            {
+              "expression": "actif",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_produits_ref_code": {
+          "name": "uq_produits_ref_code",
+          "nullsNotDistinct": false,
+          "columns": ["code"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_regions_ref": {
+      "name": "lic_regions_ref",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "region_code": {
+          "name": "region_code",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom": {
+          "name": "nom",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dm_responsable": {
+          "name": "dm_responsable",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actif": {
+          "name": "actif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "date_creation": {
+          "name": "date_creation",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_regions_ref_actif": {
+          "name": "idx_regions_ref_actif",
+          "columns": [
+            {
+              "expression": "actif",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_regions_ref_region_code": {
+          "name": "uq_regions_ref_region_code",
+          "nullsNotDistinct": false,
+          "columns": ["region_code"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_renouvellements": {
+      "name": "lic_renouvellements",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "licence_id": {
+          "name": "licence_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nouvelle_date_debut": {
+          "name": "nouvelle_date_debut",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nouvelle_date_fin": {
+          "name": "nouvelle_date_fin",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "renew_status_enum",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'EN_COURS'"
+        },
+        "commentaire": {
+          "name": "commentaire",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "validee_par": {
+          "name": "validee_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "date_validation": {
+          "name": "date_validation",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "cree_par": {
+          "name": "cree_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_renouvellements_licence": {
+          "name": "idx_renouvellements_licence",
+          "columns": [
+            {
+              "expression": "licence_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_renouvellements_cree_par": {
+          "name": "idx_renouvellements_cree_par",
+          "columns": [
+            {
+              "expression": "cree_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_renouvellements_valide_par": {
+          "name": "idx_renouvellements_valide_par",
+          "columns": [
+            {
+              "expression": "validee_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_renouvellements_status": {
+          "name": "idx_renouvellements_status",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_renouvellements_licence_id_lic_licences_id_fk": {
+          "name": "lic_renouvellements_licence_id_lic_licences_id_fk",
+          "tableFrom": "lic_renouvellements",
+          "tableTo": "lic_licences",
+          "columnsFrom": ["licence_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_renouvellements_validee_par_lic_users_id_fk": {
+          "name": "lic_renouvellements_validee_par_lic_users_id_fk",
+          "tableFrom": "lic_renouvellements",
+          "tableTo": "lic_users",
+          "columnsFrom": ["validee_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_renouvellements_cree_par_lic_users_id_fk": {
+          "name": "lic_renouvellements_cree_par_lic_users_id_fk",
+          "tableFrom": "lic_renouvellements",
+          "tableTo": "lic_users",
+          "columnsFrom": ["cree_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_renouv_date_fin_apres_debut": {
+          "name": "ck_renouv_date_fin_apres_debut",
+          "value": "\"lic_renouvellements\".\"nouvelle_date_fin\" > \"lic_renouvellements\".\"nouvelle_date_debut\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.lic_settings": {
+      "name": "lic_settings",
+      "schema": "",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "varchar(100)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_settings_updated_by": {
+          "name": "idx_settings_updated_by",
+          "columns": [
+            {
+              "expression": "updated_by",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_settings_updated_by_lic_users_id_fk": {
+          "name": "lic_settings_updated_by_lic_users_id_fk",
+          "tableFrom": "lic_settings",
+          "tableTo": "lic_users",
+          "columnsFrom": ["updated_by"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_team_members": {
+      "name": "lic_team_members",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "nom": {
+          "name": "nom",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prenom": {
+          "name": "prenom",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "telephone": {
+          "name": "telephone",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role_team": {
+          "name": "role_team",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "region_code": {
+          "name": "region_code",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "actif": {
+          "name": "actif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "date_creation": {
+          "name": "date_creation",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_team_members_region_code": {
+          "name": "idx_team_members_region_code",
+          "columns": [
+            {
+              "expression": "region_code",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_team_members_role": {
+          "name": "idx_team_members_role",
+          "columns": [
+            {
+              "expression": "role_team",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_team_members_actif": {
+          "name": "idx_team_members_actif",
+          "columns": [
+            {
+              "expression": "actif",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_team_members_region_code_lic_regions_ref_region_code_fk": {
+          "name": "lic_team_members_region_code_lic_regions_ref_region_code_fk",
+          "tableFrom": "lic_team_members",
+          "tableTo": "lic_regions_ref",
+          "columnsFrom": ["region_code"],
+          "columnsTo": ["region_code"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_team_members_role": {
+          "name": "ck_team_members_role",
+          "value": "\"lic_team_members\".\"role_team\" IN ('SALES','AM','DM')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.lic_types_contact_ref": {
+      "name": "lic_types_contact_ref",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "libelle": {
+          "name": "libelle",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actif": {
+          "name": "actif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {
+        "idx_types_contact_ref_actif": {
+          "name": "idx_types_contact_ref_actif",
+          "columns": [
+            {
+              "expression": "actif",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_types_contact_ref_code": {
+          "name": "uq_types_contact_ref_code",
+          "nullsNotDistinct": false,
+          "columns": ["code"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_users": {
+      "name": "lic_users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "matricule": {
+          "name": "matricule",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nom": {
+          "name": "nom",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prenom": {
+          "name": "prenom",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "must_change_password": {
+          "name": "must_change_password",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "token_version": {
+          "name": "token_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "telephone": {
+          "name": "telephone",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "user_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actif": {
+          "name": "actif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "derniere_connexion": {
+          "name": "derniere_connexion",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "cree_par": {
+          "name": "cree_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "modifie_par": {
+          "name": "modifie_par",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_users_actif": {
+          "name": "idx_users_actif",
+          "columns": [
+            {
+              "expression": "actif",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_users_cree_par": {
+          "name": "idx_users_cree_par",
+          "columns": [
+            {
+              "expression": "cree_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_users_modifie_par": {
+          "name": "idx_users_modifie_par",
+          "columns": [
+            {
+              "expression": "modifie_par",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_users_cree_par_lic_users_id_fk": {
+          "name": "lic_users_cree_par_lic_users_id_fk",
+          "tableFrom": "lic_users",
+          "tableTo": "lic_users",
+          "columnsFrom": ["cree_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_users_modifie_par_lic_users_id_fk": {
+          "name": "lic_users_modifie_par_lic_users_id_fk",
+          "tableFrom": "lic_users",
+          "tableTo": "lic_users",
+          "columnsFrom": ["modifie_par"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_users_matricule": {
+          "name": "uq_users_matricule",
+          "nullsNotDistinct": false,
+          "columns": ["matricule"]
+        },
+        "uq_users_email": {
+          "name": "uq_users_email",
+          "nullsNotDistinct": false,
+          "columns": ["email"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.lic_article_volume_history": {
+      "name": "lic_article_volume_history",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "licence_id": {
+          "name": "licence_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "article_id": {
+          "name": "article_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "periode": {
+          "name": "periode",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "volume_autorise": {
+          "name": "volume_autorise",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "volume_consomme": {
+          "name": "volume_consomme",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snapshot_at": {
+          "name": "snapshot_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_volume_history_licence": {
+          "name": "idx_volume_history_licence",
+          "columns": [
+            {
+              "expression": "licence_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_volume_history_article": {
+          "name": "idx_volume_history_article",
+          "columns": [
+            {
+              "expression": "article_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_volume_history_periode": {
+          "name": "idx_volume_history_periode",
+          "columns": [
+            {
+              "expression": "periode",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "lic_article_volume_history_licence_id_lic_licences_id_fk": {
+          "name": "lic_article_volume_history_licence_id_lic_licences_id_fk",
+          "tableFrom": "lic_article_volume_history",
+          "tableTo": "lic_licences",
+          "columnsFrom": ["licence_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "lic_article_volume_history_article_id_lic_articles_ref_id_fk": {
+          "name": "lic_article_volume_history_article_id_lic_articles_ref_id_fk",
+          "tableFrom": "lic_article_volume_history",
+          "tableTo": "lic_articles_ref",
+          "columnsFrom": ["article_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_volume_history_licence_article_periode": {
+          "name": "uq_volume_history_licence_article_periode",
+          "nullsNotDistinct": false,
+          "columns": ["licence_id", "article_id", "periode"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_volume_history_autorise_pos": {
+          "name": "ck_volume_history_autorise_pos",
+          "value": "\"lic_article_volume_history\".\"volume_autorise\" >= 0"
+        },
+        "ck_volume_history_consomme_pos": {
+          "name": "ck_volume_history_consomme_pos",
+          "value": "\"lic_article_volume_history\".\"volume_consomme\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.audit_mode": {
+      "name": "audit_mode",
+      "schema": "public",
+      "values": ["MANUEL", "API", "JOB", "SEED"]
+    },
+    "public.client_statut_enum": {
+      "name": "client_statut_enum",
+      "schema": "public",
+      "values": ["PROSPECT", "ACTIF", "SUSPENDU", "RESILIE"]
+    },
+    "public.licence_status_enum": {
+      "name": "licence_status_enum",
+      "schema": "public",
+      "values": ["ACTIF", "INACTIF", "SUSPENDU", "EXPIRE"]
+    },
+    "public.renew_status_enum": {
+      "name": "renew_status_enum",
+      "schema": "public",
+      "values": ["EN_COURS", "VALIDE", "CREE", "ANNULE"]
+    },
+    "public.user_role": {
+      "name": "user_role",
+      "schema": "public",
+      "values": ["SADMIN", "ADMIN", "USER"]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

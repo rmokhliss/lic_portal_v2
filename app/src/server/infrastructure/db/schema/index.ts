@@ -35,3 +35,10 @@ export {
   renewStatus,
   renouvellements,
 } from "@/server/modules/renouvellement/adapters/postgres/schema";
+
+// Phase 6 étape 6.A : catalogue (produits/articles ref) + liaisons + volume history.
+export { produitsRef } from "@/server/modules/produit/adapters/postgres/schema";
+export { articlesRef } from "@/server/modules/article/adapters/postgres/schema";
+export { licenceProduits } from "@/server/modules/licence-produit/adapters/postgres/schema";
+export { licenceArticles } from "@/server/modules/licence-article/adapters/postgres/schema";
+export { articleVolumeHistory } from "@/server/modules/volume-history/adapters/postgres/schema";
