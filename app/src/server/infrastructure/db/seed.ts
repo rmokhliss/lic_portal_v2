@@ -41,6 +41,7 @@ import bcryptjs from "bcryptjs";
 import postgres from "postgres";
 
 import { seedPhase4Clients } from "./seed/phase4-clients.seed";
+import { seedPhase5Licences } from "./seed/phase5-licences.seed";
 
 import { SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
 
@@ -335,6 +336,10 @@ async function runSeed(): Promise<void> {
     // Phase 4.D — clients/entités/contacts via repositories.
     // Idempotent (early return si lic_clients déjà peuplée).
     await seedPhase4Clients(seedClient);
+
+    // Phase 5.D — licences + renouvellements (dépend Phase 4).
+    // Idempotent (early return si lic_licences déjà peuplée).
+    await seedPhase5Licences(seedClient);
 
     log.info("Seed completed successfully");
   } finally {
