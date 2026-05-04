@@ -324,3 +324,10 @@ export const removeArticleFromLicenceUseCase = new RemoveArticleFromLicenceUseCa
 
 export { listProduitsByLicenceUseCase } from "@/server/modules/licence-produit/licence-produit.module";
 export { listArticlesByLicenceUseCase } from "@/server/modules/licence-article/licence-article.module";
+
+// --- Phase 6 étape 6.D : volume history (snapshots mensuels, pas d'audit) ---
+
+export {
+  listVolumeHistoryUseCase,
+  recordVolumeSnapshotUseCase,
+} from "@/server/modules/volume-history/volume-history.module";
