@@ -288,6 +288,84 @@
       }
     }
   },
+  "licences": {
+    "title": "Licences",
+    "back": "← Back to client",
+    "detail": {
+      "tabs": {
+        "resume": "Summary",
+        "articles": "Articles",
+        "renouvellements": "Renewals",
+        "historique": "History"
+      },
+      "resume": {
+        "section": "Licence information",
+        "editInfo": "Edit info",
+        "changeStatus": "Change status",
+        "fields": {
+          "reference": "Reference",
+          "status": "Status",
+          "client": "Client",
+          "entite": "Entity",
+          "dateDebut": "Start date",
+          "dateFin": "End date",
+          "renouvellementAuto": "Auto-renewal",
+          "notifEnvoyee": "Notification sent",
+          "version": "Version (L4)",
+          "commentaire": "Comment",
+          "dateCreation": "Created"
+        },
+        "yes": "Yes",
+        "no": "No",
+        "statusDialog": {
+          "title": "Change licence status",
+          "newStatus": "New status",
+          "submit": "Apply",
+          "submitting": "Applying…"
+        },
+        "editDialog": {
+          "title": "Edit licence",
+          "dateDebut": "Start date",
+          "dateFin": "End date",
+          "commentaire": "Comment",
+          "renouvellementAuto": "Auto-renewal",
+          "submit": "Save",
+          "submitting": "Saving…",
+          "cancel": "Cancel"
+        }
+      },
+      "renouvellements": {
+        "section": "Renewals",
+        "newRenouvellement": "New renewal",
+        "table": {
+          "dateCreation": "Requested",
+          "nouvelleDateDebut": "New start",
+          "nouvelleDateFin": "New end",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "valider": "Validate",
+        "annuler": "Cancel",
+        "empty": "No renewal.",
+        "createDialog": {
+          "title": "New renewal",
+          "nouvelleDateDebut": "New start date",
+          "nouvelleDateFin": "New end date",
+          "commentaire": "Comment (optional)",
+          "submit": "Create",
+          "creating": "Creating…",
+          "cancel": "Cancel"
+        },
+        "annulerDialog": {
+          "title": "Cancel renewal?",
+          "motif": "Reason (optional)",
+          "submit": "Confirm cancellation",
+          "submitting": "Cancelling…",
+          "cancel": "Back"
+        }
+      }
+    }
+  },
   "errors": {
     "SPX-LIC-001": "Session expired or missing",
     "SPX-LIC-002": "Invalid credentials",

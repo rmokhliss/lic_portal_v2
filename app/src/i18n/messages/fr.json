@@ -288,6 +288,84 @@
       }
     }
   },
+  "licences": {
+    "title": "Licences",
+    "back": "← Retour client",
+    "detail": {
+      "tabs": {
+        "resume": "Résumé",
+        "articles": "Articles",
+        "renouvellements": "Renouvellements",
+        "historique": "Historique"
+      },
+      "resume": {
+        "section": "Informations licence",
+        "editInfo": "Modifier les infos",
+        "changeStatus": "Changer le statut",
+        "fields": {
+          "reference": "Référence",
+          "status": "Statut",
+          "client": "Client",
+          "entite": "Entité",
+          "dateDebut": "Date de début",
+          "dateFin": "Date de fin",
+          "renouvellementAuto": "Renouvellement automatique",
+          "notifEnvoyee": "Notification envoyée",
+          "version": "Version (L4)",
+          "commentaire": "Commentaire",
+          "dateCreation": "Création"
+        },
+        "yes": "Oui",
+        "no": "Non",
+        "statusDialog": {
+          "title": "Changer le statut de la licence",
+          "newStatus": "Nouveau statut",
+          "submit": "Appliquer",
+          "submitting": "Application…"
+        },
+        "editDialog": {
+          "title": "Modifier la licence",
+          "dateDebut": "Date de début",
+          "dateFin": "Date de fin",
+          "commentaire": "Commentaire",
+          "renouvellementAuto": "Renouvellement automatique",
+          "submit": "Enregistrer",
+          "submitting": "Enregistrement…",
+          "cancel": "Annuler"
+        }
+      },
+      "renouvellements": {
+        "section": "Renouvellements",
+        "newRenouvellement": "Nouveau renouvellement",
+        "table": {
+          "dateCreation": "Demandé le",
+          "nouvelleDateDebut": "Nouvelle date début",
+          "nouvelleDateFin": "Nouvelle date fin",
+          "status": "Statut",
+          "actions": "Actions"
+        },
+        "valider": "Valider",
+        "annuler": "Annuler",
+        "empty": "Aucun renouvellement.",
+        "createDialog": {
+          "title": "Nouveau renouvellement",
+          "nouvelleDateDebut": "Nouvelle date de début",
+          "nouvelleDateFin": "Nouvelle date de fin",
+          "commentaire": "Commentaire (optionnel)",
+          "submit": "Créer",
+          "creating": "Création…",
+          "cancel": "Annuler"
+        },
+        "annulerDialog": {
+          "title": "Annuler le renouvellement ?",
+          "motif": "Motif (optionnel)",
+          "submit": "Confirmer l'annulation",
+          "submitting": "Annulation…",
+          "cancel": "Retour"
+        }
+      }
+    }
+  },
   "errors": {
     "SPX-LIC-001": "Session expirée ou inexistante",
     "SPX-LIC-002": "Identifiants invalides",
