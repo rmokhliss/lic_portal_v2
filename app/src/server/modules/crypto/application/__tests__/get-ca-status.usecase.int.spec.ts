@@ -29,6 +29,11 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
+  // F-13 : cleanup lic_settings — les tests crypto y insèrent du contenu (CA
+  // record), qui survit aux tests si on n'efface pas. D'autres specs (ex:
+  // settings/update-settings.spec.ts > "payload vide est un no-op") attendent
+  // lic_settings vide en début de test → garantir l'invariant ici.
+  await sql`TRUNCATE TABLE lic_settings CASCADE`;
   await sql.end();
 });
 

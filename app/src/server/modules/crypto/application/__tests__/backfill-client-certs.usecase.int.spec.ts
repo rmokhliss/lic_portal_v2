@@ -47,6 +47,20 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
+  // F-13 : cleanup post-tests — voir generate-ca.usecase.int.spec.ts.
+  await sql`
+    TRUNCATE TABLE lic_audit_log, lic_settings, lic_entites, lic_clients, lic_users CASCADE
+  `;
+  await sql`
+    INSERT INTO lic_users (
+      id, matricule, nom, prenom, email, password_hash,
+      must_change_password, role, actif, created_at, updated_at
+    ) VALUES (
+      ${SYSTEM_USER_ID}, 'SYS-000', 'SYSTEM', 'Système', 'system@s2m.local',
+      '$2a$10$8oE0NRs/IzymGH5KL/XuguewPgWQCv4PeFYP9HpxgnxisQvhFE/0C',
+      false, 'SADMIN', false, NOW(), NOW()
+    )
+  `;
   await sql.end();
 });
 

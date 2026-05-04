@@ -51,6 +51,21 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
+  // F-13 : cleanup post-tests — les tests insèrent une CA dans lic_settings et
+  // un audit CA_GENERATED dans lic_audit_log. On TRUNCATE pour ne pas polluer
+  // les specs lancées après (notamment settings/update-settings.spec.ts qui
+  // s'attend à lic_settings vide). Reseed SYSTEM user (FK audit_log.user_id).
+  await sql`TRUNCATE TABLE lic_audit_log, lic_settings, lic_users CASCADE`;
+  await sql`
+    INSERT INTO lic_users (
+      id, matricule, nom, prenom, email, password_hash,
+      must_change_password, role, actif, created_at, updated_at
+    ) VALUES (
+      ${SYSTEM_USER_ID}, 'SYS-000', 'SYSTEM', 'Système', 'system@s2m.local',
+      '$2a$10$8oE0NRs/IzymGH5KL/XuguewPgWQCv4PeFYP9HpxgnxisQvhFE/0C',
+      false, 'SADMIN', false, NOW(), NOW()
+    )
+  `;
   await sql.end();
 });
 
