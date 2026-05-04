@@ -43,16 +43,18 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phase 5 Licences complète (Mai 2026)** — 2 modules hexagonaux (licence, renouvellement) + UI liste/détail/4 tabs + seed démo 55 licences, **502/502 tests verts**.
+**Phase actuelle** : **Phase 6 Catalogue + Volumes complète (Mai 2026)** — 5 modules hexagonaux (produit, article, licence-produit, licence-article, volume-history) + UI tab articles licence + onglet catalogues settings + seed démo, **562/562 tests verts**.
 
-- 5.A (commit `e348406`) : 2 schémas (lic_licences + lic_renouvellements) + 2 enums + migration 0006 (CHECK reference + dates)
-- 5.B (commit `f6d7e9b`) : module licence hexagonal + 5 use-cases + allocateNextReference (LIC-{YYYY}-{NNN}) + L4 + 9 tests
-- 5.C (commit `fdea9c2`) : module renouvellement + 5 use-cases (workflow EN_COURS→VALIDE|ANNULE) + 4 tests
-- 5.D (commit `7163fc5`) : seed démo 55 licences (45 ACTIF / 5 SUSPENDU / 5 EXPIRE) + 10 renouvellements
-- 5.E (commit `d640471`) : tab Licences débloqué dans /clients/[id]/licences + Dialog + LicenceStatusBadge
-- 5.F (commit `69610af`) : page détail /licences/[id] + 4 tabs (resume + renouvellements + 2 stubs Phase 6/7) + 5 Server Actions
+- 6.A (commit `46cbe5c`) : 5 schémas Drizzle + migration 0007 (10 indexes + 5 FKs + 4 CHECK volumes ≥0 + 4 UNIQUE)
+- 6.B (commit `4bfeb3e`) : modules produit + article (PK serial ADR 0017, R-27 sans audit), 10 use-cases, 43 tests
+- 6.C (commit `d958bc3`) : modules licence-produit + licence-article (audit transactionnel L3), Add/UpdateVolume/Remove
+- 6.D (commit `0fe715e`) : module volume-history append-only avec cursor pagination + R-35 isUniqueViolation
+- 6.E (commit `bc81e98`) : seed démo (5 produits + 15 articles + 20 licences attachées + 60 snapshots, idempotent SEED)
+- 6.F (commit `c5466a3`) : UI tab `/licences/[id]/articles` + onglet `/settings/catalogues` + 11 Server Actions + i18n FR/EN
 
-**Phase 4 EC-Clients close** : schémas + 3 modules hexagonaux (client, entite, contact) + UI liste/détail + seed démo 55 clients (commits `b5906c4` → `f2c273e`).
+**Phase 5 Licences close** (commits `e348406` → `69610af`) : 2 modules + 4 tabs détail + seed 55 licences.
+
+**Phase 4 EC-Clients close** (commits `b5906c4` → `f2c273e`) : 3 modules + UI liste/détail + seed 55 clients.
 
 **Phase actuelle précédente** : **Phase 2.B + Phase 2.B.bis EC-08 Users complètes (Mai 2026)** — écran EC-13 Paramétrage opérationnel (4 onglets réels + 5 PhaseStub), 462/462 tests verts.
 
@@ -520,13 +522,9 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 - **Priorité** : basse.
 - **Phase cible** : 13 (durcissement perf prod).
 
-### DETTE-LIC-012 — Tab Articles licence reste un PhaseStub Phase 6
+### ~~DETTE-LIC-012 — Tab Articles licence reste un PhaseStub Phase 6~~ — **résolue Phase 6.F (commit `c5466a3`)**
 
-- **Cause** : Phase 5.F livre `/licences/[id]/articles/page.tsx` comme stub Phase 6. La tab Articles affichera la liste des produits/articles attachés à la licence avec leurs volumes (autorisé/consommé/taux). Implémentation requiert les modules `produit` + `article` + tables de liaison `lic_licence_produits` / `lic_licence_articles` (Phase 6 entière).
-- **Impact** : UX dégradée — l'utilisateur voit la licence mais pas son contenu modulaire (produits/articles). Pas bloquant Phase 5.
-- **Solution future** : Phase 6.F dédiée à débloquer ce stub avec liste produits + sous-table articles + Dialogs add/remove + auto-refresh volumes.
-- **Priorité** : haute (utilisabilité métier).
-- **Phase cible** : 6.
+Tab `/licences/[id]/articles` débloquée : sections produits + sous-tables articles avec volumes (consommé/autorisé/taux), Dialogs Add Produit / Add Article / Edit Volume / Remove. L'onglet `/settings/catalogues` (DETTE résiduelle des stubs Phase 2.B) est également opérationnel (CRUD SADMIN produits + articles). 11 Server Actions, schémas Zod cf. `shared/src/schemas/produit.schema.ts`, codes SPX-LIC-743..754.
 
 ### DETTE-LIC-010 — Liste `typeContactCode` statique dans `ContactDialog`
 
