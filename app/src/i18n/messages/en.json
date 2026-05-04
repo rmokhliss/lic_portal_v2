@@ -35,6 +35,17 @@
       "auditLog": "Audit log",
       "batches": "Batches",
       "settings": "Settings"
+    },
+    "breadcrumb": {
+      "detail": "Detail",
+      "info": "Info",
+      "entites": "Entities",
+      "contacts": "Contacts",
+      "licences": "Licences",
+      "historique": "History",
+      "articles": "Articles",
+      "resume": "Summary",
+      "renouvellements": "Renewals"
     }
   },
   "auth": {

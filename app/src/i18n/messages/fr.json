@@ -35,6 +35,17 @@
       "auditLog": "Journal",
       "batches": "Batchs",
       "settings": "Paramétrage"
+    },
+    "breadcrumb": {
+      "detail": "Détail",
+      "info": "Info",
+      "entites": "Entités",
+      "contacts": "Contacts",
+      "licences": "Licences",
+      "historique": "Historique",
+      "articles": "Articles",
+      "resume": "Résumé",
+      "renouvellements": "Renouvellements"
     }
   },
   "auth": {
