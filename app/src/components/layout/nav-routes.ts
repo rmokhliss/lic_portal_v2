@@ -55,7 +55,7 @@ export const NAV_ROUTES: readonly NavRoute[] = [
   { href: "/reports", labelKey: "reportsList", icon: BarChart3, group: "reports" },
   { href: "/files", labelKey: "files", icon: FileBox, group: "reports", minRole: "ADMIN" },
   // Système
-  { href: "/history", labelKey: "auditLog", icon: History, group: "system" },
+  { href: "/audit", labelKey: "auditLog", icon: History, group: "system", minRole: "ADMIN" },
   { href: "/batches", labelKey: "batches", icon: Workflow, group: "system", minRole: "ADMIN" },
   // Paramétrage isolé en bas (SADMIN uniquement)
   { href: "/settings", labelKey: "settings", icon: Settings, group: "settings", minRole: "SADMIN" },
