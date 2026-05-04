@@ -254,3 +254,73 @@ export async function resetUserPasswordAction(input: unknown) {
   revalidatePath("/settings/users");
   return result;
 }
+
+// ============================================================================
+// Phase 6.F — onglet Catalogues : produits + articles (R-27 sans audit)
+// ============================================================================
+
+import {
+  CreateArticleSchema,
+  CreateProduitSchema,
+  ToggleArticleSchema,
+  ToggleProduitSchema,
+  UpdateArticleSchema,
+  UpdateProduitSchema,
+} from "@s2m-lic/shared";
+
+import {
+  createArticleUseCase,
+  createProduitUseCase,
+  toggleArticleUseCase,
+  toggleProduitUseCase,
+  updateArticleUseCase,
+  updateProduitUseCase,
+} from "@/server/composition-root";
+
+export async function createProduitAction(input: unknown) {
+  await requireRole(["SADMIN"]);
+  const parsed = CreateProduitSchema.parse(input);
+  const result = await createProduitUseCase.execute(parsed);
+  revalidatePath("/settings/catalogues");
+  return result;
+}
+
+export async function updateProduitAction(input: unknown) {
+  await requireRole(["SADMIN"]);
+  const parsed = UpdateProduitSchema.parse(input);
+  const result = await updateProduitUseCase.execute(parsed);
+  revalidatePath("/settings/catalogues");
+  return result;
+}
+
+export async function toggleProduitAction(input: unknown) {
+  await requireRole(["SADMIN"]);
+  const { code } = ToggleProduitSchema.parse(input);
+  const result = await toggleProduitUseCase.execute(code);
+  revalidatePath("/settings/catalogues");
+  return result;
+}
+
+export async function createArticleAction(input: unknown) {
+  await requireRole(["SADMIN"]);
+  const parsed = CreateArticleSchema.parse(input);
+  const result = await createArticleUseCase.execute(parsed);
+  revalidatePath("/settings/catalogues");
+  return result;
+}
+
+export async function updateArticleAction(input: unknown) {
+  await requireRole(["SADMIN"]);
+  const parsed = UpdateArticleSchema.parse(input);
+  const result = await updateArticleUseCase.execute(parsed);
+  revalidatePath("/settings/catalogues");
+  return result;
+}
+
+export async function toggleArticleAction(input: unknown) {
+  await requireRole(["SADMIN"]);
+  const { id } = ToggleArticleSchema.parse(input);
+  const result = await toggleArticleUseCase.execute(id);
+  revalidatePath("/settings/catalogues");
+  return result;
+}

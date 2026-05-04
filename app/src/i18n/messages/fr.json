@@ -101,6 +101,48 @@
         "label": "Données de démo",
         "description": "Génération de jeux de données fictifs pour démos clients et formations."
       }
+    },
+    "catalogues": {
+      "title": "Catalogue produits SELECT-PX",
+      "subtitle": "Produits commerciaux et leurs articles facturables (volumes, unités).",
+      "createProduit": "Nouveau produit",
+      "createArticle": "Nouvel article",
+      "editProduit": "Modifier produit",
+      "edit": "Modifier",
+      "enable": "Activer",
+      "disable": "Désactiver",
+      "actif": "Actif",
+      "inactif": "Inactif",
+      "emptyProduits": "Aucun produit. Créez le premier pour démarrer le catalogue.",
+      "emptyArticles": "Aucun article pour ce produit.",
+      "table": {
+        "code": "Code",
+        "nom": "Nom",
+        "unite": "Unité",
+        "actif": "Statut",
+        "actions": "Actions"
+      },
+      "produitDialog": {
+        "createTitle": "Nouveau produit",
+        "editTitle": "Modifier le produit",
+        "code": "Code (ex: SPX-CORE)",
+        "nom": "Nom commercial",
+        "description": "Description (optionnel)",
+        "cancel": "Annuler",
+        "submit": "Enregistrer",
+        "submitting": "..."
+      },
+      "articleDialog": {
+        "createTitle": "Nouvel article ({produit})",
+        "editTitle": "Modifier l’article",
+        "code": "Code (ex: USERS, TX-MOIS)",
+        "nom": "Nom",
+        "uniteVolume": "Unité (transactions, utilisateurs, Mo, ...)",
+        "description": "Description (optionnel)",
+        "cancel": "Annuler",
+        "submit": "Enregistrer",
+        "submitting": "..."
+      }
     }
   },
   "clients": {
@@ -362,6 +404,52 @@
           "submit": "Confirmer l'annulation",
           "submitting": "Annulation…",
           "cancel": "Retour"
+        }
+      },
+      "articles": {
+        "section": "Produits & articles inclus dans cette licence",
+        "addProduit": "Ajouter un produit",
+        "addArticle": "Ajouter un article",
+        "removeProduit": "Retirer le produit",
+        "removeProduitBlocked": "Retirer d’abord les articles attachés",
+        "removeArticle": "Retirer",
+        "editVolume": "Modifier volume",
+        "emptyProduits": "Aucun produit attaché à cette licence.",
+        "emptyArticles": "Aucun article pour ce produit.",
+        "confirmRemoveProduit": "Confirmer le retrait de ce produit ?",
+        "confirmRemoveArticle": "Confirmer le retrait de cet article ?",
+        "table": {
+          "code": "Code",
+          "nom": "Nom",
+          "unite": "Unité",
+          "consomme": "Consommé",
+          "autorise": "Autorisé",
+          "taux": "Taux",
+          "actions": "Actions"
+        },
+        "addProduitDialog": {
+          "title": "Ajouter un produit à la licence",
+          "produitLabel": "Produit",
+          "placeholder": "— Choisir un produit —",
+          "cancel": "Annuler",
+          "submit": "Ajouter",
+          "submitting": "Ajout..."
+        },
+        "addArticleDialog": {
+          "title": "Ajouter un article ({produit})",
+          "articleLabel": "Article",
+          "placeholder": "— Choisir un article —",
+          "volumeLabel": "Volume autorisé",
+          "cancel": "Annuler",
+          "submit": "Ajouter",
+          "submitting": "Ajout..."
+        },
+        "editVolumeDialog": {
+          "title": "Modifier volume — {article}",
+          "volumeLabel": "Volume autorisé",
+          "cancel": "Annuler",
+          "submit": "Enregistrer",
+          "submitting": "Enregistrement..."
         }
       }
     }

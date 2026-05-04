@@ -101,6 +101,48 @@
         "label": "Demo data",
         "description": "Generation of fictitious data sets for client demos and training."
       }
+    },
+    "catalogues": {
+      "title": "SELECT-PX product catalogue",
+      "subtitle": "Commercial products and their billable articles (volumes, units).",
+      "createProduit": "New product",
+      "createArticle": "New article",
+      "editProduit": "Edit product",
+      "edit": "Edit",
+      "enable": "Enable",
+      "disable": "Disable",
+      "actif": "Active",
+      "inactif": "Inactive",
+      "emptyProduits": "No product yet. Create the first one to start the catalogue.",
+      "emptyArticles": "No article for this product.",
+      "table": {
+        "code": "Code",
+        "nom": "Name",
+        "unite": "Unit",
+        "actif": "Status",
+        "actions": "Actions"
+      },
+      "produitDialog": {
+        "createTitle": "New product",
+        "editTitle": "Edit product",
+        "code": "Code (e.g. SPX-CORE)",
+        "nom": "Commercial name",
+        "description": "Description (optional)",
+        "cancel": "Cancel",
+        "submit": "Save",
+        "submitting": "..."
+      },
+      "articleDialog": {
+        "createTitle": "New article ({produit})",
+        "editTitle": "Edit article",
+        "code": "Code (e.g. USERS, TX-MONTH)",
+        "nom": "Name",
+        "uniteVolume": "Unit (transactions, users, MB, ...)",
+        "description": "Description (optional)",
+        "cancel": "Cancel",
+        "submit": "Save",
+        "submitting": "..."
+      }
     }
   },
   "clients": {
@@ -362,6 +404,52 @@
           "submit": "Confirm cancellation",
           "submitting": "Cancelling…",
           "cancel": "Back"
+        }
+      },
+      "articles": {
+        "section": "Products & articles included in this licence",
+        "addProduit": "Add product",
+        "addArticle": "Add article",
+        "removeProduit": "Remove product",
+        "removeProduitBlocked": "Remove articles first",
+        "removeArticle": "Remove",
+        "editVolume": "Edit volume",
+        "emptyProduits": "No product attached to this licence yet.",
+        "emptyArticles": "No article for this product.",
+        "confirmRemoveProduit": "Confirm product removal?",
+        "confirmRemoveArticle": "Confirm article removal?",
+        "table": {
+          "code": "Code",
+          "nom": "Name",
+          "unite": "Unit",
+          "consomme": "Used",
+          "autorise": "Allowed",
+          "taux": "Rate",
+          "actions": "Actions"
+        },
+        "addProduitDialog": {
+          "title": "Add a product to this licence",
+          "produitLabel": "Product",
+          "placeholder": "— Pick a product —",
+          "cancel": "Cancel",
+          "submit": "Add",
+          "submitting": "Adding..."
+        },
+        "addArticleDialog": {
+          "title": "Add an article ({produit})",
+          "articleLabel": "Article",
+          "placeholder": "— Pick an article —",
+          "volumeLabel": "Allowed volume",
+          "cancel": "Cancel",
+          "submit": "Add",
+          "submitting": "Adding..."
+        },
+        "editVolumeDialog": {
+          "title": "Edit volume — {article}",
+          "volumeLabel": "Allowed volume",
+          "cancel": "Cancel",
+          "submit": "Save",
+          "submitting": "Saving..."
         }
       }
     }

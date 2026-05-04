@@ -93,3 +93,29 @@ export type {
   RenewStatusInput,
   ValiderRenouvellementInput,
 } from "./schemas/renouvellement.schema";
+
+// --- Schémas catalogue Phase 6 ----------------------------------------------
+export {
+  AddArticleToLicenceSchema,
+  AddProduitToLicenceSchema,
+  CreateArticleSchema,
+  CreateProduitSchema,
+  RemoveLiaisonSchema,
+  ToggleArticleSchema,
+  ToggleProduitSchema,
+  UpdateArticleSchema,
+  UpdateArticleVolumeSchema,
+  UpdateProduitSchema,
+} from "./schemas/produit.schema";
+export type {
+  AddArticleToLicenceInput,
+  AddProduitToLicenceInput,
+  CreateArticleInput,
+  CreateProduitInput,
+  RemoveLiaisonInput,
+  ToggleArticleInput,
+  ToggleProduitInput,
+  UpdateArticleInput,
+  UpdateArticleVolumeInput,
+  UpdateProduitInput,
+} from "./schemas/produit.schema";

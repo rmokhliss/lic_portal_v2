@@ -96,3 +96,63 @@ export async function annulerRenouvellementAction(input: unknown, ctx: unknown) 
   revalidatePath(pathFor(licenceId, "renouvellements"));
   return result;
 }
+
+// ============================================================================
+// Phase 6.F — Tab Articles : add/remove produit, add/update/remove article
+// ============================================================================
+
+import {
+  AddArticleToLicenceSchema,
+  AddProduitToLicenceSchema,
+  RemoveLiaisonSchema,
+  UpdateArticleVolumeSchema,
+} from "@s2m-lic/shared";
+
+import {
+  addArticleToLicenceUseCase,
+  addProduitToLicenceUseCase,
+  removeArticleFromLicenceUseCase,
+  removeProduitFromLicenceUseCase,
+  updateArticleVolumeUseCase,
+} from "@/server/composition-root";
+
+export async function addProduitToLicenceAction(input: unknown) {
+  const actor = await requireRole(["ADMIN", "SADMIN"]);
+  const parsed = AddProduitToLicenceSchema.parse(input);
+  const result = await addProduitToLicenceUseCase.execute(parsed, actor.id);
+  revalidatePath(`/licences/${parsed.licenceId}/articles`);
+  return result;
+}
+
+export async function removeProduitFromLicenceAction(input: unknown, ctx: unknown) {
+  const actor = await requireRole(["ADMIN", "SADMIN"]);
+  const parsed = RemoveLiaisonSchema.parse(input);
+  const { licenceId } = LicenceIdSchema.parse(ctx);
+  await removeProduitFromLicenceUseCase.execute(parsed, actor.id);
+  revalidatePath(`/licences/${licenceId}/articles`);
+}
+
+export async function addArticleToLicenceAction(input: unknown) {
+  const actor = await requireRole(["ADMIN", "SADMIN"]);
+  const parsed = AddArticleToLicenceSchema.parse(input);
+  const result = await addArticleToLicenceUseCase.execute(parsed, actor.id);
+  revalidatePath(`/licences/${parsed.licenceId}/articles`);
+  return result;
+}
+
+export async function updateArticleVolumeAction(input: unknown, ctx: unknown) {
+  const actor = await requireRole(["ADMIN", "SADMIN"]);
+  const parsed = UpdateArticleVolumeSchema.parse(input);
+  const { licenceId } = LicenceIdSchema.parse(ctx);
+  const result = await updateArticleVolumeUseCase.execute(parsed, actor.id);
+  revalidatePath(`/licences/${licenceId}/articles`);
+  return result;
+}
+
+export async function removeArticleFromLicenceAction(input: unknown, ctx: unknown) {
+  const actor = await requireRole(["ADMIN", "SADMIN"]);
+  const parsed = RemoveLiaisonSchema.parse(input);
+  const { licenceId } = LicenceIdSchema.parse(ctx);
+  await removeArticleFromLicenceUseCase.execute(parsed, actor.id);
+  revalidatePath(`/licences/${licenceId}/articles`);
+}
