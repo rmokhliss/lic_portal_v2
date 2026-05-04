@@ -1,10 +1,25 @@
-// LIC v2 — Placeholder /notifications (F-12, vrai écran Phase 8 EC-10)
+// ==============================================================================
+// LIC v2 — /notifications (Phase 8.D, EC-10)
+// ==============================================================================
 
-export default function NotificationsPage() {
+import { requireAuthPage } from "@/server/infrastructure/auth";
+import { listNotificationsUseCase } from "@/server/composition-root";
+
+import { NotificationsList } from "./_components/NotificationsList";
+
+export default async function NotificationsPage() {
+  const user = await requireAuthPage();
+
+  const page = await listNotificationsUseCase.execute({
+    userId: user.id,
+    limit: 50,
+  });
+
   return (
-    <div className="p-8">
-      <h1 className="font-display text-foreground text-2xl">Notifications</h1>
-      <p className="text-muted-foreground mt-2">Écran à venir (Phase 8).</p>
-    </div>
+    <NotificationsList
+      initialItems={page.items}
+      initialCursor={page.nextCursor}
+      initialUnread={page.unreadCount}
+    />
   );
 }

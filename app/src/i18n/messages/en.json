@@ -510,5 +510,47 @@
       "entity": "Entity type",
       "entityAll": "— All —"
     }
+  },
+  "notifications": {
+    "page": {
+      "title": "Notifications",
+      "unreadCount": "{count} unread",
+      "showAll": "All",
+      "showOnlyUnread": "Unread only",
+      "markAllRead": "Mark all read",
+      "markRead": "Mark read",
+      "openLink": "Open",
+      "empty": "No notifications.",
+      "loadMore": "Load more",
+      "loading": "Loading..."
+    },
+    "drawer": {
+      "unreadCount": "{count} unread",
+      "markAllRead": "Mark all read",
+      "markRead": "Mark read",
+      "openLink": "View",
+      "seeAll": "See all notifications",
+      "empty": "No notifications."
+    }
+  },
+  "batches": {
+    "title": "Batch supervision",
+    "subtitle": "pg-boss orchestrated jobs — execution history and logs.",
+    "runNow": "Run now",
+    "running": "Running...",
+    "scheduleLabel": "Schedule",
+    "noExecutions": "No execution recorded.",
+    "seeLogs": "Logs",
+    "table": {
+      "startedAt": "Started",
+      "declencheur": "Trigger",
+      "status": "Status",
+      "duration": "Duration",
+      "actions": "Actions"
+    },
+    "logs": {
+      "title": "Execution logs",
+      "empty": "No log."
+    }
   }
 }

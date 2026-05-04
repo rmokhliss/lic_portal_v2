@@ -510,5 +510,47 @@
       "entity": "Type entité",
       "entityAll": "— Toutes —"
     }
+  },
+  "notifications": {
+    "page": {
+      "title": "Notifications",
+      "unreadCount": "{count} non lue(s)",
+      "showAll": "Toutes",
+      "showOnlyUnread": "Non lues uniquement",
+      "markAllRead": "Tout marquer lu",
+      "markRead": "Marquer lu",
+      "openLink": "Ouvrir",
+      "empty": "Aucune notification.",
+      "loadMore": "Charger plus",
+      "loading": "Chargement..."
+    },
+    "drawer": {
+      "unreadCount": "{count} non lue(s)",
+      "markAllRead": "Tout marquer lu",
+      "markRead": "Marquer lu",
+      "openLink": "Voir",
+      "seeAll": "Voir toutes les notifications",
+      "empty": "Aucune notification."
+    }
+  },
+  "batches": {
+    "title": "Supervision des batchs",
+    "subtitle": "Jobs pg-boss orchestrés sur la plateforme — historique des exécutions et logs.",
+    "runNow": "Lancer maintenant",
+    "running": "Exécution...",
+    "scheduleLabel": "Planification",
+    "noExecutions": "Aucune exécution enregistrée.",
+    "seeLogs": "Logs",
+    "table": {
+      "startedAt": "Démarré",
+      "declencheur": "Déclencheur",
+      "status": "Statut",
+      "duration": "Durée",
+      "actions": "Actions"
+    },
+    "logs": {
+      "title": "Logs d’exécution",
+      "empty": "Aucun log."
+    }
   }
 }
