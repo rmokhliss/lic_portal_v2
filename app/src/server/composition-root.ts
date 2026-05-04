@@ -331,3 +331,13 @@ export {
   listVolumeHistoryUseCase,
   recordVolumeSnapshotUseCase,
 } from "@/server/modules/volume-history/volume-history.module";
+
+// --- Phase 7 étape 7.A : audit-query (lecture seule, FTS + cursor + scope) --
+
+export {
+  exportAuditCsvUseCase,
+  listAuditByClientScopeUseCase,
+  listAuditByEntityUseCase,
+  listAuditByLicenceScopeUseCase,
+  searchAuditUseCase,
+} from "@/server/modules/audit-query/audit-query.module";

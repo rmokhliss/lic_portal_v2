@@ -76,6 +76,12 @@ export type ErrorCode =
   | "SPX-LIC-752"
   | "SPX-LIC-753"
   | "SPX-LIC-754"
+  | "SPX-LIC-755"
+  | "SPX-LIC-756"
+  | "SPX-LIC-757"
+  | "SPX-LIC-758"
+  | "SPX-LIC-759"
+  | "SPX-LIC-760"
   | "SPX-LIC-900"
   | "SPX-LIC-901"
   | "SPX-LIC-902"
@@ -471,6 +477,42 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     httpStatus: 409,
     defaultMessage: "Snapshot de volume déjà enregistré pour cette période",
     className: "ConflictError",
+  },
+  "SPX-LIC-755": {
+    code: "SPX-LIC-755",
+    httpStatus: 409,
+    defaultMessage: "Export d'audit trop volumineux — affiner les filtres",
+    className: "ConflictError",
+  },
+  "SPX-LIC-756": {
+    code: "SPX-LIC-756",
+    httpStatus: 404,
+    defaultMessage: "Configuration d'alerte introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-757": {
+    code: "SPX-LIC-757",
+    httpStatus: 400,
+    defaultMessage: "Configuration d'alerte invalide",
+    className: "ValidationError",
+  },
+  "SPX-LIC-758": {
+    code: "SPX-LIC-758",
+    httpStatus: 400,
+    defaultMessage: "Au moins un seuil (volume ou date) est requis",
+    className: "ValidationError",
+  },
+  "SPX-LIC-759": {
+    code: "SPX-LIC-759",
+    httpStatus: 404,
+    defaultMessage: "Notification introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-760": {
+    code: "SPX-LIC-760",
+    httpStatus: 403,
+    defaultMessage: "Notification appartient à un autre utilisateur",
+    className: "ForbiddenError",
   },
 
   // --- Système + erreurs génériques transverses (900-999) ------------------
