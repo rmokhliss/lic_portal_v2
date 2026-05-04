@@ -103,6 +103,65 @@
       }
     }
   },
+  "clients": {
+    "title": "Clients",
+    "subtitle": "Banques et institutions financières clientes SELECT-PX",
+    "table": {
+      "codeClient": "Code",
+      "raisonSociale": "Raison sociale",
+      "pays": "Pays",
+      "statut": "Statut",
+      "dateCreation": "Création",
+      "actions": "Actions"
+    },
+    "statut": {
+      "PROSPECT": "Prospect",
+      "ACTIF": "Actif",
+      "SUSPENDU": "Suspendu",
+      "RESILIE": "Résilié"
+    },
+    "filters": {
+      "search": "Rechercher (raison sociale, code, contact)",
+      "searchPlaceholder": "ex: Maghrib, BAM, alice@...",
+      "statutAll": "Tous statuts",
+      "apply": "Filtrer",
+      "reset": "Réinitialiser"
+    },
+    "pagination": {
+      "previous": "Précédent",
+      "next": "Suivant",
+      "first": "Première page"
+    },
+    "actions": {
+      "new": "Nouveau client",
+      "edit": "Modifier",
+      "viewDetails": "Détails"
+    },
+    "dialog": {
+      "createTitle": "Créer un client",
+      "editTitle": "Modifier le client",
+      "fields": {
+        "codeClient": "Code client",
+        "codeClientHint": "UPPERCASE alphanumérique (ex: BAM, ATTIJARI_TN)",
+        "raisonSociale": "Raison sociale",
+        "nomContact": "Nom contact (optionnel)",
+        "emailContact": "Email contact (optionnel)",
+        "telContact": "Téléphone (optionnel)",
+        "codePays": "Pays (ISO alpha-2)",
+        "codeDevise": "Devise (ISO 4217)",
+        "codeLangue": "Langue",
+        "siegeNom": "Nom du Siège (optionnel — défaut = raison sociale)",
+        "salesResponsable": "Sales responsable",
+        "accountManager": "Account Manager"
+      },
+      "submitCreate": "Créer",
+      "submitEdit": "Enregistrer",
+      "creating": "Création…",
+      "saving": "Enregistrement…",
+      "cancel": "Annuler"
+    },
+    "empty": "Aucun client trouvé."
+  },
   "errors": {
     "SPX-LIC-001": "Session expirée ou inexistante",
     "SPX-LIC-002": "Identifiants invalides",

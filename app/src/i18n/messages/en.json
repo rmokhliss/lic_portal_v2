@@ -103,6 +103,65 @@
       }
     }
   },
+  "clients": {
+    "title": "Clients",
+    "subtitle": "SELECT-PX customer banks and financial institutions",
+    "table": {
+      "codeClient": "Code",
+      "raisonSociale": "Legal name",
+      "pays": "Country",
+      "statut": "Status",
+      "dateCreation": "Created",
+      "actions": "Actions"
+    },
+    "statut": {
+      "PROSPECT": "Prospect",
+      "ACTIF": "Active",
+      "SUSPENDU": "Suspended",
+      "RESILIE": "Terminated"
+    },
+    "filters": {
+      "search": "Search (legal name, code, contact)",
+      "searchPlaceholder": "e.g. Maghrib, BAM, alice@...",
+      "statutAll": "All statuses",
+      "apply": "Filter",
+      "reset": "Reset"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "first": "First page"
+    },
+    "actions": {
+      "new": "New client",
+      "edit": "Edit",
+      "viewDetails": "Details"
+    },
+    "dialog": {
+      "createTitle": "Create client",
+      "editTitle": "Edit client",
+      "fields": {
+        "codeClient": "Client code",
+        "codeClientHint": "UPPERCASE alphanumeric (e.g. BAM, ATTIJARI_TN)",
+        "raisonSociale": "Legal name",
+        "nomContact": "Contact name (optional)",
+        "emailContact": "Contact email (optional)",
+        "telContact": "Phone (optional)",
+        "codePays": "Country (ISO alpha-2)",
+        "codeDevise": "Currency (ISO 4217)",
+        "codeLangue": "Language",
+        "siegeNom": "HQ entity name (optional — default = legal name)",
+        "salesResponsable": "Sales lead",
+        "accountManager": "Account Manager"
+      },
+      "submitCreate": "Create",
+      "submitEdit": "Save",
+      "creating": "Creating…",
+      "saving": "Saving…",
+      "cancel": "Cancel"
+    },
+    "empty": "No clients found."
+  },
   "errors": {
     "SPX-LIC-001": "Session expired or missing",
     "SPX-LIC-002": "Invalid credentials",

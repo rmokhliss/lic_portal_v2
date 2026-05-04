@@ -1,10 +1,59 @@
-// LIC v2 — Placeholder /clients (F-12, vrai écran Phase 4 EC-Clients)
+// ==============================================================================
+// LIC v2 — /clients (Phase 4 étape 4.E — EC-Clients liste)
+//
+// Server Component. Lit searchParams (cursor + q + statut), appelle
+// listClientsUseCase, render ClientsTable Client Component avec les rows.
+//
+// Auth : `requireAuthPage` couvre la session (layout). Tous les rôles ont
+// accès en lecture (USER/ADMIN/SADMIN). La création est gardée côté
+// Server Action (requireRole ADMIN/SADMIN).
+// ==============================================================================
 
-export default function ClientsPage() {
+import { requireAuthPage } from "@/server/infrastructure/auth";
+import { listClientsUseCase } from "@/server/composition-root";
+
+import { ClientsTable } from "./_components/ClientsTable";
+import type { ClientStatutClient } from "./_components/clients-types";
+
+const VALID_STATUTS: ReadonlySet<ClientStatutClient> = new Set<ClientStatutClient>([
+  "PROSPECT",
+  "ACTIF",
+  "SUSPENDU",
+  "RESILIE",
+]);
+
+interface ClientsPageProps {
+  readonly searchParams: Promise<{
+    readonly cursor?: string;
+    readonly q?: string;
+    readonly statut?: string;
+  }>;
+}
+
+export default async function ClientsPage({ searchParams }: ClientsPageProps) {
+  const user = await requireAuthPage();
+  const params = await searchParams;
+
+  const statutFilter: ClientStatutClient | undefined =
+    params.statut !== undefined && VALID_STATUTS.has(params.statut as ClientStatutClient)
+      ? (params.statut as ClientStatutClient)
+      : undefined;
+
+  const result = await listClientsUseCase.execute({
+    ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
+    ...(params.q !== undefined && params.q.trim().length > 0 ? { q: params.q.trim() } : {}),
+    ...(statutFilter !== undefined ? { statutClient: statutFilter } : {}),
+    limit: 25,
+  });
+
   return (
-    <div className="p-8">
-      <h1 className="font-display text-foreground text-2xl">Clients</h1>
-      <p className="text-muted-foreground mt-2">Écran à venir (Phase 4).</p>
-    </div>
+    <ClientsTable
+      rows={result.items}
+      nextCursor={result.nextCursor}
+      currentCursor={params.cursor ?? null}
+      currentQuery={params.q ?? ""}
+      currentStatut={statutFilter ?? null}
+      canCreate={user.role === "ADMIN" || user.role === "SADMIN"}
+    />
   );
 }
