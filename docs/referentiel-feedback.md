@@ -769,3 +769,51 @@ _Fin de l'archive. Capitalisation close en Mai 2026._
   Le test sur `err.message` reste en premier pour compatibilité avec d'éventuels chemins (raw SQL tagged template, postgres-js direct sans Drizzle wrap) où le message contient "unique" en clair.
 
 - **Reco évolution Référentiel v2.2+** : Promouvoir ce helper en **utilitaire infrastructure partagé** (`infrastructure/db/pg-errors.ts`) avec exports `isUniqueViolation`, `isForeignKeyViolation` (`23503`), `isCheckViolation` (`23514`), etc. Documenter le pattern de wrap Drizzle en §4.4. Évite que chaque module re-découvre indépendamment le piège (déjà observé Phase 5 → Phase 6, va se reproduire dès qu'on multiplie les conflits métier).
+
+---
+
+### R-36 — Jobs pg-boss : acteur SYSTEM + bypass use-case L4 acceptable
+
+- **Type** : Pattern d'architecture jobs / acteur système à standardiser
+- **Phase LIC** : Phase 8 étape 8.C
+- **Contexte** : Les jobs `pg-boss` non-interactifs (cron `expire-licences`, `snapshot-volumes`, `check-alerts`) doivent muter de l'état métier **sans actorId humain** disponible. Deux exigences contradictoires apparaissent :
+  1. **Règle L3 (audit obligatoire)** : toute mutation métier doit générer une entrée d'audit dans la même transaction.
+  2. **Règle L4 (optimistic locking via `expectedVersion`)** : `ChangeLicenceStatusUseCase` exige un `actorId` interactif + `expectedVersion` lu côté client — incompatible avec un job batch qui itère en bulk sans round-trip UI.
+
+  Le réflexe naïf est de **bypass complètement** l'audit ("c'est un job, pas un humain") — ce qui casse la règle L3 et rend la chronologie d'audit incomplète (un statut peut passer ACTIF → EXPIRE sans trace pour l'opérateur EC-06).
+
+- **Décision LIC v2** : Pattern **« bypass use-case + maintien audit »** pour les jobs non-interactifs :
+  - Bypass autorisé du use-case mutateur quand sa surface impose `expectedVersion` ou un `actorId` interactif → SQL UPDATE direct dans le handler.
+  - Audit **obligatoire maintenu** avec acteur SYSTEM :
+    - `userId = SYSTEM_USER_ID` (uuid nil seedé en migration 0000)
+    - `userDisplay = SYSTEM_USER_DISPLAY` (`"Système (SYS-000)"`)
+    - `mode = 'JOB'`
+    - **action distincte** du verbe interactif (ex: `LICENCE_EXPIRED_BY_JOB` vs `LICENCE_EXPIRED`) pour permettre à EC-06 de filtrer "transitions automatiques" vs "actions manuelles".
+  - 1 audit par row mutée (pas un seul audit agrégé), pour préserver la traçabilité fine côté EC-06 (drill-down avant/après par licence).
+  - Implémenté dans `app/src/server/jobs/handlers/expire-licences.handler.ts` Phase 8.C.
+
+- **Reco évolution Référentiel v2.2+** : Ajouter en §4.6 (Jobs / Workers) une sous-section **« Acteur SYSTEM et patterns de mutation batch »** :
+  1. Tout projet S2M doit seeder un user `SYS-000` (uuid nil ou figé) en migration `0000`.
+  2. Les jobs muteurs doivent émettre des entrées d'audit avec `userId=SYSTEM_USER_ID`, `mode='JOB'`, et un verbe d'action **suffixé `_BY_JOB`** ou un préfixe identifiable.
+  3. Bypass des use-cases mutateurs L4 autorisé si et seulement si l'audit est explicitement régénéré côté job (pas de bypass silencieux).
+
+---
+
+### R-37 — Audit `entity_id` est `uuid` (pas `text`) — casts explicites dans sous-requêtes scope
+
+- **Type** : Précision de typage du template AuditEntry
+- **Phase LIC** : Phase 7 étape 7.A
+- **Contexte** : Le module `audit-query` (Phase 7) a besoin de filtrer le journal selon des **scopes multi-entités** : "tous les audits qui touchent un client X" inclut audit direct sur le client + audits indirects sur ses entités/contacts/licences/renouvellements/liaisons. La requête utilise des sous-requêtes type `WHERE audit.entity_id IN (SELECT id FROM lic_entites WHERE client_id = X)`.
+
+  Comme `lic_audit_log.entity_id` est typé **`uuid`** côté schéma Drizzle (cf. `audit/adapters/postgres/schema.ts:25`), tout SQL templated qui :
+  - Compare `entity_id = '<string>'` sans cast → `operator does not exist: uuid = text` (SQLSTATE 42883)
+  - Sous-requête retournant `id::text` → même erreur de mismatch types
+
+  Drizzle query builder gère le cast automatiquement via `eq(auditLog.entityId, value)` ; mais **dès qu'on bascule en `sql\`...\``** template (cas multi-OR scope), le cast doit être explicite : `${literal}::uuid` côté valeur, et `SELECT id FROM ...` (sans `::text`) côté sous-requête.
+
+- **Décision LIC v2** : Casts `::uuid` explicites systématiques dans `audit-query.repository.pg.ts` (Phase 7.A). Sous-requêtes retournent des `uuid` natifs (pas des `text`).
+
+- **Reco évolution Référentiel v2.2+** : §4.12 (template AuditEntry) doit préciser explicitement :
+  - **`entity_id` est typé `uuid`** côté BD (pas `text` ni `varchar`), pour s'aligner sur les PK uuidv7 des entités métier (ADR 0005).
+  - Quand on écrit du SQL template `sql\`...\``qui croise`audit_log`avec d'autres tables, **caster les littéraux en`::uuid`** et **NE PAS** caster les `id`des entités cibles en`::text`.
+  - Documenter comme règle critique car l'erreur Postgres 42883 ne survient qu'à l'exécution avec un message peu explicite ("operator does not exist: uuid = text") qui peut faire perdre du temps en debug.
