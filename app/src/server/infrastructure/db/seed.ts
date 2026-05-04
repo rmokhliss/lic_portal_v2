@@ -42,6 +42,7 @@ import postgres from "postgres";
 
 import { seedPhase4Clients } from "./seed/phase4-clients.seed";
 import { seedPhase5Licences } from "./seed/phase5-licences.seed";
+import { seedPhase6Catalogue } from "./seed/phase6-catalogue.seed";
 
 import { SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
 
@@ -340,6 +341,10 @@ async function runSeed(): Promise<void> {
     // Phase 5.D — licences + renouvellements (dépend Phase 4).
     // Idempotent (early return si lic_licences déjà peuplée).
     await seedPhase5Licences(seedClient);
+
+    // Phase 6.E — catalogue produits/articles + liaisons + volume_history.
+    // Idempotent (early return si lic_produits_ref déjà peuplée).
+    await seedPhase6Catalogue(seedClient);
 
     log.info("Seed completed successfully");
   } finally {
