@@ -48,7 +48,7 @@
 - **MUST NOT** utiliser `any` — préférer `unknown` + narrowing
 - **MUST NOT** utiliser `new Error("...")` ni `throw "string"`
 - **MUST NOT** utiliser SQL en string brut — toujours Drizzle query builder ou SQL tagged template
-- **MUST NOT** implémenter de cryptographie custom — utiliser `node-forge` (PKI) + `crypto` natif Node (AES)
+- **MUST NOT** implémenter de cryptographie custom — utiliser `node:crypto` natif Node 24 (`generateKeyPairSync`, `X509Certificate`, `createSign`/`createVerify`, `createCipheriv('aes-256-gcm')`). `node-forge` retiré Phase 3.A.1 (cf. ADR 0019). Aucune dépendance crypto tierce.
 - **MUST NOT** utiliser `useEffect` pour fetch — Server Components ou TanStack Query
 - **MUST NOT** faire de mutations directes en composant client — Server Actions uniquement
 - **MUST NOT** utiliser CSS inline ni CSS modules — Tailwind `@theme` + utility classes only
