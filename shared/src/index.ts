@@ -67,3 +67,16 @@ export type {
   DeleteContactInput,
   UpdateContactInput,
 } from "./schemas/contact.schema";
+
+// --- Schémas licence Phase 5 ------------------------------------------------
+export {
+  ChangeLicenceStatusSchema,
+  CreateLicenceSchema,
+  UpdateLicenceSchema,
+} from "./schemas/licence.schema";
+export type {
+  ChangeLicenceStatusInput,
+  CreateLicenceInput,
+  LicenceStatusInput,
+  UpdateLicenceInput,
+} from "./schemas/licence.schema";

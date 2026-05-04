@@ -56,6 +56,14 @@ export type ErrorCode =
   | "SPX-LIC-732"
   | "SPX-LIC-733"
   | "SPX-LIC-734"
+  | "SPX-LIC-735"
+  | "SPX-LIC-736"
+  | "SPX-LIC-737"
+  | "SPX-LIC-738"
+  | "SPX-LIC-739"
+  | "SPX-LIC-740"
+  | "SPX-LIC-741"
+  | "SPX-LIC-742"
   | "SPX-LIC-900"
   | "SPX-LIC-901"
   | "SPX-LIC-902"
@@ -327,6 +335,58 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     httpStatus: 400,
     defaultMessage: "Données contact invalides",
     className: "ValidationError",
+  },
+
+  // --- Licences Phase 5 (735-739) -------------------------------------------
+  "SPX-LIC-735": {
+    code: "SPX-LIC-735",
+    httpStatus: 404,
+    defaultMessage: "Licence introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-736": {
+    code: "SPX-LIC-736",
+    httpStatus: 409,
+    defaultMessage: "Référence licence déjà utilisée",
+    className: "ConflictError",
+  },
+  "SPX-LIC-737": {
+    code: "SPX-LIC-737",
+    httpStatus: 400,
+    defaultMessage: "Données licence invalides",
+    className: "ValidationError",
+  },
+  "SPX-LIC-738": {
+    code: "SPX-LIC-738",
+    httpStatus: 409,
+    defaultMessage: "Transition de statut licence interdite",
+    className: "ConflictError",
+  },
+  "SPX-LIC-739": {
+    code: "SPX-LIC-739",
+    httpStatus: 409,
+    defaultMessage: "Conflit de version licence (modification concurrente)",
+    className: "ConflictError",
+  },
+
+  // --- Renouvellements Phase 5 (740-742) ------------------------------------
+  "SPX-LIC-740": {
+    code: "SPX-LIC-740",
+    httpStatus: 404,
+    defaultMessage: "Renouvellement introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-741": {
+    code: "SPX-LIC-741",
+    httpStatus: 400,
+    defaultMessage: "Données renouvellement invalides",
+    className: "ValidationError",
+  },
+  "SPX-LIC-742": {
+    code: "SPX-LIC-742",
+    httpStatus: 409,
+    defaultMessage: "Transition de statut renouvellement interdite",
+    className: "ConflictError",
   },
 
   // --- Système + erreurs génériques transverses (900-999) ------------------

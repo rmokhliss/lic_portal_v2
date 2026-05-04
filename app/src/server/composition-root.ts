@@ -40,6 +40,10 @@ import { CreateEntiteUseCase } from "@/server/modules/entite/application/create-
 import { ToggleEntiteActiveUseCase } from "@/server/modules/entite/application/toggle-entite-active.usecase";
 import { UpdateEntiteUseCase } from "@/server/modules/entite/application/update-entite.usecase";
 import { entiteRepository } from "@/server/modules/entite/entite.module";
+import { ChangeLicenceStatusUseCase } from "@/server/modules/licence/application/change-licence-status.usecase";
+import { CreateLicenceUseCase } from "@/server/modules/licence/application/create-licence.usecase";
+import { UpdateLicenceUseCase } from "@/server/modules/licence/application/update-licence.usecase";
+import { licenceRepository } from "@/server/modules/licence/licence.module";
 import { ChangePasswordUseCase } from "@/server/modules/user/application/change-password.usecase";
 import { CreateUserUseCase } from "@/server/modules/user/application/create-user.usecase";
 import { ResetUserPasswordUseCase } from "@/server/modules/user/application/reset-user-password.usecase";
@@ -204,3 +208,26 @@ export {
   getContactUseCase,
   listContactsByEntiteUseCase,
 } from "@/server/modules/contact/contact.module";
+
+// --- Phase 5 : licences (audit obligatoire) ---------------------------------
+
+export const createLicenceUseCase = new CreateLicenceUseCase(
+  licenceRepository,
+  userRepository,
+  auditRepository,
+);
+export const updateLicenceUseCase = new UpdateLicenceUseCase(
+  licenceRepository,
+  userRepository,
+  auditRepository,
+);
+export const changeLicenceStatusUseCase = new ChangeLicenceStatusUseCase(
+  licenceRepository,
+  userRepository,
+  auditRepository,
+);
+
+export {
+  getLicenceUseCase,
+  listLicencesByClientUseCase,
+} from "@/server/modules/licence/licence.module";
