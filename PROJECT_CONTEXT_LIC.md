@@ -43,7 +43,16 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phase 2.B + Phase 2.B.bis EC-08 Users complètes (Mai 2026)** — écran EC-13 Paramétrage opérationnel (4 onglets réels + 5 PhaseStub), 462/462 tests verts.
+**Phase actuelle** : **Phase 4 EC-Clients complète (Mai 2026)** — schémas + 3 modules hexagonaux (client, entite, contact) + UI liste/détail + seed démo 55 clients, 489/489 tests verts.
+
+- 4.A (commit `b5906c4`) : 3 schémas Drizzle + migration 0004 + DETTE-LIC-008 (PKI)
+- 4.B (commit `ab5b262`) : module client hexagonal + 5 use-cases + cursor pagination + FTS + L4 + 16 tests
+- 4.C (commit `59fbe64`) : modules entite + contact + 11 tests + R-33 (clientId/clientDisplay audit)
+- 4.D (commit `9c6a633`) : seed démo 55 clients/60 entités/110 contacts/170 audits SEED + R-34 (server-only CLI)
+- 4.E (commit `720dc11`) : page liste /clients + 3 Server Actions + filtres FTS + cursor pagination
+- 4.F (commit `f2c273e`) : page détail /clients/[id] + 5 tabs + 6 Server Actions entite/contact
+
+**Phase actuelle précédente** : **Phase 2.B + Phase 2.B.bis EC-08 Users complètes (Mai 2026)** — écran EC-13 Paramétrage opérationnel (4 onglets réels + 5 PhaseStub), 462/462 tests verts.
 
 - Étape 1/7 : 6 schémas Drizzle référentiels SADMIN + migration bootstrap idempotente + **ADR 0017** (PK serial, exception bornée à ADR 0005).
 - Étapes 2-4/7 : 6 modules hexagonaux complets (regions, pays, devises, langues, types-contact, team-members) — 30 use-cases, exclus de l'audit obligatoire (R-27, ADR 0017).
@@ -492,6 +501,22 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 - **Solution future** : refactor `createClientUseCase` Phase 3 + job one-shot pour clients déjà créés sans certificat.
 - **Priorité** : haute (bloquant première génération `.lic`).
 - **Phase cible** : Phase 3.
+
+### DETTE-LIC-009 — Breadcrumb header sticky non dynamique sur `/clients/[id]/*`
+
+- **Cause** : `Breadcrumb` (Client Component, `components/layout/Breadcrumb.tsx`) affiche le label de la route courante via `findRouteByPathname(pathname)` matché contre `nav-routes.ts`. Pour `/clients/[id]/info` la route n'existe pas dans le registre → fallback affiche le pathname brut `/clients/<uuid>/info` (peu lisible).
+- **Impact UX** : header sticky moins informatif sur les pages détail (visible sur toutes les sous-routes `/clients/[id]/*` Phase 4.F).
+- **Solution future** : étendre `Breadcrumb` pour accepter un fil d'Ariane multi-niveaux résolu côté serveur (ex: « Clients > Bank Al-Maghrib > Info »). Nécessite un context React ou un slot Next.js parallel route.
+- **Priorité** : basse (UX cosmétique).
+- **Phase cible** : 7 (audit/journal — moment où l'UX cross-écran sera réétudiée) ou plus tôt si feedback utilisateur.
+
+### DETTE-LIC-010 — Liste `typeContactCode` statique dans `ContactDialog`
+
+- **Cause** : Phase 4.F livre `ContactDialog` avec un `<select>` peuplé d'une liste statique `TYPES_CONTACT_OPTIONS` (6 valeurs : ACHAT/FACTURATION/TECHNIQUE/JURIDIQUE/TECHNIQUE_F2/DIRECTION). Le SADMIN administre la vraie liste depuis `/settings/team` (Phase 2.B) via `lic_types_contact_ref`, mais le Dialog ne fetch pas cette liste dynamiquement.
+- **Impact** : si le SADMIN ajoute un type (ex: `RGPD`), il ne sera pas visible dans le sélecteur Phase 4.F. La validation FK côté serveur attrape les codes inconnus, mais l'UX ne reflète pas la liste autoritative.
+- **Solution future** : fetcher `listTypesContactUseCase` côté Server Component `contacts/page.tsx`, passer la liste en prop à `ContactsTab` → `ContactDialog`.
+- **Priorité** : basse.
+- **Phase cible** : 4.G ou plus tôt si demande métier.
 
 ### Dettes résolues
 
