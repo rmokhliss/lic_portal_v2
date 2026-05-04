@@ -817,3 +817,29 @@ _Fin de l'archive. Capitalisation close en Mai 2026._
   - **`entity_id` est typé `uuid`** côté BD (pas `text` ni `varchar`), pour s'aligner sur les PK uuidv7 des entités métier (ADR 0005).
   - Quand on écrit du SQL template `sql\`...\``qui croise`audit_log`avec d'autres tables, **caster les littéraux en`::uuid`** et **NE PAS** caster les `id`des entités cibles en`::text`.
   - Documenter comme règle critique car l'erreur Postgres 42883 ne survient qu'à l'exécution avec un message peu explicite ("operator does not exist: uuid = text") qui peut faire perdre du temps en debug.
+
+---
+
+### R-38 — `db.execute()` Drizzle ne parse pas TIMESTAMPTZ → cast Date manuel
+
+- **Type** : Pattern technique Drizzle / postgres-js à standardiser
+- **Phase LIC** : Phase 9 étape 9.C (job auto-renew-licences)
+- **Contexte** : Drizzle expose deux APIs pour exécuter une requête SELECT :
+  1. **`db.select().from(table)`** — query builder typé, **parse automatique** des colonnes selon le schéma Drizzle (`timestamp` PG → `Date` JS, `jsonb` → objet typé, `uuid` → string, etc.).
+  2. **`db.execute(sql\`...\`)`** — exécution raw SQL via tagged template, **bypass du parse** : les colonnes temporelles `TIMESTAMPTZ` reviennent en **string ISO** (postgres-js le format par défaut), pas en `Date`. Pareil pour les autres types non triviaux.
+
+  Phase 9.C `auto-renew-licences.handler.ts` a hit ce piège : la requête `db.execute<EligibleLicenceRow>(sql\`SELECT l.id, l.date_fin FROM lic_licences l WHERE...\`)`retourne`row.date_fin`en string. L'appel`row.date_fin.getTime()`plus loin throw`TypeError: debut.getTime is not a function`.
+
+- **Décision LIC v2** : Cast manuel obligatoire à la frontière `db.execute()` :
+
+  ```ts
+  // Pattern défensif quand on bascule sur sql template raw :
+  const newDebut = row.date_fin instanceof Date ? row.date_fin : new Date(row.date_fin);
+  ```
+
+  À privilégier : **`db.select()` avec schéma Drizzle typé** (parse auto). Le `db.execute()` reste utile pour les requêtes SQL complexes (JOIN multi-OR scope audit Phase 7.A, RETURNING UPDATE Phase 8.C `expire-licences`), mais alors **caster systématiquement** les colonnes temporelles à la sortie.
+
+- **Reco évolution Référentiel v2.2+** : Ajouter en §4.11 (Drizzle / Adapters) un encart **« API Drizzle : query builder vs `db.execute()` »** précisant :
+  1. Préférer `db.select().from(table).where(...)` chaque fois que la requête est exprimable en query builder (parse auto, types stricts).
+  2. `db.execute(sql\`...\`)`uniquement quand le query builder ne suffit pas (sous-requêtes complexes, RETURNING UPDATE, expressions non supportées). **Cast manuel à la sortie** pour :`TIMESTAMPTZ`→`Date`, `JSONB`→ typage explicite via`as`, `NUMERIC`→`number`ou`string` selon stratégie projet.
+  3. Documenter comme règle critique car le bug ne se voit qu'à l'exécution (TypeScript ne peut pas vérifier les types de retour de `sql\`...\`` sans annotation manuelle).

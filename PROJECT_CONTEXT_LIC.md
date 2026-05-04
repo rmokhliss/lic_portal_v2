@@ -526,6 +526,22 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 
 Tab `/licences/[id]/articles` débloquée : sections produits + sous-tables articles avec volumes (consommé/autorisé/taux), Dialogs Add Produit / Add Article / Edit Volume / Remove. L'onglet `/settings/catalogues` (DETTE résiduelle des stubs Phase 2.B) est également opérationnel (CRUD SADMIN produits + articles). 11 Server Actions, schémas Zod cf. `shared/src/schemas/produit.schema.ts`, codes SPX-LIC-743..754.
 
+### DETTE-LIC-013 — Sélecteur licences `Dialog healthcheck` /clients/[id] non-paginé
+
+- **Cause** : Phase 10.D — `ImportHealthcheckClientButton` dans le layout `/clients/[id]` charge les licences du client via `listLicencesByClientUseCase.execute({ clientId, limit: 200 })`. Le `<select>` dropdown ne supporte pas la pagination cursor (vue dégradée si un client dépasse 200 licences — improbable mais possible Phase 13+ avec gros bancaires).
+- **Impact** : faible mono-tenant (les clients vendus ont rarement >200 licences). Si dépassement, les licences au-delà ne sont pas sélectionnables → utilisateur doit aller sur la tab `licences` du client puis cliquer "Importer healthcheck" depuis la page licence directement (pattern fallback déjà fonctionnel).
+- **Solution future** : remplacer le `<select>` par un combobox autocomplete avec recherche serveur paginée (TanStack Query `keepPreviousData` + cursor cf. pattern à raffiner). Idéalement un composant `<LicencePicker>` réutilisable.
+- **Priorité** : basse.
+- **Phase cible** : 13 (durcissement UX).
+
+### DETTE-LIC-014 — Dropdown clients page `/renewals` non-paginé
+
+- **Cause** : Phase 9.B — `RenewalsList` charge les clients via `listClientsUseCase.execute({ limit: 200 })` pour peupler le filtre `<select>` "Client". Pas de pagination cursor sur le dropdown.
+- **Impact** : si la BD dépasse 200 clients (volume cible mono-tenant 100-200 clients SELECT-PX), les clients au-delà ne peuvent pas être filtrés depuis ce dropdown → utilisateur doit passer par `/clients` filtre FTS puis drill-down vers `/licences/[id]/renouvellements`.
+- **Solution future** : combobox autocomplete avec recherche serveur (cf. DETTE-LIC-013 — même composant `<ClientPicker>` réutilisable).
+- **Priorité** : basse.
+- **Phase cible** : 13 (durcissement UX).
+
 ### DETTE-LIC-010 — Liste `typeContactCode` statique dans `ContactDialog`
 
 - **Cause** : Phase 4.F livre `ContactDialog` avec un `<select>` peuplé d'une liste statique `TYPES_CONTACT_OPTIONS` (6 valeurs : ACHAT/FACTURATION/TECHNIQUE/JURIDIQUE/TECHNIQUE_F2/DIRECTION). Le SADMIN administre la vraie liste depuis `/settings/team` (Phase 2.B) via `lic_types_contact_ref`, mais le Dialog ne fetch pas cette liste dynamiquement.
