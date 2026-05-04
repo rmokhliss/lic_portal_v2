@@ -29,8 +29,6 @@ Portail back-office S2M de gestion des licences contractuelles **SELECT-PX**.
 
 ### Installation
 
-> **Note Phase 1** : la commande `pnpm db:migrate` n'est opérationnelle qu'à partir de la Phase 5 (premier schéma BD). En Phase 1 / Phase 2, ignorer cette étape — elle échouera car le script `migrate.ts` n'est pas encore implémenté. Idem pour `pnpm db:seed`, `pnpm db:studio`, `pnpm db:reset`.
-
 ```bash
 # Cloner le repo
 git clone <url> lic-portal-v2
@@ -120,7 +118,9 @@ Voir `PROJECT_CONTEXT_LIC.md` section 5 pour le détail.
 
 Le statut projet est maintenu dans `PROJECT_CONTEXT_LIC.md` section 2 (source de vérité unique selon Référentiel §4.21).
 
-**Phase actuelle** : Phase 2.A — Fondations complètes (Mai 2026). 12 fondations livrées (F-01 à F-12), audit Référentiel disponible dans [`docs/AUDIT_PHASE_2A.md`](./docs/AUDIT_PHASE_2A.md).
+**Phase actuelle** : **Phases 1 → 12 closes (Mai 2026)** — back-office complet livré (clients, licences, articles/volumes, audit, alertes/notifications/jobs, fichiers .lic stub PKI, dashboard EC-01, rapports CSV, profil EC-14). **Phase 13 en cours** : durcissement sécurité (CSP nonces — pending validation), perf, dettes résiduelles, doc finale, déploiement.
+
+12 fondations livrées (F-01 à F-12) + 12 phases métier (1 → 12). Plus de 580 tests verts. Voir `PROJECT_CONTEXT_LIC.md` §2 pour l'historique détaillé des commits par phase.
 
 ---
 
