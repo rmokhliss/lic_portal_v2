@@ -290,6 +290,25 @@ async function seedUsers(sql: postgres.Sql): Promise<void> {
   }
 }
 
+async function seedBatchJobsCatalog(sql: postgres.Sql): Promise<void> {
+  log.info("Seeding lic_batch_jobs catalog");
+  // Phase 8.C — 3 jobs registered in worker.ts. Catalog row = libellé +
+  // schedule humain pour l'UI EC-12. Idempotent ON CONFLICT (code).
+  await sql`
+    INSERT INTO lic_batch_jobs (code, libelle, description, schedule) VALUES
+      ('snapshot-volumes', 'Snapshot volumes mensuels',
+       'Snapshot mensuel des volumes consommés/autorisés par licence×article — alimente l''historique de volumétrie (EC-09).',
+       '0 2 1 * *'),
+      ('check-alerts', 'Vérification des alertes',
+       'Compare volumes/dates avec les configs d''alertes actives → notifications IN_APP aux ADMIN/SADMIN (EC-07).',
+       '0 3 * * *'),
+      ('expire-licences', 'Expiration automatique licences',
+       'Passe les licences ACTIF dont date_fin < NOW() au statut EXPIRE.',
+       '0 4 * * *')
+    ON CONFLICT (code) DO NOTHING
+  `;
+}
+
 async function seedSettings(sql: postgres.Sql): Promise<void> {
   log.info("Seeding lic_settings");
   // Schema actuel : key (varchar PK) + value (jsonb). Les valeurs string/numeric
@@ -345,6 +364,9 @@ async function runSeed(): Promise<void> {
     // Phase 6.E — catalogue produits/articles + liaisons + volume_history.
     // Idempotent (early return si lic_produits_ref déjà peuplée).
     await seedPhase6Catalogue(seedClient);
+
+    // Phase 8.A — catalogue jobs batch (idempotent).
+    await seedBatchJobsCatalog(seedClient);
 
     log.info("Seed completed successfully");
   } finally {
