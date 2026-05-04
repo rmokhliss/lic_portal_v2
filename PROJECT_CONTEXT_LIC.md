@@ -43,7 +43,22 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phases 1 → 13 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod, **586/586 tests verts**. MVP livré, prêt pour premier déploiement préprod.
+**Phase actuelle** : **Phases 1 → 13 closes + Phase 3 PKI (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI. MVP livré, prêt pour premier déploiement préprod.
+
+**Phase 3 PKI close (Mai 2026)** — module crypto + CA + cert clients + sandbox + endpoint public.
+
+- 3.A.1 (commits `c6a8f59`, `a1477ff`) : retrait node-forge + module crypto/domain/rsa.ts (RSA-4096 + RSASSA-PKCS1-v1_5 RFC8017) + 21 tests + vecteur de non-régression. ADR-0019.
+- 3.A.2 (commits `c178a8a`, `07c75a9`) : aes.ts (AES-256-GCM NIST SP800-38D) + x509.ts (CA + client cert generation via @peculiar/x509, vérification sync via node:crypto.X509Certificate). 41 tests crypto.
+- 3.B : migration 0010 — 3 colonnes PKI nullable sur `lic_clients` (`client_private_key_enc`, `client_certificate_pem`, `client_certificate_expires_at`) + index `idx_clients_cert_expires_at`.
+- 3.E.0 : migration 0011 — ALTER TYPE audit_mode ADD VALUE 'SCRIPT' pour backfill + scripts pnpm one-shot.
+- 3.C : `generateCAUseCase` + `getCAStatusUseCase` + `getCACertificateUseCase` câblés cross-module (settingRepository + auditRepository + userRepository) + UI `/settings/security` (statut CA, génération SADMIN, téléchargement `s2m-ca.pem`). CA persistée en JSONB unique sous clé `s2m_root_ca`.
+- 3.D : refactor `createClientUseCase` — vérif CA présente AVANT tx (throw SPX-LIC-411 si absente), génération paire RSA-4096 client + cert X.509 signé par CA + chiffrement AES-GCM clé privée + INSERT cert dans même tx que client + audit `CERTIFICATE_ISSUED`. Constructor avec `settingRepository?` optional pour rétrocompat tests legacy.
+- 3.E : `backfillClientCertificatesUseCase` itère clients sans cert, génère cert pour chacun (audit mode SCRIPT). Script CLI `pnpm script:backfill-client-certs`. UI section dans `/settings/security`.
+- 3.F : Sandbox `/settings/sandbox` opérationnelle — 5 outils SADMIN (génération paire RSA, signature .lic, vérification, chiffrement .hc, déchiffrement) — règle L16 respectée (ZÉRO écriture BD, tout en mémoire).
+- 3.G : route `/.well-known/s2m-ca.pem` (404 silencieux par défaut, 200 + PEM si setting `expose_s2m_ca_public=true`). Toggle SADMIN. Var d'env `EXPOSE_S2M_CA_PUBLIC` supprimée → setting BD single source of truth.
+- 3.H : ADR-0019 (RSA-4096, node:crypto natif, @peculiar/x509 exception, PKCS1-v1_5, validity 20/10 ans, AES-GCM, toggle BD, audit_mode SCRIPT). DETTE-LIC-008 résolue.
+
+**Phases 1 → 13 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod.
 
 **Phase 13 close (Mai 2026)** — durcissement sécurité, perf, déploiement, doc finale.
 
@@ -479,6 +494,7 @@ Bonnes / mauvaises / neutres
 | **0009** | Variante B Next.js full-stack (alignement §4.12)                                       | Accepted |
 | **0017** | PK `serial` pour les 6 tables référentiels paramétrables (exception bornée à ADR 0005) | Accepted |
 | **0018** | CSP nonces production-only (Variante A+nonces) — résolution DETTE-LIC-004              | Accepted |
+| **0019** | Implémentation PKI Phase 3 — précisions et dérogations vs ADR 0002                     | Accepted |
 
 ### ADR anticipés (non créés — décisions absorbées dans le code)
 
@@ -506,16 +522,14 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 - **DETTE-LIC-005 — i18n namespace `files.*` manquant** : `AppSidebar` rend déjà l'item `nav.items.files` (clé existante) mais aucune clé `files.*` n'est définie pour le futur écran EC-Files. À ajouter quand la Phase 10 introduira la page `/files`. **Priorité** : basse. **Phase** : 10 (fichiers + génération `.lic`).
 - **DETTE-LIC-006 — UI Edit absente sur les 6 référentiels SADMIN (`/settings/team`)** : les use-cases `update*UseCase` existent côté backend (Phase 2.B étapes 2-4) et sont ré-exportés via `composition-root.ts`, mais l'onglet team n'expose que Create + Toggle (pas de bouton Edit par row). Limitation acceptée pour le périmètre étape 7 — Edit modal Dialog identique au pattern Create + Server Action `update*Action`. **Priorité** : basse. **Phase** : Phase 13.x+ (jalon dédié refinement /settings post-MVP).
 
-### DETTE-LIC-008 — PKI absente à la création client (Phase 4 avant Phase 3)
+### ~~DETTE-LIC-008 — PKI absente à la création client (Phase 4 avant Phase 3)~~ — **résolue Phase 3.D + 3.E**
 
-> Numéro alloué `008` (et non `002` comme suggéré au brief 4.A) — `DETTE-LIC-002` est déjà utilisé par l'historique « middleware.ts deprecated Next.js 16 — Sans objet F-12 ». Conservation de la chronologie.
+Phase 3 (Mai 2026) résout cette dette en deux temps :
 
-- **Cause** : Phase 4 (clients) livrée avant Phase 3 (PKI/ADR 0002).
-- **Impact** : `createClientUseCase` ne génère pas de paire RSA ni de certificat X.509 à la création. Impossible de générer un `.lic` signé pour les clients Phase 4 tant que Phase 3 est absente.
-- **TODO dans le code** : commentaire `// TODO Phase 3 — ADR 0002 : generateClientKeyPair + signCertificateByCA dans cette transaction` à poser dans `create-client.usecase.ts` lors de la livraison 4.B.
-- **Solution future** : refactor `createClientUseCase` Phase 3 + job one-shot pour clients déjà créés sans certificat.
-- **Priorité** : haute (bloquant première génération `.lic`).
-- **Phase cible** : Phase 3 PKI (livraison crypto/CA + génération paire RSA + certificat X.509 client).
+- **3.D** : `createClientUseCase` refactoré — pré-check CA présente (throw SPX-LIC-411 si absente), génération paire RSA-4096 client + cert X.509 signé par CA + persistance des 3 colonnes PKI (`client_private_key_enc`, `client_certificate_pem`, `client_certificate_expires_at`) dans la même tx que l'INSERT client + audit `CERTIFICATE_ISSUED`.
+- **3.E** : `backfillClientCertificatesUseCase` (use-case + script `pnpm script:backfill-client-certs` + UI section dans `/settings/security`) génère rétroactivement les certs pour les clients pré-Phase-3 (audit mode `SCRIPT`).
+
+Cf. ADR-0019 pour les choix d'implémentation (RSA-4096, RSASSA-PKCS1-v1_5, AES-GCM, @peculiar/x509 exception bornée).
 
 ### DETTE-LIC-009 — Breadcrumb header dynamique nom d'entité (résiduelle après Phase 11.C)
 
@@ -555,6 +569,27 @@ Tab `/licences/[id]/articles` débloquée : sections produits + sous-tables arti
 - **Solution future** : combobox autocomplete avec recherche serveur (cf. DETTE-LIC-013 — même composant `<ClientPicker>` réutilisable).
 - **Priorité** : basse.
 - **Phase cible** : 13 (durcissement UX).
+
+### DETTE-LIC-015 — i18n FR/EN absent sur `/settings/security` et `/settings/sandbox`
+
+- **Cause** : Phase 3.C/3.F livré en mode rapide — labels et descriptions UI hardcodés en FR (sections CA, Backfill, Toggle, Sandbox 5 boutons). Pas de namespace `settings.security.*` ni `settings.sandbox.*` dans `messages/fr.json` + `messages/en.json`.
+- **Impact** : un user EN voit du FR sur ces 2 pages. Pas bloquant pour le MVP S2M Maroc (utilisateurs francophones).
+- **Solution future** : extraire toutes les chaînes UI vers `useTranslations("settings.security")` + `useTranslations("settings.sandbox")` ; ajouter clés FR/EN.
+- **Priorité** : basse (UX cosmétique).
+- **Phase cible** : Phase 3.x ou jalon polish UX dédié.
+
+### DETTE-LIC-016 — Tests d'intégration `createClientUseCase` mode PKI obligatoire absents + signature dual-mode
+
+- **Cause** : Phase 3.D — `CreateClientUseCase` accepte `settingRepository?` et `options?` optionnels pour rétrocompat avec 14+ tests d'intégration legacy (entité, licence, licence-article, licence-produit, renouvellement, volume-history) qui instanciaient `new CreateClientUseCase(...)` à 3 args. Sans cette rétrocompat, ces tests cassent au typecheck. La rétrocompat actuelle introduit une logique conditionnelle (`if (settingRepo !== undefined && options !== undefined) ... else skip PKI`) — sale niveau architecture.
+- **Impact** : la couverture du chemin PKI obligatoire (3.D strict) n'est pas testée — uniquement le chemin legacy l'est. La règle 3.D `throw SPX-LIC-411 si CA absente` n'est validée que par revue de code.
+- **Solution future** :
+  1. Extraire un port `ClientCertIssuer` (interface) injectable à 4e position obligatoire.
+  2. Adapter `CryptoClientCertIssuer` (utilise `settingRepository` + `appMasterKey`) pour la prod (composition-root).
+  3. `MockClientCertIssuer` réutilisable pour tous les tests legacy d'intégration (renvoie cert dummy).
+  4. Refactor `CreateClientUseCase` pour supprimer les chemins conditionnels et faire de l'issuer une dépendance obligatoire.
+  5. Écrire `create-client.usecase.int.spec.ts` qui teste à la fois le chemin happy + SPX-LIC-411.
+- **Priorité** : moyenne (sale architecture + test coverage manquant sur chemin sécurité critique).
+- **Phase cible** : Phase 3.x (cleanup post-3.H).
 
 ### DETTE-LIC-010 — Liste `typeContactCode` statique dans `ContactDialog`
 
