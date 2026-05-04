@@ -64,6 +64,12 @@ export type ErrorCode =
   | "SPX-LIC-740"
   | "SPX-LIC-741"
   | "SPX-LIC-742"
+  | "SPX-LIC-743"
+  | "SPX-LIC-744"
+  | "SPX-LIC-745"
+  | "SPX-LIC-746"
+  | "SPX-LIC-747"
+  | "SPX-LIC-748"
   | "SPX-LIC-900"
   | "SPX-LIC-901"
   | "SPX-LIC-902"
@@ -387,6 +393,42 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     httpStatus: 409,
     defaultMessage: "Transition de statut renouvellement interdite",
     className: "ConflictError",
+  },
+  "SPX-LIC-743": {
+    code: "SPX-LIC-743",
+    httpStatus: 404,
+    defaultMessage: "Produit introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-744": {
+    code: "SPX-LIC-744",
+    httpStatus: 409,
+    defaultMessage: "Un produit avec ce code existe déjà",
+    className: "ConflictError",
+  },
+  "SPX-LIC-745": {
+    code: "SPX-LIC-745",
+    httpStatus: 400,
+    defaultMessage: "Données produit invalides",
+    className: "ValidationError",
+  },
+  "SPX-LIC-746": {
+    code: "SPX-LIC-746",
+    httpStatus: 404,
+    defaultMessage: "Article introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-747": {
+    code: "SPX-LIC-747",
+    httpStatus: 409,
+    defaultMessage: "Un article avec ce code existe déjà pour ce produit",
+    className: "ConflictError",
+  },
+  "SPX-LIC-748": {
+    code: "SPX-LIC-748",
+    httpStatus: 400,
+    defaultMessage: "Données article invalides",
+    className: "ValidationError",
   },
 
   // --- Système + erreurs génériques transverses (900-999) ------------------
