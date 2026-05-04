@@ -669,5 +669,33 @@
       "noRenouvellements": "No EN_COURS renewal.",
       "noNotifications": "No unread notification."
     }
+  },
+  "rapports": {
+    "title": "Reports",
+    "subtitle": "CSV exports for external analyses — 100k rows cap per export.",
+    "export": "Export CSV",
+    "exporting": "Generating...",
+    "filters": {
+      "client": "Client",
+      "clientAll": "— All —",
+      "status": "Status",
+      "statusAll": "— All —",
+      "fromDate": "From date",
+      "toDate": "To date"
+    },
+    "licences": {
+      "title": "Licences report",
+      "description": "Full list of licences with dates, status, version. Filter by client and status."
+    },
+    "renouvellements": {
+      "title": "Renewals report",
+      "description": "List of renewals with statuses and validations. Filter by client, status, period."
+    },
+    "audit": {
+      "title": "Audit report",
+      "description": "Full audit log — actions, entities, period. Reuses /audit page export.",
+      "action": "Action (audit verb)",
+      "entity": "Entity"
+    }
   }
 }

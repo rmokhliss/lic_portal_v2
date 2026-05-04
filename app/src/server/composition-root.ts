@@ -430,3 +430,13 @@ export const importHealthcheckUseCase = new ImportHealthcheckUseCase(
 // --- Phase 11.A : dashboard EC-01 (lecture seule, agrégats SQL) ------------
 
 export { getDashboardStatsUseCase } from "@/server/modules/dashboard/dashboard.module";
+
+// --- Phase 11.B : exports CSV rapports (cross-module) ----------------------
+
+import { ExportLicencesCsvUseCase } from "@/server/modules/dashboard/application/export-licences-csv.usecase";
+import { ExportRenouvellementsCsvUseCase } from "@/server/modules/dashboard/application/export-renouvellements-csv.usecase";
+
+export const exportLicencesCsvUseCase = new ExportLicencesCsvUseCase(licenceRepository);
+export const exportRenouvellementsCsvUseCase = new ExportRenouvellementsCsvUseCase(
+  renouvellementRepository,
+);

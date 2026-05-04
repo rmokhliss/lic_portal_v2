@@ -669,5 +669,33 @@
       "noRenouvellements": "Aucun renouvellement EN_COURS.",
       "noNotifications": "Aucune notification non lue."
     }
+  },
+  "rapports": {
+    "title": "Rapports",
+    "subtitle": "Exports CSV pour analyses externes — cap 100k lignes par export.",
+    "export": "Exporter CSV",
+    "exporting": "Génération...",
+    "filters": {
+      "client": "Client",
+      "clientAll": "— Tous —",
+      "status": "Statut",
+      "statusAll": "— Tous —",
+      "fromDate": "Date début",
+      "toDate": "Date fin"
+    },
+    "licences": {
+      "title": "Rapport licences",
+      "description": "Liste complète des licences avec dates, statut, version. Filtrable par client et statut."
+    },
+    "renouvellements": {
+      "title": "Rapport renouvellements",
+      "description": "Liste des renouvellements avec statuts et validations. Filtrable par client, statut, période."
+    },
+    "audit": {
+      "title": "Rapport audit",
+      "description": "Journal d'audit complet — actions, entités, période. Réutilise l'export de la page /audit.",
+      "action": "Action (verbe audit)",
+      "entity": "Entité"
+    }
   }
 }

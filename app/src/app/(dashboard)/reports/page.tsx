@@ -1,10 +1,28 @@
-// LIC v2 — Placeholder /reports (F-12, vrai écran Phase 11 EC-09)
+// ==============================================================================
+// LIC v2 — /reports (Phase 11.B EC-09)
+// 3 cartes export CSV ADMIN/SADMIN.
+// ==============================================================================
 
-export default function ReportsPage() {
+import { notFound } from "next/navigation";
+
+import { requireAuthPage } from "@/server/infrastructure/auth";
+import { listClientsUseCase } from "@/server/composition-root";
+
+import { ReportsPanel, type ClientOption } from "./_components/ReportsPanel";
+
+export default async function ReportsPage() {
+  const user = await requireAuthPage();
+  if (user.role !== "ADMIN" && user.role !== "SADMIN") notFound();
+
+  const clientsPage = await listClientsUseCase.execute({ limit: 200 });
+  const clients: ClientOption[] = clientsPage.items.map((c) => ({
+    id: c.id,
+    label: `${c.codeClient} — ${c.raisonSociale}`,
+  }));
+
   return (
     <div className="p-8">
-      <h1 className="font-display text-foreground text-2xl">Rapports</h1>
-      <p className="text-muted-foreground mt-2">Écran à venir (Phase 11).</p>
+      <ReportsPanel clients={clients} />
     </div>
   );
 }
