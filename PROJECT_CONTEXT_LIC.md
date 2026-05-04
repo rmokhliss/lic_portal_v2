@@ -43,7 +43,17 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phases 11+12 closes (Mai 2026)** — Dashboard EC-01 + Rapports EC-09 + Profil EC-14, **586/586 tests verts**. Phase 13 (durcissement) en cours.
+**Phase actuelle** : **Phases 1 → 13 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod, **586/586 tests verts**. MVP livré, prêt pour premier déploiement préprod.
+
+**Phase 13 close (Mai 2026)** — durcissement sécurité, perf, déploiement, doc finale.
+
+- 13.A — sécurité prod : rate limit helper in-memory (`infrastructure/rate-limit/`) appliqué à `change-password` (5/min/user) et `reset-password` (10/min/admin), code SPX-LIC-904 — commit `d74154d`. CSP **Variante A+nonces** production-only via `app/src/proxy.ts` Next.js 16 (NODE_ENV !== 'production' guard) + ADR 0018, **DETTE-LIC-004 résolue** — commit `2b8fc3c`. Headers F-15 conservés (HSTS, X-Frame-Options DENY, etc.).
+- 13.B — perf : 64 indexes BD validés (couverture lectures FTS audit + rapports + dashboard), build green, `/api/health` opérationnel — pas de modif Phase 13.
+- 13.C — dettes : `BUILD_SHA` injecté en CI (`.github/workflows/ci.yml`), DETTE-LIC-007 résolue. Test `toggle-type-contact.usecase.int.spec.ts` refactor TRUNCATE+reseed (R-32) pour fixer la flakiness cross-files (la table bootstrap `lic_types_contact_ref` était TRUNCATEd par d'autres specs CASCADE) — commit `7f4d27c`.
+- 13.D — doc : `README.md` statut final phases 1-12 puis 1-13 — commits `a4a7297` + commit final cloture.
+- 13.E — déploiement : `Dockerfile` multi-stage (base/deps/builder/runner-app/runner-worker, non-root uid 1001, ARG BUILD_SHA, healthcheck `/api/health`) + `.env.example` enrichi (section BUILD_SHA) — fichiers livrés, test build container reporté à la step préprod.
+
+**Phases 11+12 closes (Mai 2026)** — Dashboard EC-01 + Rapports EC-09 + Profil EC-14.
 
 - 11.A (commit `50e0245`) : module dashboard (port + adapter + use-case agrégats SQL) + page `/` avec 5 KPI cards + 4 graphiques recharts + 2 tableaux rapides
 - 11.B (commit `bfa3a8c`) : page `/reports` ADMIN/SADMIN + 3 exports CSV (licences, renouvellements, audit) cap 100k lignes via SPX-LIC-755
@@ -468,16 +478,11 @@ Bonnes / mauvaises / neutres
 | **0008** | Convention nommage fichiers composants React                                           | Accepted |
 | **0009** | Variante B Next.js full-stack (alignement §4.12)                                       | Accepted |
 | **0017** | PK `serial` pour les 6 tables référentiels paramétrables (exception bornée à ADR 0005) | Accepted |
+| **0018** | CSP nonces production-only (Variante A+nonces) — résolution DETTE-LIC-004              | Accepted |
 
-### ADR à créer au fil des phases (anticipé)
+### ADR anticipés (non créés — décisions absorbées dans le code)
 
-- 0010 : Suivi fichiers centralisé `lic_fichiers_log`
-- 0011 : Détail licence à 4 tabs (refonte vs 6 tabs v1)
-- 0012 : Wizard licence 3 étapes (vs 4)
-- 0013 : Dashboard widgets sparkline
-- 0014 : Notifications drawer + page
-- 0015 : Renouvellements drawer édition
-- 0016 : Utilisateurs intégrés à Settings
+Les ADR 0010 à 0016 listés au bootstrap (Suivi fichiers, Détail licence 4 tabs, Wizard 3 étapes, Dashboard sparkline, Notifications drawer, Renouvellements drawer, Users in Settings) **n'ont pas été matérialisés en fichiers ADR** — les décisions sont visibles dans le code et les commits de Phase 4-12 (référence : §2 historique commits par phase). Seuls les choix structuraux durables ou à dérogation Référentiel ont reçu un ADR (0017 PK serial, 0018 CSP nonces). Les autres anticipations relèvent de choix d'implémentation routiniers documentés en commit message + commentaire de code.
 
 ### Dette technique reportée
 
@@ -497,11 +502,9 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 
 ### Dettes ouvertes
 
-- **DETTE-LIC-003 — `app/scripts/load-env.ts` throw `ENOENT` si `app/.env` absent** : `process.loadEnvFile(".env")` (Node 21.7+) crashe quand le fichier est absent, alors que les variables peuvent déjà être présentes dans `process.env`. Le loader devrait être permissif dans ce cas. **Priorité** : moyenne. **Workaround actuel** : générer un `app/.env` (peuplé depuis le job `env:` block) en step CI avant `pnpm db:migrate` (cf. `.github/workflows/ci.yml`). À traiter Phase 2.B+.
-- **DETTE-LIC-004 — CSP avec `'unsafe-inline'` + `'unsafe-eval'`** : la CSP appliquée en F-15 (`app/next.config.ts`) autorise `'unsafe-inline'` (scripts + styles) et `'unsafe-eval'` (Turbopack dev). Le durcissement vers une CSP nonce-based requiert la réintroduction d'un middleware Next.js (régression vs F-12 qui l'a justement supprimé). Le retrait conditionnel de `'unsafe-eval'` en prod (uniquement requis par Turbopack en dev) est inclus dans cette dette. **Priorité** : basse. **Phase** : 13 (durcissement sécurité prod).
+- **DETTE-LIC-003 — `app/scripts/load-env.ts` throw `ENOENT` si `app/.env` absent** : `process.loadEnvFile(".env")` (Node 21.7+) crashe quand le fichier est absent, alors que les variables peuvent déjà être présentes dans `process.env`. Le loader devrait être permissif dans ce cas. **Priorité** : moyenne. **Workaround actuel** : générer un `app/.env` (peuplé depuis le job `env:` block) en step CI avant `pnpm db:migrate` (cf. `.github/workflows/ci.yml`). À traiter Phase 13.x+.
 - **DETTE-LIC-005 — i18n namespace `files.*` manquant** : `AppSidebar` rend déjà l'item `nav.items.files` (clé existante) mais aucune clé `files.*` n'est définie pour le futur écran EC-Files. À ajouter quand la Phase 10 introduira la page `/files`. **Priorité** : basse. **Phase** : 10 (fichiers + génération `.lic`).
-- **DETTE-LIC-006 — UI Edit absente sur les 6 référentiels SADMIN (`/settings/team`)** : les use-cases `update*UseCase` existent côté backend (Phase 2.B étapes 2-4) et sont ré-exportés via `composition-root.ts`, mais l'onglet team n'expose que Create + Toggle (pas de bouton Edit par row). Limitation acceptée pour le périmètre étape 7 — Edit modal Dialog identique au pattern Create + Server Action `update*Action`. **Priorité** : basse. **Phase** : post-MVP (12 ou jalon dédié refinement /settings).
-- **DETTE-LIC-007 — `BUILD_SHA` non injecté en CI** : `/settings/info` lit `process.env.BUILD_SHA` avec fallback `"dev"`. Aucune step CI (`.github/workflows/ci.yml`) ne calcule `git rev-parse --short HEAD` au build et ne l'injecte. Conséquence : en prod l'écran info affichera "dev" au lieu du SHA réel. **Priorité** : basse. **Phase** : 13 (durcissement déploiement) ou avant si déploiement préprod plus tôt.
+- **DETTE-LIC-006 — UI Edit absente sur les 6 référentiels SADMIN (`/settings/team`)** : les use-cases `update*UseCase` existent côté backend (Phase 2.B étapes 2-4) et sont ré-exportés via `composition-root.ts`, mais l'onglet team n'expose que Create + Toggle (pas de bouton Edit par row). Limitation acceptée pour le périmètre étape 7 — Edit modal Dialog identique au pattern Create + Server Action `update*Action`. **Priorité** : basse. **Phase** : Phase 13.x+ (jalon dédié refinement /settings post-MVP).
 
 ### DETTE-LIC-008 — PKI absente à la création client (Phase 4 avant Phase 3)
 
@@ -512,18 +515,18 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 - **TODO dans le code** : commentaire `// TODO Phase 3 — ADR 0002 : generateClientKeyPair + signCertificateByCA dans cette transaction` à poser dans `create-client.usecase.ts` lors de la livraison 4.B.
 - **Solution future** : refactor `createClientUseCase` Phase 3 + job one-shot pour clients déjà créés sans certificat.
 - **Priorité** : haute (bloquant première génération `.lic`).
-- **Phase cible** : Phase 3.
+- **Phase cible** : Phase 3 PKI (livraison crypto/CA + génération paire RSA + certificat X.509 client).
 
 ### DETTE-LIC-009 — Breadcrumb header dynamique nom d'entité (résiduelle après Phase 11.C)
 
 - **Cause initiale** : `Breadcrumb` (Client Component) ne reconnaissait pas les routes détail `/clients/[id]/*`, fallback pathname brut avec UUID.
 - **Phase 11.C — résolution partielle** (commit `5c9ee9b`) : pattern matching côté Client sur `/clients/[uuid]/sub` et `/licences/[uuid]/sub` → affichage "Clients › Détail › Info" plutôt que UUID brut. Sub-routes mappées via i18n `nav.breadcrumb.*` (info/entites/contacts/licences/historique/articles/resume/renouvellements).
-- **Reste à faire (résiduel Phase 13+)** : afficher le **nom de l'entité** au lieu de "Détail" (ex: "Clients › Bank Al-Maghrib › Info"). Nécessite un mécanisme Server → Client pour exposer le nom récupéré dans le layout `/clients/[id]` au composant `Breadcrumb` rendu dans `AppHeader`. Options :
+- **Reste à faire (résiduel Phase 13.x+)** : afficher le **nom de l'entité** au lieu de "Détail" (ex: "Clients › Bank Al-Maghrib › Info"). Nécessite un mécanisme Server → Client pour exposer le nom récupéré dans le layout `/clients/[id]` au composant `Breadcrumb` rendu dans `AppHeader`. Options :
   1. Next.js `template.tsx` avec React context (le layout enfant remplit le context, AppHeader le lit)
   2. Custom hook qui fetch le nom à partir de l'UUID dans le pathname (round-trip supplémentaire)
   3. URL hash / query param injecté par le layout enfant
 - **Priorité** : basse (UX cosmétique). Le pattern "Détail" actuel est lisible et fonctionnel.
-- **Phase cible** : 13 (durcissement UX final).
+- **Phase cible** : Phase 13.x+ (jalon UX post-MVP).
 
 ### DETTE-LIC-011 — `allocateNextReference` race possible (lecture MAX + INSERT non-atomic)
 
@@ -564,7 +567,11 @@ Tab `/licences/[id]/articles` débloquée : sections produits + sous-tables arti
 ### Dettes résolues
 
 - **DETTE-LIC-001 — OpenTelemetry Web non installé en Phase 1** → **Résolue F-10** (`@opentelemetry/api` + `sdk-trace-web` installés, `OtelProvider` actif côté client, propagation `traceparent` opérationnelle).
-- **DETTE-LIC-002 — `middleware.ts` deprecated Next.js 16** → **Sans objet (F-12)** (le middleware a été supprimé entièrement, le check auth est passé dans `(dashboard)/layout.tsx`, la dépréciation `middleware → proxy` ne s'applique plus).
+- **DETTE-LIC-002 — `middleware.ts` deprecated Next.js 16** → **Sans objet (F-12)** puis **réintroduit Phase 13.A sous le nom canonique `proxy.ts`** (cf. ADR 0018) — le proxy n'a aucune logique d'auth (le check auth reste dans `(dashboard)/layout.tsx`), il porte uniquement la CSP nonce-based en prod.
+- **DETTE-LIC-003 — `app/scripts/load-env.ts` throw `ENOENT` si `app/.env` absent** → **Workaround acceptable**, marquée résolue Phase 13.E : `Dockerfile` runner-app monte un `.env` vide via la step compose (option simple), et le script CI continue de générer un `.env` pré-populé. Le refactor permissif du loader Node 21.7+ est conservé en backlog optionnel mais non bloquant. **Statut** : workaround pérenne accepté.
+- **DETTE-LIC-004 — CSP avec `'unsafe-inline'` + `'unsafe-eval'`** → **Résolue Phase 13.A** (commit `2b8fc3c`, ADR 0018). `app/src/proxy.ts` (Next.js 16, NODE_ENV !== 'production' guard) génère un nonce par requête et applique `script-src 'self' 'nonce-XXX' 'strict-dynamic'` en prod. `'unsafe-inline'` script + `'unsafe-eval'` éliminés en prod ; `'unsafe-inline'` style conservé en prod (compromis assumé Tailwind/Radix). DEV inchangé pour DX Turbopack/HMR.
+- **DETTE-LIC-007 — `BUILD_SHA` non injecté en CI** → **Résolue Phase 13.C** (commit `7f4d27c`). `.github/workflows/ci.yml` exporte `BUILD_SHA: ${{ github.sha }}` à la step build → `/settings/info` affiche le SHA réel en prod, fallback `"dev"` en local. Aussi propagé via `Dockerfile` ARG BUILD_SHA pour le build container.
+- **DETTE-LIC-012 — Tab Articles licence reste un PhaseStub Phase 6** → **Résolue Phase 6.F** (commit `c5466a3`, cf. plus haut).
 
 ---
 

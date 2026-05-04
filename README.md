@@ -118,9 +118,9 @@ Voir `PROJECT_CONTEXT_LIC.md` section 5 pour le détail.
 
 Le statut projet est maintenu dans `PROJECT_CONTEXT_LIC.md` section 2 (source de vérité unique selon Référentiel §4.21).
 
-**Phase actuelle** : **Phases 1 → 12 closes (Mai 2026)** — back-office complet livré (clients, licences, articles/volumes, audit, alertes/notifications/jobs, fichiers .lic stub PKI, dashboard EC-01, rapports CSV, profil EC-14). **Phase 13 en cours** : durcissement sécurité (CSP nonces — pending validation), perf, dettes résiduelles, doc finale, déploiement.
+**Phase actuelle** : **Phases 1 → 13 closes (Mai 2026)** — MVP livré, prêt pour premier déploiement préprod. Back-office complet (clients, licences, articles/volumes, audit FTS, alertes/notifications/jobs, fichiers .lic stub PKI, dashboard EC-01, rapports CSV, profil EC-14) + durcissement sécurité prod (CSP nonces production-only via `app/src/proxy.ts` — ADR 0018, rate limit Server Actions sensibles, BUILD_SHA injecté en CI, Dockerfile multi-stage non-root).
 
-12 fondations livrées (F-01 à F-12) + 12 phases métier (1 → 12). Plus de 580 tests verts. Voir `PROJECT_CONTEXT_LIC.md` §2 pour l'historique détaillé des commits par phase.
+12 fondations livrées (F-01 à F-15) + 13 phases métier (1 → 13). **586/586 tests verts**. 9 migrations Drizzle. 12 ADR (0001-0009 + 0017 + 0018). Voir `PROJECT_CONTEXT_LIC.md` §2 pour l'historique détaillé des commits par phase.
 
 ---
 
