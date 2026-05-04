@@ -23,6 +23,13 @@ export type ErrorCode =
   | "SPX-LIC-003"
   | "SPX-LIC-400"
   | "SPX-LIC-401"
+  | "SPX-LIC-402"
+  | "SPX-LIC-403"
+  | "SPX-LIC-410"
+  | "SPX-LIC-411"
+  | "SPX-LIC-420"
+  | "SPX-LIC-421"
+  | "SPX-LIC-422"
   | "SPX-LIC-500"
   | "SPX-LIC-501"
   | "SPX-LIC-502"
@@ -140,6 +147,51 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     code: "SPX-LIC-401",
     httpStatus: 400,
     defaultMessage: "Échec décodage clé RSA",
+    className: "ValidationError",
+  },
+  // Phase 3.A.2 : AES-256-GCM (NIST SP800-38D).
+  "SPX-LIC-402": {
+    code: "SPX-LIC-402",
+    httpStatus: 400,
+    defaultMessage: "Échec déchiffrement AES-GCM (tag invalide ou format altéré)",
+    className: "ValidationError",
+  },
+  "SPX-LIC-403": {
+    code: "SPX-LIC-403",
+    httpStatus: 400,
+    defaultMessage: "Clé AES-256 invalide",
+    className: "ValidationError",
+  },
+  // Phase 3.A.2+ : CA management (allocations partielles — 410 utilisé en 3.C).
+  "SPX-LIC-410": {
+    code: "SPX-LIC-410",
+    httpStatus: 409,
+    defaultMessage: "CA S2M déjà existante",
+    className: "ConflictError",
+  },
+  "SPX-LIC-411": {
+    code: "SPX-LIC-411",
+    httpStatus: 400,
+    defaultMessage: "CA S2M absente ou clé privée CA invalide",
+    className: "ValidationError",
+  },
+  // Phase 3.A.2+ : certificats clients (420 utilisé en 3.D, 421/422 en 3.D/3.E).
+  "SPX-LIC-420": {
+    code: "SPX-LIC-420",
+    httpStatus: 400,
+    defaultMessage: "Chaîne de certification invalide",
+    className: "ValidationError",
+  },
+  "SPX-LIC-421": {
+    code: "SPX-LIC-421",
+    httpStatus: 400,
+    defaultMessage: "Certificat expiré",
+    className: "ValidationError",
+  },
+  "SPX-LIC-422": {
+    code: "SPX-LIC-422",
+    httpStatus: 400,
+    defaultMessage: "CA cert et CA private key ne correspondent pas",
     className: "ValidationError",
   },
 
