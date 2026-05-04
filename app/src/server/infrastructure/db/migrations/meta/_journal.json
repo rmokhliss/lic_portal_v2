@@ -71,6 +71,20 @@
       "when": 1777906478216,
       "tag": "0009_overconfident_hammerhead",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1777934535009,
+      "tag": "0010_unusual_luke_cage",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1777934559947,
+      "tag": "0011_add_script_audit_mode",
+      "breakpoints": true
     }
   ]
 }

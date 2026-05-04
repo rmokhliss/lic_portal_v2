@@ -32,14 +32,16 @@ const tsvector = customType<{ data: string; driverData: string }>({
   },
 });
 
-// 4 valeurs :
+// 5 valeurs :
 //   MANUEL = action déclenchée par un utilisateur authentifié via l'UI
 //   API    = action déclenchée par un appel API tiers (réservé futur)
 //   JOB    = action déclenchée par un job pg-boss (user_id = SYSTEM)
 //   SEED   = ajout Phase 4.D — déclenché par pnpm db:seed (user_id = SYSTEM,
 //            non-CI uniquement). Distingue les données de démo des actions
 //            réelles dans le journal.
-export const auditMode = pgEnum("audit_mode", ["MANUEL", "API", "JOB", "SEED"]);
+//   SCRIPT = ajout Phase 3.E.0 — scripts pnpm one-shot (backfill, opérations
+//            admin imperatives). Migration 0011 (ALTER TYPE ADD VALUE).
+export const auditMode = pgEnum("audit_mode", ["MANUEL", "API", "JOB", "SEED", "SCRIPT"]);
 
 export const auditLog = pgTable(
   "lic_audit_log",

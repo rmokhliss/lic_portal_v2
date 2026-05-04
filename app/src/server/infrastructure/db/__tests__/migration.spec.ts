@@ -72,7 +72,9 @@ describe("migration F-06 — schéma BD attendu", () => {
     const byName = Object.fromEntries(rows.map((r) => [r.typname, r.values]));
     // Phase 4.D — 'SEED' ajouté via migration 0005 (ALTER TYPE ... ADD VALUE)
     // pour distinguer les insertions seed (pnpm db:seed) des actions réelles.
-    expect(byName.audit_mode).toEqual(["MANUEL", "API", "JOB", "SEED"]);
+    // Phase 3.E.0 — 'SCRIPT' ajouté via migration 0011 pour les scripts pnpm
+    // one-shot (backfill, opérations admin imperatives).
+    expect(byName.audit_mode).toEqual(["MANUEL", "API", "JOB", "SEED", "SCRIPT"]);
     expect(byName.user_role).toEqual(["SADMIN", "ADMIN", "USER"]);
   });
 

@@ -17,9 +17,11 @@ import { SYSTEM_USER_DISPLAY, SYSTEM_USER_ID } from "@s2m-lic/shared/constants/s
 
 import { ValidationError } from "@/server/modules/error";
 
-export type AuditMode = "MANUEL" | "API" | "JOB" | "SEED";
+// Phase 3.E.0 : SCRIPT ajouté pour les scripts pnpm one-shot (ex: backfill
+// `script:backfill-client-certs`). Cf. migration 0011.
+export type AuditMode = "MANUEL" | "API" | "JOB" | "SEED" | "SCRIPT";
 
-const VALID_MODES: ReadonlySet<AuditMode> = new Set(["MANUEL", "API", "JOB", "SEED"]);
+const VALID_MODES: ReadonlySet<AuditMode> = new Set(["MANUEL", "API", "JOB", "SEED", "SCRIPT"]);
 
 // IPv4 (a.b.c.d) ou IPv6 (h:h:...:h, formes abrégées tolérées).
 // Validation minimale : on rejette les formats clairement étrangers, pas une
@@ -123,7 +125,7 @@ export class AuditEntry {
     if (!VALID_MODES.has(input.mode)) {
       throw new ValidationError({
         code: "SPX-LIC-500",
-        message: `mode invalide : "${input.mode}" — attendu MANUEL, API ou JOB`,
+        message: `mode invalide : "${input.mode}" — attendu MANUEL, API, JOB, SEED ou SCRIPT`,
       });
     }
 

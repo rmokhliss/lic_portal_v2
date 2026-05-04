@@ -32,6 +32,8 @@ import {
   integer,
   pgEnum,
   pgTable,
+  text,
+  timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
 
@@ -82,6 +84,16 @@ export const clients = pgTable(
     prochaineDateRenouvellementSupport: date("prochaine_date_renouvellement_support"),
     actif: boolean("actif").notNull().default(true),
     version: integer("version").notNull().default(0),
+    // --- Phase 3.B (PKI / DETTE-LIC-008) -----------------------------------
+    // 3 colonnes nullable jusqu'à backfill (3.E) ou createClient refactor (3.D).
+    // `client_private_key_enc` = AES-256-GCM(privateKeyPem, APP_MASTER_KEY)
+    // sérialisé en `iv:tag:ciphertext` base64. PEM contenu uniquement après
+    // déchiffrement runtime — jamais stocké en clair.
+    clientPrivateKeyEnc: text("client_private_key_enc"),
+    clientCertificatePem: text("client_certificate_pem"),
+    clientCertificateExpiresAt: timestamp("client_certificate_expires_at", {
+      withTimezone: true,
+    }),
     // ⚠️ Colonne GENERATED ALWAYS STORED après migration manuelle. Ne JAMAIS
     // l'inclure dans un .insert() ou .update() — Postgres rejette. Lecture FTS
     // seule (.where(sql`search_vector @@ to_tsquery(...)`)).
@@ -102,6 +114,9 @@ export const clients = pgTable(
     index("idx_clients_modifie_par").on(table.modifiePar),
     // ORDER BY raison_sociale fréquent dans la liste UI
     index("idx_clients_raison_sociale").on(table.raisonSociale),
+    // Phase 3.B : filtres futurs « certif expirant <30j » (Phase 13.x) ou
+    // jobs de renouvellement automatique des certificats clients.
+    index("idx_clients_cert_expires_at").on(table.clientCertificateExpiresAt),
     // idx_clients_search GIN sur search_vector → ajouté par la migration manuelle.
   ],
 );
