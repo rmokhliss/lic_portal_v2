@@ -404,6 +404,34 @@
           "submit": "Confirm cancellation",
           "submitting": "Cancelling…",
           "cancel": "Back"
+        },
+        "edit": "Edit",
+        "drawer": {
+          "createTitle": "New renouvellement",
+          "editTitle": "Edit renouvellement",
+          "nouvelleDateDebut": "New start date",
+          "nouvelleDateFin": "New end date",
+          "commentaire": "Comment (optional)",
+          "cancel": "Cancel",
+          "submitCreate": "Create",
+          "submitEdit": "Save",
+          "submitting": "..."
+        },
+        "validerConfirm": {
+          "title": "Validate this renouvellement?",
+          "body": "Confirm validation of renouvellement {debut} → {fin}?",
+          "cancel": "Cancel",
+          "confirm": "Validate",
+          "submitting": "..."
+        },
+        "annulerConfirm": {
+          "title": "Cancel this renouvellement?",
+          "body": "The renouvellement will be marked CANCELLED and cannot be validated anymore.",
+          "motif": "Reason (optional)",
+          "motifPlaceholder": "e.g. No client budget",
+          "cancel": "Cancel",
+          "confirm": "Confirm cancellation",
+          "submitting": "..."
         }
       },
       "articles": {

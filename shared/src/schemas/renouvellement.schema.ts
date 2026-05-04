@@ -35,4 +35,26 @@ export const AnnulerRenouvellementSchema = z
   .strict();
 export type AnnulerRenouvellementInput = z.infer<typeof AnnulerRenouvellementSchema>;
 
+export const UpdateRenouvellementSchema = z
+  .object({
+    renouvellementId: z.uuid(),
+    nouvelleDateDebut: IsoDateTimeSchema.optional(),
+    nouvelleDateFin: IsoDateTimeSchema.optional(),
+    commentaire: z.string().max(1000).nullable().optional(),
+  })
+  .strict()
+  .refine(
+    (d) => {
+      if (d.nouvelleDateDebut !== undefined && d.nouvelleDateFin !== undefined) {
+        return new Date(d.nouvelleDateFin).getTime() > new Date(d.nouvelleDateDebut).getTime();
+      }
+      return true;
+    },
+    {
+      message: "nouvelleDateFin doit être postérieure à nouvelleDateDebut",
+      path: ["nouvelleDateFin"],
+    },
+  );
+export type UpdateRenouvellementInput = z.infer<typeof UpdateRenouvellementSchema>;
+
 export type RenewStatusInput = z.infer<typeof RenewStatusSchema>;

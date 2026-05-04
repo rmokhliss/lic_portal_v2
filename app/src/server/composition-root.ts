@@ -46,6 +46,7 @@ import { UpdateLicenceUseCase } from "@/server/modules/licence/application/updat
 import { licenceRepository } from "@/server/modules/licence/licence.module";
 import { AnnulerRenouvellementUseCase } from "@/server/modules/renouvellement/application/annuler-renouvellement.usecase";
 import { CreateRenouvellementUseCase } from "@/server/modules/renouvellement/application/create-renouvellement.usecase";
+import { UpdateRenouvellementUseCase } from "@/server/modules/renouvellement/application/update-renouvellement.usecase";
 import { ValiderRenouvellementUseCase } from "@/server/modules/renouvellement/application/valider-renouvellement.usecase";
 import { renouvellementRepository } from "@/server/modules/renouvellement/renouvellement.module";
 import { ChangePasswordUseCase } from "@/server/modules/user/application/change-password.usecase";
@@ -250,6 +251,11 @@ export const validerRenouvellementUseCase = new ValiderRenouvellementUseCase(
   auditRepository,
 );
 export const annulerRenouvellementUseCase = new AnnulerRenouvellementUseCase(
+  renouvellementRepository,
+  userRepository,
+  auditRepository,
+);
+export const updateRenouvellementUseCase = new UpdateRenouvellementUseCase(
   renouvellementRepository,
   userRepository,
   auditRepository,

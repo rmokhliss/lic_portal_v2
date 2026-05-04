@@ -404,6 +404,34 @@
           "submit": "Confirmer l'annulation",
           "submitting": "Annulation…",
           "cancel": "Retour"
+        },
+        "edit": "Éditer",
+        "drawer": {
+          "createTitle": "Nouveau renouvellement",
+          "editTitle": "Modifier le renouvellement",
+          "nouvelleDateDebut": "Nouvelle date de début",
+          "nouvelleDateFin": "Nouvelle date de fin",
+          "commentaire": "Commentaire (optionnel)",
+          "cancel": "Annuler",
+          "submitCreate": "Créer",
+          "submitEdit": "Enregistrer",
+          "submitting": "..."
+        },
+        "validerConfirm": {
+          "title": "Valider ce renouvellement ?",
+          "body": "Confirmer la validation du renouvellement {debut} → {fin} ?",
+          "cancel": "Annuler",
+          "confirm": "Valider",
+          "submitting": "..."
+        },
+        "annulerConfirm": {
+          "title": "Annuler ce renouvellement ?",
+          "body": "Le renouvellement sera marqué ANNULE et ne pourra plus être validé.",
+          "motif": "Motif (optionnel)",
+          "motifPlaceholder": "Ex: Pas de budget client",
+          "cancel": "Annuler",
+          "confirm": "Confirmer l'annulation",
+          "submitting": "..."
         }
       },
       "articles": {

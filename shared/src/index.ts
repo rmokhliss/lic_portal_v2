@@ -81,16 +81,18 @@ export type {
   UpdateLicenceInput,
 } from "./schemas/licence.schema";
 
-// --- Schémas renouvellement Phase 5 -----------------------------------------
+// --- Schémas renouvellement Phase 5 + Phase 9.A update ----------------------
 export {
   AnnulerRenouvellementSchema,
   CreateRenouvellementSchema,
+  UpdateRenouvellementSchema,
   ValiderRenouvellementSchema,
 } from "./schemas/renouvellement.schema";
 export type {
   AnnulerRenouvellementInput,
   CreateRenouvellementInput,
   RenewStatusInput,
+  UpdateRenouvellementInput,
   ValiderRenouvellementInput,
 } from "./schemas/renouvellement.schema";
 

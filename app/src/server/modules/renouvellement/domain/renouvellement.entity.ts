@@ -168,6 +168,25 @@ export class PersistedRenouvellement extends Renouvellement {
     );
   }
 
+  /** Met à jour les nouvelles dates (Phase 9.A — édition pré-validation).
+   *  Le caller doit aussi refuser si status !== EN_COURS au niveau use-case. */
+  withDates(nouvelleDateDebut: Date, nouvelleDateFin: Date): PersistedRenouvellement {
+    Renouvellement.validateDates(nouvelleDateDebut, nouvelleDateFin);
+    return new PersistedRenouvellement(
+      {
+        licenceId: this.licenceId,
+        nouvelleDateDebut,
+        nouvelleDateFin,
+        status: this.status,
+        commentaire: this.commentaire,
+        valideePar: this.valideePar,
+        dateValidation: this.dateValidation,
+      },
+      this.id,
+      this.dateCreation,
+    );
+  }
+
   withCommentaire(commentaire: string | null): PersistedRenouvellement {
     if (commentaire !== null) Renouvellement.validateCommentaire(commentaire);
     return new PersistedRenouvellement(

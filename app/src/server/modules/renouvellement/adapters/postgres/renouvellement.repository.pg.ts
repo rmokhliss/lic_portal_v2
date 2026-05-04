@@ -84,6 +84,8 @@ export class RenouvellementRepositoryPg extends RenouvellementRepository {
     await target
       .update(renouvellements)
       .set({
+        nouvelleDateDebut: renouvellement.nouvelleDateDebut,
+        nouvelleDateFin: renouvellement.nouvelleDateFin,
         status: renouvellement.status,
         commentaire: renouvellement.commentaire,
         valideePar: renouvellement.valideePar,

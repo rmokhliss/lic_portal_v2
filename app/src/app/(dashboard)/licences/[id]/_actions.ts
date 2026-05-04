@@ -97,6 +97,31 @@ export async function annulerRenouvellementAction(input: unknown, ctx: unknown) 
   return result;
 }
 
+import { UpdateRenouvellementSchema } from "@s2m-lic/shared";
+
+import { updateRenouvellementUseCase } from "@/server/composition-root";
+
+export async function updateRenouvellementAction(input: unknown, ctx: unknown) {
+  const actor = await requireRole(["ADMIN", "SADMIN"]);
+  const parsed = UpdateRenouvellementSchema.parse(input);
+  const { licenceId } = LicenceIdSchema.parse(ctx);
+  const result = await updateRenouvellementUseCase.execute(
+    {
+      renouvellementId: parsed.renouvellementId,
+      ...(parsed.nouvelleDateDebut !== undefined
+        ? { nouvelleDateDebut: new Date(parsed.nouvelleDateDebut) }
+        : {}),
+      ...(parsed.nouvelleDateFin !== undefined
+        ? { nouvelleDateFin: new Date(parsed.nouvelleDateFin) }
+        : {}),
+      ...("commentaire" in parsed ? { commentaire: parsed.commentaire } : {}),
+    },
+    actor.id,
+  );
+  revalidatePath(pathFor(licenceId, "renouvellements"));
+  return result;
+}
+
 // ============================================================================
 // Phase 6.F — Tab Articles : add/remove produit, add/update/remove article
 // ============================================================================
