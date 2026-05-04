@@ -160,7 +160,108 @@
       "saving": "Enregistrement…",
       "cancel": "Annuler"
     },
-    "empty": "Aucun client trouvé."
+    "empty": "Aucun client trouvé.",
+    "detail": {
+      "back": "← Liste des clients",
+      "importHealthcheck": "Importer healthcheck",
+      "importHealthcheckTooltip": "Disponible en Phase 3 (PKI)",
+      "tabs": {
+        "info": "Informations",
+        "entites": "Entités",
+        "contacts": "Contacts",
+        "licences": "Licences",
+        "historique": "Historique"
+      },
+      "info": {
+        "section": "Informations client",
+        "editInfo": "Modifier les infos",
+        "changeStatus": "Changer le statut",
+        "fields": {
+          "codeClient": "Code",
+          "raisonSociale": "Raison sociale",
+          "statutClient": "Statut",
+          "actif": "Actif",
+          "version": "Version (L4)",
+          "dateCreation": "Création",
+          "codePays": "Pays",
+          "codeDevise": "Devise",
+          "codeLangue": "Langue",
+          "salesResponsable": "Sales responsable",
+          "accountManager": "Account Manager",
+          "nomContact": "Contact",
+          "emailContact": "Email contact",
+          "telContact": "Téléphone",
+          "dateSignatureContrat": "Signature contrat",
+          "dateMiseEnProd": "Mise en production",
+          "dateDemarrageSupport": "Démarrage support",
+          "prochaineDateRenouvellementSupport": "Renouvellement support"
+        },
+        "statusDialog": {
+          "title": "Changer le statut du client",
+          "newStatus": "Nouveau statut",
+          "submit": "Appliquer",
+          "submitting": "Application…"
+        }
+      },
+      "entites": {
+        "section": "Entités du client",
+        "newEntite": "Nouvelle entité",
+        "table": {
+          "nom": "Nom",
+          "codePays": "Pays",
+          "actif": "État",
+          "dateCreation": "Création",
+          "actions": "Actions"
+        },
+        "actif": "Actif",
+        "inactif": "Inactif",
+        "edit": "Modifier",
+        "deactivate": "Désactiver",
+        "activate": "Activer",
+        "empty": "Aucune entité.",
+        "dialog": {
+          "createTitle": "Nouvelle entité",
+          "editTitle": "Modifier l'entité",
+          "nom": "Nom de l'entité",
+          "codePays": "Pays (ISO alpha-2)",
+          "submitCreate": "Créer",
+          "submitEdit": "Enregistrer",
+          "creating": "Création…",
+          "saving": "Enregistrement…",
+          "cancel": "Annuler"
+        }
+      },
+      "contacts": {
+        "section": "Contacts par entité",
+        "selectEntite": "Entité :",
+        "newContact": "Nouveau contact",
+        "table": {
+          "type": "Type",
+          "nom": "Nom",
+          "email": "Email",
+          "telephone": "Téléphone",
+          "actions": "Actions"
+        },
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "empty": "Aucun contact pour cette entité.",
+        "deleteConfirm": "Confirmer la suppression définitive du contact ?",
+        "dialog": {
+          "createTitle": "Nouveau contact",
+          "editTitle": "Modifier le contact",
+          "typeContactCode": "Type de contact",
+          "nom": "Nom",
+          "prenom": "Prénom (optionnel)",
+          "email": "Email (optionnel)",
+          "telephone": "Téléphone (optionnel)",
+          "submitCreate": "Créer",
+          "submitEdit": "Enregistrer",
+          "creating": "Création…",
+          "saving": "Enregistrement…",
+          "cancel": "Annuler"
+        }
+      }
+    }
   },
   "errors": {
     "SPX-LIC-001": "Session expirée ou inexistante",

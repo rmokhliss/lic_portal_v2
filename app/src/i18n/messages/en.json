@@ -160,7 +160,108 @@
       "saving": "Saving…",
       "cancel": "Cancel"
     },
-    "empty": "No clients found."
+    "empty": "No clients found.",
+    "detail": {
+      "back": "← Clients list",
+      "importHealthcheck": "Import healthcheck",
+      "importHealthcheckTooltip": "Available in Phase 3 (PKI)",
+      "tabs": {
+        "info": "Info",
+        "entites": "Entities",
+        "contacts": "Contacts",
+        "licences": "Licences",
+        "historique": "History"
+      },
+      "info": {
+        "section": "Client information",
+        "editInfo": "Edit info",
+        "changeStatus": "Change status",
+        "fields": {
+          "codeClient": "Code",
+          "raisonSociale": "Legal name",
+          "statutClient": "Status",
+          "actif": "Active",
+          "version": "Version (L4)",
+          "dateCreation": "Created",
+          "codePays": "Country",
+          "codeDevise": "Currency",
+          "codeLangue": "Language",
+          "salesResponsable": "Sales lead",
+          "accountManager": "Account Manager",
+          "nomContact": "Contact",
+          "emailContact": "Contact email",
+          "telContact": "Phone",
+          "dateSignatureContrat": "Contract signed",
+          "dateMiseEnProd": "Production start",
+          "dateDemarrageSupport": "Support start",
+          "prochaineDateRenouvellementSupport": "Next support renewal"
+        },
+        "statusDialog": {
+          "title": "Change client status",
+          "newStatus": "New status",
+          "submit": "Apply",
+          "submitting": "Applying…"
+        }
+      },
+      "entites": {
+        "section": "Client entities",
+        "newEntite": "New entity",
+        "table": {
+          "nom": "Name",
+          "codePays": "Country",
+          "actif": "Status",
+          "dateCreation": "Created",
+          "actions": "Actions"
+        },
+        "actif": "Active",
+        "inactif": "Inactive",
+        "edit": "Edit",
+        "deactivate": "Deactivate",
+        "activate": "Activate",
+        "empty": "No entities.",
+        "dialog": {
+          "createTitle": "New entity",
+          "editTitle": "Edit entity",
+          "nom": "Entity name",
+          "codePays": "Country (ISO alpha-2)",
+          "submitCreate": "Create",
+          "submitEdit": "Save",
+          "creating": "Creating…",
+          "saving": "Saving…",
+          "cancel": "Cancel"
+        }
+      },
+      "contacts": {
+        "section": "Contacts by entity",
+        "selectEntite": "Entity:",
+        "newContact": "New contact",
+        "table": {
+          "type": "Type",
+          "nom": "Name",
+          "email": "Email",
+          "telephone": "Phone",
+          "actions": "Actions"
+        },
+        "edit": "Edit",
+        "delete": "Delete",
+        "empty": "No contacts for this entity.",
+        "deleteConfirm": "Confirm permanent contact deletion?",
+        "dialog": {
+          "createTitle": "New contact",
+          "editTitle": "Edit contact",
+          "typeContactCode": "Contact type",
+          "nom": "Name",
+          "prenom": "First name (optional)",
+          "email": "Email (optional)",
+          "telephone": "Phone (optional)",
+          "submitCreate": "Create",
+          "submitEdit": "Save",
+          "creating": "Creating…",
+          "saving": "Saving…",
+          "cancel": "Cancel"
+        }
+      }
+    }
   },
   "errors": {
     "SPX-LIC-001": "Session expired or missing",
