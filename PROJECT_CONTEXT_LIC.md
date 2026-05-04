@@ -43,7 +43,15 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phase 6 Catalogue + Volumes complète (Mai 2026)** — 5 modules hexagonaux (produit, article, licence-produit, licence-article, volume-history) + UI tab articles licence + onglet catalogues settings + seed démo, **562/562 tests verts**.
+**Phase actuelle** : **Phases 11+12 closes (Mai 2026)** — Dashboard EC-01 + Rapports EC-09 + Profil EC-14, **586/586 tests verts**. Phase 13 (durcissement) en cours.
+
+- 11.A (commit `50e0245`) : module dashboard (port + adapter + use-case agrégats SQL) + page `/` avec 5 KPI cards + 4 graphiques recharts + 2 tableaux rapides
+- 11.B (commit `bfa3a8c`) : page `/reports` ADMIN/SADMIN + 3 exports CSV (licences, renouvellements, audit) cap 100k lignes via SPX-LIC-755
+- 11.C (commit `5c9ee9b`) : nav-routes nettoyé (4 routes orphelines retirées) + breadcrumbs dynamiques `/clients/[id]/*` et `/licences/[id]/*` (DETTE-LIC-009 partielle)
+- 12.A (commit `1ae5597`) : page `/profile` (infos user + lien change-password + warning mustChange)
+- 12.B : flow force-change-password déjà opérationnel depuis Phase 2.A (`requireAuthPage` redirige vers `/change-password` si `mustChangePassword=true`)
+
+**Phase 6 Catalogue + Volumes close (Mai 2026)** — 5 modules hexagonaux (produit, article, licence-produit, licence-article, volume-history) + UI tab articles licence + onglet catalogues settings + seed démo.
 
 - 6.A (commit `46cbe5c`) : 5 schémas Drizzle + migration 0007 (10 indexes + 5 FKs + 4 CHECK volumes ≥0 + 4 UNIQUE)
 - 6.B (commit `4bfeb3e`) : modules produit + article (PK serial ADR 0017, R-27 sans audit), 10 use-cases, 43 tests
@@ -506,13 +514,16 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 - **Priorité** : haute (bloquant première génération `.lic`).
 - **Phase cible** : Phase 3.
 
-### DETTE-LIC-009 — Breadcrumb header sticky non dynamique sur `/clients/[id]/*`
+### DETTE-LIC-009 — Breadcrumb header dynamique nom d'entité (résiduelle après Phase 11.C)
 
-- **Cause** : `Breadcrumb` (Client Component, `components/layout/Breadcrumb.tsx`) affiche le label de la route courante via `findRouteByPathname(pathname)` matché contre `nav-routes.ts`. Pour `/clients/[id]/info` la route n'existe pas dans le registre → fallback affiche le pathname brut `/clients/<uuid>/info` (peu lisible).
-- **Impact UX** : header sticky moins informatif sur les pages détail (visible sur toutes les sous-routes `/clients/[id]/*` Phase 4.F).
-- **Solution future** : étendre `Breadcrumb` pour accepter un fil d'Ariane multi-niveaux résolu côté serveur (ex: « Clients > Bank Al-Maghrib > Info »). Nécessite un context React ou un slot Next.js parallel route.
-- **Priorité** : basse (UX cosmétique).
-- **Phase cible** : 7 (audit/journal — moment où l'UX cross-écran sera réétudiée) ou plus tôt si feedback utilisateur.
+- **Cause initiale** : `Breadcrumb` (Client Component) ne reconnaissait pas les routes détail `/clients/[id]/*`, fallback pathname brut avec UUID.
+- **Phase 11.C — résolution partielle** (commit `5c9ee9b`) : pattern matching côté Client sur `/clients/[uuid]/sub` et `/licences/[uuid]/sub` → affichage "Clients › Détail › Info" plutôt que UUID brut. Sub-routes mappées via i18n `nav.breadcrumb.*` (info/entites/contacts/licences/historique/articles/resume/renouvellements).
+- **Reste à faire (résiduel Phase 13+)** : afficher le **nom de l'entité** au lieu de "Détail" (ex: "Clients › Bank Al-Maghrib › Info"). Nécessite un mécanisme Server → Client pour exposer le nom récupéré dans le layout `/clients/[id]` au composant `Breadcrumb` rendu dans `AppHeader`. Options :
+  1. Next.js `template.tsx` avec React context (le layout enfant remplit le context, AppHeader le lit)
+  2. Custom hook qui fetch le nom à partir de l'UUID dans le pathname (round-trip supplémentaire)
+  3. URL hash / query param injecté par le layout enfant
+- **Priorité** : basse (UX cosmétique). Le pattern "Détail" actuel est lisible et fonctionnel.
+- **Phase cible** : 13 (durcissement UX final).
 
 ### DETTE-LIC-011 — `allocateNextReference` race possible (lecture MAX + INSERT non-atomic)
 
