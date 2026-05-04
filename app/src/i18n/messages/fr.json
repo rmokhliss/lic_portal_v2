@@ -708,5 +708,21 @@
       "action": "Action (verbe audit)",
       "entity": "Entité"
     }
+  },
+  "profil": {
+    "title": "Mon profil",
+    "subtitle": "Vos informations utilisateur et options de sécurité.",
+    "infoSection": "Informations",
+    "fields": {
+      "matricule": "Matricule",
+      "role": "Rôle",
+      "display": "Identifiant affiché",
+      "email": "Email"
+    },
+    "securitySection": "Sécurité",
+    "securityHint": "Vous pouvez modifier votre mot de passe à tout moment. Le serveur impose 12 caractères minimum, mix majuscule/minuscule/chiffre/spécial.",
+    "changePassword": "Changer le mot de passe",
+    "mustChangeWarning": "Le changement de mot de passe est obligatoire avant la prochaine connexion.",
+    "logoutHint": "Pour vous déconnecter, utilisez le menu utilisateur en haut à droite."
   }
 }

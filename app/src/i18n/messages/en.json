@@ -708,5 +708,21 @@
       "action": "Action (audit verb)",
       "entity": "Entity"
     }
+  },
+  "profil": {
+    "title": "My profile",
+    "subtitle": "Your user information and security options.",
+    "infoSection": "Information",
+    "fields": {
+      "matricule": "Matricule",
+      "role": "Role",
+      "display": "Display name",
+      "email": "Email"
+    },
+    "securitySection": "Security",
+    "securityHint": "You can change your password at any time. Server enforces minimum 12 characters, mixed case + digit + special.",
+    "changePassword": "Change password",
+    "mustChangeWarning": "Password change is required before next login.",
+    "logoutHint": "To sign out, use the user menu in the top-right corner."
   }
 }
