@@ -292,7 +292,7 @@ async function seedUsers(sql: postgres.Sql): Promise<void> {
 
 async function seedBatchJobsCatalog(sql: postgres.Sql): Promise<void> {
   log.info("Seeding lic_batch_jobs catalog");
-  // Phase 8.C — 3 jobs registered in worker.ts. Catalog row = libellé +
+  // Phase 8.C + 9.C — 4 jobs registered in worker.ts. Catalog row = libellé +
   // schedule humain pour l'UI EC-12. Idempotent ON CONFLICT (code).
   await sql`
     INSERT INTO lic_batch_jobs (code, libelle, description, schedule) VALUES
@@ -304,7 +304,10 @@ async function seedBatchJobsCatalog(sql: postgres.Sql): Promise<void> {
        '0 3 * * *'),
       ('expire-licences', 'Expiration automatique licences',
        'Passe les licences ACTIF dont date_fin < NOW() au statut EXPIRE.',
-       '0 4 * * *')
+       '0 4 * * *'),
+      ('auto-renew-licences', 'Renouvellement automatique',
+       'Crée un renouvellement statut CREE pour les licences renouvellement_auto avec date_fin <= 30j (EC-11).',
+       '0 5 * * *')
     ON CONFLICT (code) DO NOTHING
   `;
 }

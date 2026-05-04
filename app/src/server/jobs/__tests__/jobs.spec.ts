@@ -16,6 +16,7 @@ import "../../../../scripts/load-env";
 
 import postgres from "postgres";
 
+import { runAutoRenewLicences } from "../handlers/auto-renew-licences.handler";
 import { runCheckAlerts } from "../handlers/check-alerts.handler";
 import { runExpireLicences } from "../handlers/expire-licences.handler";
 import { runSnapshotVolumes } from "../handlers/snapshot-volumes.handler";
@@ -57,7 +58,8 @@ beforeEach(async () => {
     INSERT INTO lic_batch_jobs (code, libelle) VALUES
       ('snapshot-volumes', 'Snapshot volumes'),
       ('check-alerts', 'Check alerts'),
-      ('expire-licences', 'Expire licences')
+      ('expire-licences', 'Expire licences'),
+      ('auto-renew-licences', 'Auto-renew licences')
     ON CONFLICT (code) DO NOTHING
   `;
 });
@@ -251,5 +253,62 @@ describe("Job expire-licences", () => {
     expect(expired?.user_id).toBe(SYSTEM_USER_ID);
     expect(expired?.user_display).toBe("Système (SYS-000)");
     expect(expired?.mode).toBe("JOB");
+  });
+});
+
+describe("Job auto-renew-licences (Phase 9.C)", () => {
+  it("crée un renouvellement CREE + notification + audit JOB pour licence éligible", async () => {
+    // Licence éligible : renouvellement_auto=true + ACTIF + date_fin dans 15j.
+    const fixture = await setupFixture({
+      volumeAutorise: 1000,
+      volumeConsomme: 0,
+      dateFinDaysFromNow: 15,
+    });
+    await sql`
+      UPDATE lic_licences SET renouvellement_auto = true WHERE id = ${fixture.licenceId}::uuid
+    `;
+
+    const result = await runAutoRenewLicences("MANUAL");
+    expect(result.status).toBe("SUCCESS");
+    expect((result.stats as { eligible?: number }).eligible).toBe(1);
+    expect((result.stats as { created?: number }).created).toBe(1);
+
+    // 1 renouvellement statut CREE.
+    const renouvs = await sql<{ status: string; licence_id: string }[]>`
+      SELECT status, licence_id FROM lic_renouvellements
+    `;
+    expect(renouvs).toHaveLength(1);
+    expect(renouvs[0]?.status).toBe("CREE");
+    expect(renouvs[0]?.licence_id).toBe(fixture.licenceId);
+
+    // Audit RENOUVELLEMENT_CREATED_BY_JOB avec mode='JOB'.
+    const audit = await sql<{ action: string; user_id: string; mode: string }[]>`
+      SELECT action, user_id, mode FROM lic_audit_log WHERE entity = 'renouvellement'
+    `;
+    expect(audit.find((a) => a.action === "RENOUVELLEMENT_CREATED_BY_JOB")).toBeDefined();
+    expect(audit[0]?.user_id).toBe(SYSTEM_USER_ID);
+    expect(audit[0]?.mode).toBe("JOB");
+
+    // Au moins 1 notification pour ACTOR_ID (admin actif).
+    const notifs = await sql<{ source: string; user_id: string }[]>`
+      SELECT source, user_id FROM lic_notifications WHERE source = 'AUTO_RENEW_PROPOSED'
+    `;
+    expect(notifs.find((n) => n.user_id === ACTOR_ID)).toBeDefined();
+  });
+
+  it("ignore les licences sans renouvellement_auto", async () => {
+    await setupFixture({
+      volumeAutorise: 1000,
+      volumeConsomme: 0,
+      dateFinDaysFromNow: 15,
+    });
+    // renouvellement_auto reste false par défaut
+
+    const result = await runAutoRenewLicences("MANUAL");
+    expect((result.stats as { eligible?: number }).eligible).toBe(0);
+    expect((result.stats as { created?: number }).created).toBe(0);
+
+    const renouvs = await sql<{ id: string }[]>`SELECT id FROM lic_renouvellements`;
+    expect(renouvs).toHaveLength(0);
   });
 });

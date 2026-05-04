@@ -8,6 +8,7 @@
 
 import { ValidationError } from "@/server/modules/error";
 
+import { runAutoRenewLicences } from "./handlers/auto-renew-licences.handler";
 import { runCheckAlerts } from "./handlers/check-alerts.handler";
 import { runExpireLicences } from "./handlers/expire-licences.handler";
 import { runSnapshotVolumes } from "./handlers/snapshot-volumes.handler";
@@ -16,6 +17,7 @@ const HANDLERS: Readonly<Record<string, () => Promise<unknown>>> = {
   "snapshot-volumes": () => runSnapshotVolumes("MANUAL"),
   "check-alerts": () => runCheckAlerts("MANUAL"),
   "expire-licences": () => runExpireLicences("MANUAL"),
+  "auto-renew-licences": () => runAutoRenewLicences("MANUAL"),
 };
 
 export async function runJobNow(jobCode: string): Promise<void> {

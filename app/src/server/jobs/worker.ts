@@ -1,13 +1,14 @@
 // ==============================================================================
-// LIC v2 — Worker pg-boss (Phase 8.C entry point)
+// LIC v2 — Worker pg-boss (Phase 8.C + Phase 9.C auto-renew)
 //
 // Lancé via `pnpm worker:dev` (ou container dédié en prod). Initialise pg-boss
-// sur la même Postgres, register 3 jobs handlers + cron schedules.
+// sur la même Postgres, register 4 jobs handlers + cron schedules.
 //
 // Les schedules sont en CRON UTC :
-//   - snapshot-volumes : `0 2 1 * *`   (1er jour du mois, 02:00 UTC)
-//   - check-alerts     : `0 3 * * *`   (chaque jour, 03:00 UTC)
-//   - expire-licences  : `0 4 * * *`   (chaque jour, 04:00 UTC)
+//   - snapshot-volumes      : `0 2 1 * *`   (1er jour du mois, 02:00 UTC)
+//   - check-alerts          : `0 3 * * *`   (chaque jour, 03:00 UTC)
+//   - expire-licences       : `0 4 * * *`   (chaque jour, 04:00 UTC)
+//   - auto-renew-licences   : `0 5 * * *`   (chaque jour, 05:00 UTC)
 //
 // Lancement immédiat possible via `boss.send(jobCode)` (CLI manuel, EC-12
 // "Lancer maintenant").
@@ -20,6 +21,7 @@ import PgBoss from "pg-boss";
 import { env } from "@/server/infrastructure/env";
 import { createChildLogger } from "@/server/infrastructure/logger";
 
+import { runAutoRenewLicences } from "./handlers/auto-renew-licences.handler";
 import { runCheckAlerts } from "./handlers/check-alerts.handler";
 import { runExpireLicences } from "./handlers/expire-licences.handler";
 import { runSnapshotVolumes } from "./handlers/snapshot-volumes.handler";
@@ -45,6 +47,11 @@ const SCHEDULES: readonly {
     code: "expire-licences",
     cron: "0 4 * * *",
     handler: runExpireLicences,
+  },
+  {
+    code: "auto-renew-licences",
+    cron: "0 5 * * *",
+    handler: runAutoRenewLicences,
   },
 ];
 

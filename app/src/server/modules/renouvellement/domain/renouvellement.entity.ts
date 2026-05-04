@@ -78,6 +78,23 @@ export class Renouvellement {
     });
   }
 
+  /** Phase 9.C — factory pour le job auto-renew. Statut CREE (proposé
+   *  automatiquement, pas encore EN_COURS — l'admin doit le passer en
+   *  EN_COURS s'il veut le valider). */
+  static createForJob(input: CreateRenouvellementDomainInput): Renouvellement {
+    Renouvellement.validateDates(input.nouvelleDateDebut, input.nouvelleDateFin);
+    if (input.commentaire !== undefined) Renouvellement.validateCommentaire(input.commentaire);
+    return new Renouvellement({
+      licenceId: input.licenceId,
+      nouvelleDateDebut: input.nouvelleDateDebut,
+      nouvelleDateFin: input.nouvelleDateFin,
+      status: "CREE",
+      commentaire: input.commentaire ?? null,
+      valideePar: null,
+      dateValidation: null,
+    });
+  }
+
   static rehydrate(props: RehydrateRenouvellementProps): PersistedRenouvellement {
     return new PersistedRenouvellement(
       {
