@@ -736,3 +736,36 @@ _Fin de l'archive. Capitalisation close en Mai 2026._
 - **Contexte** : Le seed démo Phase 4 doit passer par les **repositories** (pas SQL brut, brief). Mais `infrastructure/db/client.ts` importe `"server-only"` (sentinel Next.js anti-fuite client). Le package npm `server-only` exporte une condition `react-server` qui pointe vers `empty.js` (no-op), tandis que la `default` export throw immédiatement. Sous Next.js, le bundler injecte la condition. Sous tsx CLI (db:seed), Node n'active pas la condition par défaut → throw au module load, le seed crashe avant de toucher le code.
 - **Décision LIC v2** : `db:seed` script invoqué avec **`tsx --conditions=react-server`** (flag Node natif `-C`). Force l'utilisation de `empty.js`. Modification minimale dans `package.json:20`. Dépendance `server-only` ajoutée explicitement (était transitive Next.js auparavant).
 - **Reco évolution Référentiel v2.2+** : §1.2 / §4.4 devrait mentionner que **tout script CLI hors Next.js qui consomme des repositories serveur** doit activer la condition `react-server` (ou stub `server-only`). Sans cette précision, chaque projet S2M va découvrir le piège à son premier seed/job CLI consommant des repositories.
+
+---
+
+### R-35 — Détection unique_violation Postgres : inspecter `err.cause.code`, pas `err.message`
+
+- **Type** : Pattern technique Drizzle / postgres-js à standardiser
+- **Phase LIC** : Phase 6 étape 6.D
+- **Contexte** : Drizzle wrappe les erreurs natives `postgres.js` dans une `Error` dont le `.message` commence par `"Failed query: insert into ..."` — **sans contenir le mot-clé "unique"**. La `PostgresError` originale (avec `code === '23505'` SQLSTATE unique_violation) est attachée en `err.cause`. Le pattern naïf `if (/unique/i.test(err.message))` (utilisé en Phase 5 sur `create-licence.usecase.ts`) ne capture pas le cas et propage une `Error` non-typée au caller.
+
+  Phase 6.D `RecordVolumeSnapshotUseCase` a hit ce piège : test `SPX-LIC-754` échoué jusqu'à introduction de `isUniqueViolation()` qui inspecte `err.cause.code === '23505'` AVANT de retomber sur `err.message`.
+
+- **Décision LIC v2** : Helper local par module quand le use-case dépend de la détection :
+
+  ```ts
+  function isUniqueViolation(err: unknown): boolean {
+    if (!(err instanceof Error)) return false;
+    if (/unique/i.test(err.message)) return true; // legacy fallback
+    const cause = (err as { cause?: unknown }).cause;
+    if (cause === undefined || cause === null) return false;
+    if (
+      typeof cause === "object" &&
+      "code" in cause &&
+      (cause as { code?: unknown }).code === "23505"
+    )
+      return true;
+    if (cause instanceof Error && /unique/i.test(cause.message)) return true;
+    return false;
+  }
+  ```
+
+  Le test sur `err.message` reste en premier pour compatibilité avec d'éventuels chemins (raw SQL tagged template, postgres-js direct sans Drizzle wrap) où le message contient "unique" en clair.
+
+- **Reco évolution Référentiel v2.2+** : Promouvoir ce helper en **utilitaire infrastructure partagé** (`infrastructure/db/pg-errors.ts`) avec exports `isUniqueViolation`, `isForeignKeyViolation` (`23503`), `isCheckViolation` (`23514`), etc. Documenter le pattern de wrap Drizzle en §4.4. Évite que chaque module re-découvre indépendamment le piège (déjà observé Phase 5 → Phase 6, va se reproduire dès qu'on multiplie les conflits métier).
