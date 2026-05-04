@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import {
   changeLicenceStatusAction,
   generateLicenceFichierAction,
+  importHealthcheckAction,
   updateLicenceAction,
 } from "../_actions";
 import type { LicenceDTO, LicenceStatusClient } from "./licence-detail-types";
@@ -74,6 +75,7 @@ export function LicenceResumeTab({
               {t("changeStatus")}
             </Button>
             <GenerateLicFileButton licenceId={licence.id} />
+            <ImportHealthcheckButton licenceId={licence.id} />
           </div>
         )}
       </div>
@@ -367,6 +369,64 @@ function GenerateLicFileButton({ licenceId }: { readonly licenceId: string }) {
       <Button type="button" variant="outline" onClick={onGenerate} disabled={pending}>
         {pending ? t("generating") : t("generate")}
       </Button>
+      {error !== "" && <span className="text-destructive ml-2 text-xs">{error}</span>}
+    </>
+  );
+}
+
+// ============================================================================
+// Phase 10.D — Bouton "Importer healthcheck"
+//
+// Upload <input type="file"> → lit en string → envoie à la Server Action
+// importHealthcheckAction (CSV ou JSON). Réponse : nb articles updated +
+// éventuelles erreurs ligne par ligne.
+// ============================================================================
+
+function ImportHealthcheckButton({ licenceId }: { readonly licenceId: string }) {
+  const t = useTranslations("licences.detail.resume.healthcheck");
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string>("");
+  const [info, setInfo] = useState<string>("");
+
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file === undefined) return;
+    setError("");
+    setInfo("");
+    startTransition(() => {
+      void (async () => {
+        try {
+          const content = await file.text();
+          const result = (await importHealthcheckAction({
+            licenceId,
+            filename: file.name,
+            content,
+          })) as { updated: number; errors: number };
+          setInfo(t("doneSummary", { updated: result.updated, errors: result.errors }));
+          // reset file input
+          e.target.value = "";
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Erreur");
+        }
+      })();
+    });
+  };
+
+  return (
+    <>
+      <label
+        className={`border-input bg-background hover:bg-accent inline-flex h-9 cursor-pointer items-center justify-center rounded-md border px-4 text-sm font-medium ${pending ? "opacity-50" : ""}`}
+      >
+        {pending ? t("importing") : t("import")}
+        <input
+          type="file"
+          accept=".csv,.json,application/json,text/csv"
+          className="hidden"
+          onChange={onChange}
+          disabled={pending}
+        />
+      </label>
+      {info !== "" && <span className="text-success ml-2 text-xs">{info}</span>}
       {error !== "" && <span className="text-destructive ml-2 text-xs">{error}</span>}
     </>
   );

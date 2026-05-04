@@ -1,14 +1,14 @@
 // ==============================================================================
-// LIC v2 — /clients/[id] layout (Phase 4 étape 4.F)
+// LIC v2 — /clients/[id] layout (Phase 4 étape 4.F + Phase 10.D)
 //
 // Server Component partagé entre les 5 sub-routes (info, entites, contacts,
 // licences, historique). Fetch le client (notFound si absent), affiche
 // header (back link + raison sociale + statut + boutons) + tabs nav, puis
 // rend {children} (la page de l'onglet actif).
 //
-// Le bouton « Importer healthcheck » est désactivé avec tooltip jusqu'à la
-// Phase 3 (PKI). Décision cadrage Phase 4 — bouton visible mais inactif pour
-// préfigurer l'UX cible et matérialiser DETTE-LIC-008.
+// Phase 10.D : bouton « Importer healthcheck » DÉBLOQUÉ. Le parsing CSV/JSON
+// fonctionne sans PKI ; la vérification de signature certificat client reste
+// différée Phase 3 (DETTE-LIC-008) — note dans le Dialog.
 // ==============================================================================
 
 import type { ReactNode } from "react";
@@ -18,12 +18,15 @@ import { notFound } from "next/navigation";
 
 import { getTranslations } from "next-intl/server";
 
-import { Button } from "@/components/ui/button";
 import { isAppError } from "@/server/modules/error";
-import { getClientUseCase } from "@/server/composition-root";
+import { getClientUseCase, listLicencesByClientUseCase } from "@/server/composition-root";
 
 import { ClientStatusBadge } from "../_components/ClientStatusBadge";
 import { ClientDetailTabsNav } from "./_components/ClientDetailTabsNav";
+import {
+  ImportHealthcheckClientButton,
+  type LicenceOption,
+} from "./_components/ImportHealthcheckClientButton";
 
 interface ClientDetailLayoutProps {
   readonly children: ReactNode;
@@ -38,12 +41,19 @@ export default async function ClientDetailLayout({ children, params }: ClientDet
   try {
     client = await getClientUseCase.execute(id);
   } catch (err) {
-    // SPX-LIC-724 NotFoundError → 404 Next.js. Toute autre erreur remonte.
     if (isAppError(err) && err.code === "SPX-LIC-724") {
       notFound();
     }
     throw err;
   }
+
+  // Phase 10.D : licences du client (pour le sélecteur du Dialog).
+  const licencesPage = await listLicencesByClientUseCase.execute({ clientId: id, limit: 200 });
+  const licenceOptions: LicenceOption[] = licencesPage.items.map((l) => ({
+    id: l.id,
+    reference: l.reference,
+    status: l.status,
+  }));
 
   return (
     <div className="p-8">
@@ -61,9 +71,7 @@ export default async function ClientDetailLayout({ children, params }: ClientDet
             <ClientStatusBadge statut={client.statutClient} />
           </div>
         </div>
-        <Button type="button" variant="outline" disabled title={t("importHealthcheckTooltip")}>
-          {t("importHealthcheck")}
-        </Button>
+        <ImportHealthcheckClientButton clientId={id} licences={licenceOptions} />
       </header>
 
       <ClientDetailTabsNav clientId={id} />

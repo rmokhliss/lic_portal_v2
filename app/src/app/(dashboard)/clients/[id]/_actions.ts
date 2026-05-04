@@ -128,6 +128,35 @@ export async function createLicenceAction(input: unknown, clientIdContext: unkno
   return result;
 }
 
+// --- Healthcheck import (Phase 10.D) ----------------------------------------
+
+import { importHealthcheckUseCase } from "@/server/composition-root";
+
+const ImportHealthcheckClientSchema = z
+  .object({
+    licenceId: z.uuid(),
+    filename: z.string().min(1).max(200),
+    content: z.string().min(1).max(5_000_000),
+  })
+  .strict();
+
+export async function importHealthcheckClientAction(input: unknown): Promise<{
+  updated: number;
+  errors: number;
+  errorDetails: readonly string[];
+}> {
+  const actor = await requireRole(["ADMIN", "SADMIN"]);
+  const parsed = ImportHealthcheckClientSchema.parse(input);
+  const result = await importHealthcheckUseCase.execute(parsed, actor.id);
+  revalidatePath(`/licences/${parsed.licenceId}/articles`);
+  revalidatePath(`/licences/${parsed.licenceId}/resume`);
+  return {
+    updated: result.updated,
+    errors: result.errors,
+    errorDetails: result.errorDetails,
+  };
+}
+
 // --- Historique (Phase 7.B) -------------------------------------------------
 
 import { listAuditByClientScopeUseCase } from "@/server/composition-root";

@@ -126,7 +126,7 @@ export async function updateRenouvellementAction(input: unknown, ctx: unknown) {
 // Phase 10.C — Génération fichier .lic (stub PKI, signature RSA Phase 3)
 // ============================================================================
 
-import { generateLicenceFichierUseCase } from "@/server/composition-root";
+import { generateLicenceFichierUseCase, importHealthcheckUseCase } from "@/server/composition-root";
 
 export async function generateLicenceFichierAction(input: unknown): Promise<{
   contentJson: string;
@@ -144,6 +144,31 @@ export async function generateLicenceFichierAction(input: unknown): Promise<{
     contentJson: result.contentJson,
     hash: result.hash,
     filename: `${result.content.reference}.lic`,
+  };
+}
+
+const ImportHealthcheckSchema = z
+  .object({
+    licenceId: z.uuid(),
+    filename: z.string().min(1).max(200),
+    content: z.string().min(1).max(5_000_000), // cap 5MB texte
+  })
+  .strict();
+
+export async function importHealthcheckAction(input: unknown): Promise<{
+  updated: number;
+  errors: number;
+  errorDetails: readonly string[];
+}> {
+  const actor = await requireRole(["ADMIN", "SADMIN"]);
+  const parsed = ImportHealthcheckSchema.parse(input);
+  const result = await importHealthcheckUseCase.execute(parsed, actor.id);
+  revalidatePath(pathFor(parsed.licenceId, "resume"));
+  revalidatePath(`/licences/${parsed.licenceId}/articles`);
+  return {
+    updated: result.updated,
+    errors: result.errors,
+    errorDetails: result.errorDetails,
   };
 }
 

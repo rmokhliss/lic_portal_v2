@@ -397,9 +397,11 @@ export {
 
 import { articleRepository as articleRepoPhase10 } from "@/server/modules/article/article.module";
 import { GenerateLicenceFichierUseCase } from "@/server/modules/fichier-log/application/generate-licence-fichier.usecase";
+import { ImportHealthcheckUseCase } from "@/server/modules/fichier-log/application/import-healthcheck.usecase";
 import {
   fichierLogRepository,
   logFichierGenereUseCase as logFichierGenereSingleton,
+  logHealthcheckImporteUseCase as logHealthcheckImporteSingleton,
 } from "@/server/modules/fichier-log/fichier-log.module";
 import { licenceArticleRepository as licenceArticleRepoPhase10 } from "@/server/modules/licence-article/licence-article.module";
 
@@ -412,4 +414,15 @@ export const generateLicenceFichierUseCase = new GenerateLicenceFichierUseCase(
   licenceArticleRepoPhase10,
   articleRepoPhase10,
   logFichierGenereSingleton,
+);
+
+// --- Phase 10.D : import healthcheck (cross-module : licence + article +
+// licence-article + fichier-log + updateArticleVolumeUseCase) ---------------
+
+export const importHealthcheckUseCase = new ImportHealthcheckUseCase(
+  licenceRepository,
+  articleRepoPhase10,
+  licenceArticleRepoPhase10,
+  updateArticleVolumeUseCase,
+  logHealthcheckImporteSingleton,
 );

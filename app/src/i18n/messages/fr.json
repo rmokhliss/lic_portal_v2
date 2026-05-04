@@ -327,6 +327,20 @@
           "saving": "Enregistrement…",
           "cancel": "Annuler"
         }
+      },
+      "healthcheck": {
+        "importHealthcheck": "Importer healthcheck",
+        "noActiveLicence": "Aucune licence active sur ce client",
+        "dialogTitle": "Importer un fichier healthcheck",
+        "pkiNote": "⚠️ Stub Phase 10 — la vérification de signature certificat client est différée Phase 3 (DETTE-LIC-008). Le parsing CSV/JSON fonctionne.",
+        "licenceLabel": "Licence cible",
+        "licencePlaceholder": "— Choisir une licence —",
+        "fileLabel": "Fichier .csv ou .json",
+        "noFile": "Aucun fichier sélectionné",
+        "submit": "Importer",
+        "importing": "Import...",
+        "close": "Fermer",
+        "doneSummary": "Import terminé : {updated} article(s) mis à jour, {errors} erreur(s)."
       }
     }
   },
@@ -378,6 +392,11 @@
         "licFile": {
           "generate": "Générer .lic",
           "generating": "Génération..."
+        },
+        "healthcheck": {
+          "import": "Importer healthcheck",
+          "importing": "Import...",
+          "doneSummary": "Import terminé : {updated} article(s) mis à jour, {errors} erreur(s)."
         }
       },
       "renouvellements": {

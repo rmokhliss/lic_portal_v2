@@ -327,6 +327,20 @@
           "saving": "Saving…",
           "cancel": "Cancel"
         }
+      },
+      "healthcheck": {
+        "importHealthcheck": "Import healthcheck",
+        "noActiveLicence": "No active licence on this client",
+        "dialogTitle": "Import a healthcheck file",
+        "pkiNote": "⚠️ Phase 10 stub — client certificate signature verification deferred to Phase 3 (DETTE-LIC-008). CSV/JSON parsing works.",
+        "licenceLabel": "Target licence",
+        "licencePlaceholder": "— Pick a licence —",
+        "fileLabel": ".csv or .json file",
+        "noFile": "No file selected",
+        "submit": "Import",
+        "importing": "Importing...",
+        "close": "Close",
+        "doneSummary": "Import done: {updated} article(s) updated, {errors} error(s)."
       }
     }
   },
@@ -378,6 +392,11 @@
         "licFile": {
           "generate": "Generate .lic",
           "generating": "Generating..."
+        },
+        "healthcheck": {
+          "import": "Import healthcheck",
+          "importing": "Importing...",
+          "doneSummary": "Import done: {updated} article(s) updated, {errors} error(s)."
         }
       },
       "renouvellements": {
