@@ -21,6 +21,7 @@ import { ZodError } from "zod";
 import { ChangePasswordSchema } from "@s2m-lic/shared/schemas/auth.schema";
 import { changePasswordUseCase } from "@/server/composition-root";
 import { requireAuth } from "@/server/infrastructure/auth";
+import { rateLimit } from "@/server/infrastructure/rate-limit/rate-limit";
 import { AppError } from "@/server/modules/error";
 
 export interface ChangePasswordActionInput {
@@ -38,6 +39,17 @@ export async function changePasswordAction(
   input: ChangePasswordActionInput,
 ): Promise<ChangePasswordActionResult> {
   const user = await requireAuth();
+
+  // Phase 13.A — rate limit défensif : 5 tentatives / minute / user.
+  // Empêche le brute-force du currentPassword via Server Action.
+  try {
+    rateLimit(`change-password:${user.id}`, 5, 60_000);
+  } catch (err) {
+    if (err instanceof AppError) {
+      return { ok: false, error: { code: err.code, message: err.message } };
+    }
+    throw err;
+  }
 
   try {
     const parsed = ChangePasswordSchema.parse(input);

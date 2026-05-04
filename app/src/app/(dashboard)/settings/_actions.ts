@@ -24,6 +24,7 @@ import { z } from "zod";
 import { CreateUserSchema, SettingsGeneralSchema, UpdateUserSchema } from "@s2m-lic/shared";
 
 import { requireRole } from "@/server/infrastructure/auth";
+import { rateLimit } from "@/server/infrastructure/rate-limit/rate-limit";
 import { createChildLogger } from "@/server/infrastructure/logger";
 import {
   createDeviseUseCase,
@@ -239,6 +240,10 @@ export async function toggleUserActiveAction(input: unknown) {
 
 export async function resetUserPasswordAction(input: unknown) {
   const actor = await requireRole(["SADMIN"]);
+  // Phase 13.A — rate limit : 10 resets / minute / SADMIN. Bornage défensif
+  // contre un mauvais usage (un SADMIN ne fait normalement pas plus de quelques
+  // resets simultanés).
+  rateLimit(`reset-password:${actor.id}`, 10, 60_000);
   const { userId } = UserIdSchema.parse(input);
   const result = await resetUserPasswordUseCase.execute({ userId }, actor.id);
   userActionsLogger.info(
