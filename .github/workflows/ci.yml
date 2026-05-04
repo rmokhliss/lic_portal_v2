@@ -110,4 +110,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build
+        # Phase 13.C — DETTE-LIC-007 résolue : BUILD_SHA injecté depuis le SHA
+        # court du commit pour que /settings/info affiche la version réelle.
+        env:
+          BUILD_SHA: ${{ github.sha }}
         run: pnpm build
