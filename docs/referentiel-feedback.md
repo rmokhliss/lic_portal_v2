@@ -726,3 +726,13 @@ _Fin de l'archive. Capitalisation close en Mai 2026._
   - Pour contact : via `entityId` → `lic_contacts_clients.entite_id` → `lic_entites.client_id` (2 JOIN).
 - **Impact pratique** : recherche `WHERE audit.client_id = X` ne capture pas les actions sur entite/contact. Acceptable pour 4.C (recherches FTS textuelles via `search_vector` couvrent les noms). À reconsidérer si la Phase 7 (Journal des modifications EC-06) requiert le filtre direct par client.
 - **Reco évolution Référentiel v2.2+** : soit (a) rendre `clientDisplay` optionnel quand `clientId` est fourni (et générer un fallback `<unresolved>`), soit (b) imposer un helper `resolveClientDisplay(clientId)` côté infrastructure pour éviter le round-trip explicite côté use-case. Préférence pour (a) — simple, sans coupler audit à un repo externe.
+
+---
+
+### R-34 — `server-only` empêche l'usage des repositories en CLI tsx
+
+- **Type** : Limitation infra cross-runtime (Next.js Webpack vs tsx Node CLI)
+- **Phase LIC** : Phase 4 étape 4.D
+- **Contexte** : Le seed démo Phase 4 doit passer par les **repositories** (pas SQL brut, brief). Mais `infrastructure/db/client.ts` importe `"server-only"` (sentinel Next.js anti-fuite client). Le package npm `server-only` exporte une condition `react-server` qui pointe vers `empty.js` (no-op), tandis que la `default` export throw immédiatement. Sous Next.js, le bundler injecte la condition. Sous tsx CLI (db:seed), Node n'active pas la condition par défaut → throw au module load, le seed crashe avant de toucher le code.
+- **Décision LIC v2** : `db:seed` script invoqué avec **`tsx --conditions=react-server`** (flag Node natif `-C`). Force l'utilisation de `empty.js`. Modification minimale dans `package.json:20`. Dépendance `server-only` ajoutée explicitement (était transitive Next.js auparavant).
+- **Reco évolution Référentiel v2.2+** : §1.2 / §4.4 devrait mentionner que **tout script CLI hors Next.js qui consomme des repositories serveur** doit activer la condition `react-server` (ou stub `server-only`). Sans cette précision, chaque projet S2M va découvrir le piège à son premier seed/job CLI consommant des repositories.

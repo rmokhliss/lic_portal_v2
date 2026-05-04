@@ -29,6 +29,8 @@
 //   6. lic_team_members (6 membres fictifs S2M)
 //   7. lic_users (5 comptes BO)
 //   8. lic_settings (9 clés par défaut data-model.md)
+//   9. Phase 4.D — clients + entités + contacts via seedPhase4Clients
+//      (passe par les repositories, audit mode='SEED', idempotent)
 //
 // Connexion dédiée max=1 fermée à la fin (cf. migrate.ts).
 // ==============================================================================
@@ -37,6 +39,8 @@ import "../../../../scripts/load-env";
 
 import bcryptjs from "bcryptjs";
 import postgres from "postgres";
+
+import { seedPhase4Clients } from "./seed/phase4-clients.seed";
 
 import { SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
 
@@ -327,6 +331,11 @@ async function runSeed(): Promise<void> {
     await seedTeamMembers(seedClient);
     await seedUsers(seedClient);
     await seedSettings(seedClient);
+
+    // Phase 4.D — clients/entités/contacts via repositories.
+    // Idempotent (early return si lic_clients déjà peuplée).
+    await seedPhase4Clients(seedClient);
+
     log.info("Seed completed successfully");
   } finally {
     await seedClient.end();

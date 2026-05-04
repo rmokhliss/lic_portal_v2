@@ -17,7 +17,7 @@
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/server/infrastructure/db/migrate.ts",
-    "db:seed": "tsx src/server/infrastructure/db/seed.ts",
+    "db:seed": "tsx --conditions=react-server src/server/infrastructure/db/seed.ts",
     "db:studio": "drizzle-kit studio",
     "db:reset": "tsx src/server/infrastructure/db/reset.ts"
   },
@@ -65,6 +65,7 @@
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.52.0",
     "recharts": "^2.13.0",
+    "server-only": "^0.0.1",
     "sonner": "^1.7.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss": "^4.2.4",

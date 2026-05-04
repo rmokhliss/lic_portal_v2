@@ -17,9 +17,9 @@ import { SYSTEM_USER_DISPLAY, SYSTEM_USER_ID } from "@s2m-lic/shared/constants/s
 
 import { ValidationError } from "@/server/modules/error";
 
-export type AuditMode = "MANUEL" | "API" | "JOB";
+export type AuditMode = "MANUEL" | "API" | "JOB" | "SEED";
 
-const VALID_MODES: ReadonlySet<AuditMode> = new Set(["MANUEL", "API", "JOB"]);
+const VALID_MODES: ReadonlySet<AuditMode> = new Set(["MANUEL", "API", "JOB", "SEED"]);
 
 // IPv4 (a.b.c.d) ou IPv6 (h:h:...:h, formes abrégées tolérées).
 // Validation minimale : on rejette les formats clairement étrangers, pas une
