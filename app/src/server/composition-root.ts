@@ -259,3 +259,68 @@ export {
   getRenouvellementUseCase,
   listRenouvellementsByLicenceUseCase,
 } from "@/server/modules/renouvellement/renouvellement.module";
+
+// --- Phase 6 étape 6.B : catalogue produits + articles (R-27 sans audit) ---
+
+export {
+  createProduitUseCase,
+  getProduitUseCase,
+  listProduitsUseCase,
+  toggleProduitUseCase,
+  updateProduitUseCase,
+} from "@/server/modules/produit/produit.module";
+
+export {
+  createArticleUseCase,
+  getArticleUseCase,
+  listArticlesUseCase,
+  toggleArticleUseCase,
+  updateArticleUseCase,
+} from "@/server/modules/article/article.module";
+
+// --- Phase 6 étape 6.C : liaisons licence-produit + licence-article --------
+// Audit obligatoire — câblage ici avec userRepository + auditRepository.
+
+import { articleRepository } from "@/server/modules/article/article.module";
+import { AddArticleToLicenceUseCase } from "@/server/modules/licence-article/application/add-article-to-licence.usecase";
+import { RemoveArticleFromLicenceUseCase } from "@/server/modules/licence-article/application/remove-article-from-licence.usecase";
+import { UpdateArticleVolumeUseCase } from "@/server/modules/licence-article/application/update-article-volume.usecase";
+import { licenceArticleRepository } from "@/server/modules/licence-article/licence-article.module";
+import { AddProduitToLicenceUseCase } from "@/server/modules/licence-produit/application/add-produit-to-licence.usecase";
+import { RemoveProduitFromLicenceUseCase } from "@/server/modules/licence-produit/application/remove-produit-from-licence.usecase";
+import { licenceProduitRepository } from "@/server/modules/licence-produit/licence-produit.module";
+import { produitRepository } from "@/server/modules/produit/produit.module";
+
+export const addProduitToLicenceUseCase = new AddProduitToLicenceUseCase(
+  licenceProduitRepository,
+  licenceRepository,
+  produitRepository,
+  userRepository,
+  auditRepository,
+);
+export const removeProduitFromLicenceUseCase = new RemoveProduitFromLicenceUseCase(
+  licenceProduitRepository,
+  userRepository,
+  auditRepository,
+);
+
+export const addArticleToLicenceUseCase = new AddArticleToLicenceUseCase(
+  licenceArticleRepository,
+  licenceRepository,
+  articleRepository,
+  userRepository,
+  auditRepository,
+);
+export const updateArticleVolumeUseCase = new UpdateArticleVolumeUseCase(
+  licenceArticleRepository,
+  userRepository,
+  auditRepository,
+);
+export const removeArticleFromLicenceUseCase = new RemoveArticleFromLicenceUseCase(
+  licenceArticleRepository,
+  userRepository,
+  auditRepository,
+);
+
+export { listProduitsByLicenceUseCase } from "@/server/modules/licence-produit/licence-produit.module";
+export { listArticlesByLicenceUseCase } from "@/server/modules/licence-article/licence-article.module";

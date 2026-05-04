@@ -70,6 +70,12 @@ export type ErrorCode =
   | "SPX-LIC-746"
   | "SPX-LIC-747"
   | "SPX-LIC-748"
+  | "SPX-LIC-749"
+  | "SPX-LIC-750"
+  | "SPX-LIC-751"
+  | "SPX-LIC-752"
+  | "SPX-LIC-753"
+  | "SPX-LIC-754"
   | "SPX-LIC-900"
   | "SPX-LIC-901"
   | "SPX-LIC-902"
@@ -429,6 +435,42 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     httpStatus: 400,
     defaultMessage: "Données article invalides",
     className: "ValidationError",
+  },
+  "SPX-LIC-749": {
+    code: "SPX-LIC-749",
+    httpStatus: 404,
+    defaultMessage: "Liaison licence-produit introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-750": {
+    code: "SPX-LIC-750",
+    httpStatus: 409,
+    defaultMessage: "Ce produit est déjà attaché à cette licence",
+    className: "ConflictError",
+  },
+  "SPX-LIC-751": {
+    code: "SPX-LIC-751",
+    httpStatus: 404,
+    defaultMessage: "Liaison licence-article introuvable",
+    className: "NotFoundError",
+  },
+  "SPX-LIC-752": {
+    code: "SPX-LIC-752",
+    httpStatus: 409,
+    defaultMessage: "Cet article est déjà attaché à cette licence",
+    className: "ConflictError",
+  },
+  "SPX-LIC-753": {
+    code: "SPX-LIC-753",
+    httpStatus: 400,
+    defaultMessage: "Volume invalide (entier >= 0)",
+    className: "ValidationError",
+  },
+  "SPX-LIC-754": {
+    code: "SPX-LIC-754",
+    httpStatus: 409,
+    defaultMessage: "Snapshot de volume déjà enregistré pour cette période",
+    className: "ConflictError",
   },
 
   // --- Système + erreurs génériques transverses (900-999) ------------------
