@@ -34,10 +34,11 @@ export default {
         "demo", "email", "error",
         // Infrastructure
         "auth", "db", "env", "infrastructure", "jobs", "logger", "observability",
+        "security", "perf",
         // Frontend
         "ui", "components", "hooks", "i18n", "design", "dashboard", "profil",
         // Transverse
-        "bootstrap", "deps", "ci", "docs", "config", "release",
+        "bootstrap", "deps", "ci", "docs", "config", "release", "debt",
       ],
     ],
   },
