@@ -6,11 +6,15 @@
 import { RenouvellementRepositoryPg } from "./adapters/postgres/renouvellement.repository.pg";
 import { GetRenouvellementUseCase } from "./application/get-renouvellement.usecase";
 import { ListRenouvellementsByLicenceUseCase } from "./application/list-renouvellements-by-licence.usecase";
+import { SearchRenouvellementsUseCase } from "./application/search-renouvellements.usecase";
 import type { RenouvellementRepository } from "./ports/renouvellement.repository";
 
 export const renouvellementRepository: RenouvellementRepository = new RenouvellementRepositoryPg();
 
 export const getRenouvellementUseCase = new GetRenouvellementUseCase(renouvellementRepository);
 export const listRenouvellementsByLicenceUseCase = new ListRenouvellementsByLicenceUseCase(
+  renouvellementRepository,
+);
+export const searchRenouvellementsUseCase = new SearchRenouvellementsUseCase(
   renouvellementRepository,
 );

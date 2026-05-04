@@ -264,6 +264,7 @@ export const updateRenouvellementUseCase = new UpdateRenouvellementUseCase(
 export {
   getRenouvellementUseCase,
   listRenouvellementsByLicenceUseCase,
+  searchRenouvellementsUseCase,
 } from "@/server/modules/renouvellement/renouvellement.module";
 
 // --- Phase 6 étape 6.B : catalogue produits + articles (R-27 sans audit) ---

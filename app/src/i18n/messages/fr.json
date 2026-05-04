@@ -580,5 +580,33 @@
       "title": "Logs d’exécution",
       "empty": "Aucun log."
     }
+  },
+  "renewals": {
+    "page": {
+      "title": "Renouvellements",
+      "subtitle": "Vue cross-clients de tous les renouvellements en cours et passés.",
+      "filter": {
+        "status": "Statut",
+        "statusAll": "— Tous —",
+        "client": "Client",
+        "clientAll": "— Tous —",
+        "fromDate": "Date début création",
+        "toDate": "Date fin création",
+        "apply": "Filtrer",
+        "applying": "Filtrage..."
+      },
+      "table": {
+        "dateCreation": "Créé le",
+        "licence": "Licence",
+        "nouvelleDateDebut": "Nouvelle début",
+        "nouvelleDateFin": "Nouvelle fin",
+        "status": "Statut",
+        "actions": "Actions",
+        "open": "Ouvrir"
+      },
+      "empty": "Aucun renouvellement pour ces filtres.",
+      "loadMore": "Charger plus",
+      "loading": "Chargement..."
+    }
   }
 }

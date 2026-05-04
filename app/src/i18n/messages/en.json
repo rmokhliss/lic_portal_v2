@@ -580,5 +580,33 @@
       "title": "Execution logs",
       "empty": "No log."
     }
+  },
+  "renewals": {
+    "page": {
+      "title": "Renewals",
+      "subtitle": "Cross-clients view of all renewals in-progress and past.",
+      "filter": {
+        "status": "Status",
+        "statusAll": "— All —",
+        "client": "Client",
+        "clientAll": "— All —",
+        "fromDate": "Created from",
+        "toDate": "Created to",
+        "apply": "Filter",
+        "applying": "Filtering..."
+      },
+      "table": {
+        "dateCreation": "Created at",
+        "licence": "Licence",
+        "nouvelleDateDebut": "New start",
+        "nouvelleDateFin": "New end",
+        "status": "Status",
+        "actions": "Actions",
+        "open": "Open"
+      },
+      "empty": "No renewal for these filters.",
+      "loadMore": "Load more",
+      "loading": "Loading..."
+    }
   }
 }
