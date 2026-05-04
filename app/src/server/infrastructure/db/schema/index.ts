@@ -57,3 +57,10 @@ export {
   batchStatus,
   logLevel,
 } from "@/server/modules/batch/adapters/postgres/schema";
+
+// Phase 10 étape 10.A : fichiers log (génération .lic + import healthcheck).
+export {
+  fichierStatut,
+  fichierType,
+  fichiersLog,
+} from "@/server/modules/fichier-log/adapters/postgres/schema";
