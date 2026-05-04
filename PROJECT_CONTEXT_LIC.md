@@ -43,14 +43,16 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phase 4 EC-Clients complète (Mai 2026)** — schémas + 3 modules hexagonaux (client, entite, contact) + UI liste/détail + seed démo 55 clients, 489/489 tests verts.
+**Phase actuelle** : **Phase 5 Licences complète (Mai 2026)** — 2 modules hexagonaux (licence, renouvellement) + UI liste/détail/4 tabs + seed démo 55 licences, **502/502 tests verts**.
 
-- 4.A (commit `b5906c4`) : 3 schémas Drizzle + migration 0004 + DETTE-LIC-008 (PKI)
-- 4.B (commit `ab5b262`) : module client hexagonal + 5 use-cases + cursor pagination + FTS + L4 + 16 tests
-- 4.C (commit `59fbe64`) : modules entite + contact + 11 tests + R-33 (clientId/clientDisplay audit)
-- 4.D (commit `9c6a633`) : seed démo 55 clients/60 entités/110 contacts/170 audits SEED + R-34 (server-only CLI)
-- 4.E (commit `720dc11`) : page liste /clients + 3 Server Actions + filtres FTS + cursor pagination
-- 4.F (commit `f2c273e`) : page détail /clients/[id] + 5 tabs + 6 Server Actions entite/contact
+- 5.A (commit `e348406`) : 2 schémas (lic_licences + lic_renouvellements) + 2 enums + migration 0006 (CHECK reference + dates)
+- 5.B (commit `f6d7e9b`) : module licence hexagonal + 5 use-cases + allocateNextReference (LIC-{YYYY}-{NNN}) + L4 + 9 tests
+- 5.C (commit `fdea9c2`) : module renouvellement + 5 use-cases (workflow EN_COURS→VALIDE|ANNULE) + 4 tests
+- 5.D (commit `7163fc5`) : seed démo 55 licences (45 ACTIF / 5 SUSPENDU / 5 EXPIRE) + 10 renouvellements
+- 5.E (commit `d640471`) : tab Licences débloqué dans /clients/[id]/licences + Dialog + LicenceStatusBadge
+- 5.F (commit `69610af`) : page détail /licences/[id] + 4 tabs (resume + renouvellements + 2 stubs Phase 6/7) + 5 Server Actions
+
+**Phase 4 EC-Clients close** : schémas + 3 modules hexagonaux (client, entite, contact) + UI liste/détail + seed démo 55 clients (commits `b5906c4` → `f2c273e`).
 
 **Phase actuelle précédente** : **Phase 2.B + Phase 2.B.bis EC-08 Users complètes (Mai 2026)** — écran EC-13 Paramétrage opérationnel (4 onglets réels + 5 PhaseStub), 462/462 tests verts.
 
@@ -509,6 +511,22 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 - **Solution future** : étendre `Breadcrumb` pour accepter un fil d'Ariane multi-niveaux résolu côté serveur (ex: « Clients > Bank Al-Maghrib > Info »). Nécessite un context React ou un slot Next.js parallel route.
 - **Priorité** : basse (UX cosmétique).
 - **Phase cible** : 7 (audit/journal — moment où l'UX cross-écran sera réétudiée) ou plus tôt si feedback utilisateur.
+
+### DETTE-LIC-011 — `allocateNextReference` race possible (lecture MAX + INSERT non-atomic)
+
+- **Cause** : Phase 5.B — `LicenceRepositoryPg.allocateNextReference()` lit `MAX(reference)` filtré sur l'année courante, +1, puis le caller insère via `save()`. Les 2 opérations ne sont pas atomic : si 2 transactions concurrentes appellent `allocateNextReference` simultanément, elles peuvent allouer le même numéro et l'une des INSERT échouera sur la contrainte UNIQUE `uq_licences_reference`.
+- **Impact** : faible volume mono-tenant + faible concurrence dev/admin. Le caller wrap l'erreur en SPX-LIC-736 (`ConflictError`) — peut être retry idempotent côté UI ou Server Action.
+- **Solution future** : remplacer par une séquence Postgres dédiée `lic_licence_ref_seq` (reset annuel via fonction PG ou compteur `last_year_used` dans `lic_settings`). Exemple : `nextval('lic_licence_ref_seq')` dans une fonction stockée qui formatte `LIC-{YYYY}-{NNN}` atomiquement.
+- **Priorité** : basse.
+- **Phase cible** : 13 (durcissement perf prod).
+
+### DETTE-LIC-012 — Tab Articles licence reste un PhaseStub Phase 6
+
+- **Cause** : Phase 5.F livre `/licences/[id]/articles/page.tsx` comme stub Phase 6. La tab Articles affichera la liste des produits/articles attachés à la licence avec leurs volumes (autorisé/consommé/taux). Implémentation requiert les modules `produit` + `article` + tables de liaison `lic_licence_produits` / `lic_licence_articles` (Phase 6 entière).
+- **Impact** : UX dégradée — l'utilisateur voit la licence mais pas son contenu modulaire (produits/articles). Pas bloquant Phase 5.
+- **Solution future** : Phase 6.F dédiée à débloquer ce stub avec liste produits + sous-table articles + Dialogs add/remove + auto-refresh volumes.
+- **Priorité** : haute (utilisabilité métier).
+- **Phase cible** : 6.
 
 ### DETTE-LIC-010 — Liste `typeContactCode` statique dans `ContactDialog`
 
