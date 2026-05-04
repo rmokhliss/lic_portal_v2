@@ -631,5 +631,43 @@
       "loadMore": "Load more",
       "loading": "Loading..."
     }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Overview of the LIC SELECT-PX platform.",
+    "kpisAriaLabel": "Key indicators",
+    "kpis": {
+      "clientsActifs": "Active clients",
+      "licencesActives": "Active licences",
+      "licencesExpirees": "Expired licences",
+      "renouvellementsEnCours": "Renewals in progress",
+      "notificationsUnread": "Unread notifs"
+    },
+    "charts": {
+      "licenceStatusByMonth": "Licences created per month (6 months)",
+      "topClients": "Top 5 clients by licences",
+      "licencesCount": "Licences",
+      "volumesTopArticles": "Top 5 articles — used volumes"
+    },
+    "recent": {
+      "licences": "Last 5 modified licences",
+      "renouvellements": "Last 5 EN_COURS renewals",
+      "notifications": "Recent unread notifications",
+      "refLicence": "Reference",
+      "client": "Client",
+      "status": "Status",
+      "updatedAt": "Updated",
+      "createdAt": "Created",
+      "nouvelleDateFin": "New end",
+      "open": "Open"
+    },
+    "empty": {
+      "noChart": "No data for this period.",
+      "noTopClients": "No client.",
+      "noVolumes": "No allowed volume.",
+      "noLicences": "No licence.",
+      "noRenouvellements": "No EN_COURS renewal.",
+      "noNotifications": "No unread notification."
+    }
   }
 }

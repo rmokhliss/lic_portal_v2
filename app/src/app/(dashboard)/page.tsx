@@ -1,10 +1,39 @@
-// LIC v2 — Page racine dashboard (F-12 placeholder, vrai dashboard Phase 11 EC-01)
+// ==============================================================================
+// LIC v2 — / (Dashboard EC-01, Phase 11.A)
+// ==============================================================================
 
-export default function DashboardPage() {
+import { requireAuthPage } from "@/server/infrastructure/auth";
+import { getDashboardStatsUseCase, listNotificationsUseCase } from "@/server/composition-root";
+
+import { DashboardClient, type NotificationCardDTO } from "./_components/DashboardClient";
+
+export default async function DashboardPage() {
+  const user = await requireAuthPage();
+
+  const [stats, notifPage] = await Promise.all([
+    getDashboardStatsUseCase.execute(),
+    listNotificationsUseCase.execute({ userId: user.id, onlyUnread: true, limit: 5 }),
+  ]);
+
+  const recentNotifications: NotificationCardDTO[] = notifPage.items.map((n) => ({
+    id: n.id,
+    title: n.title,
+    priority: n.priority,
+    createdAt: n.createdAt,
+    href: n.href,
+  }));
+
   return (
     <div className="p-8">
-      <h1 className="font-display text-foreground text-2xl">Tableau de bord</h1>
-      <p className="text-muted-foreground mt-2">Écran à venir (Phase 11).</p>
+      <DashboardClient
+        kpis={{ ...stats.kpis, notificationsUnread: notifPage.unreadCount }}
+        licenceStatusByMonth={stats.licenceStatusByMonth}
+        topClients={stats.topClients}
+        volumes={stats.volumes}
+        recentLicences={stats.recentLicences}
+        recentRenouvellements={stats.recentRenouvellements}
+        recentNotifications={recentNotifications}
+      />
     </div>
   );
 }

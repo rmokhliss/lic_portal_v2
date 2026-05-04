@@ -426,3 +426,7 @@ export const importHealthcheckUseCase = new ImportHealthcheckUseCase(
   updateArticleVolumeUseCase,
   logHealthcheckImporteSingleton,
 );
+
+// --- Phase 11.A : dashboard EC-01 (lecture seule, agrégats SQL) ------------
+
+export { getDashboardStatsUseCase } from "@/server/modules/dashboard/dashboard.module";
