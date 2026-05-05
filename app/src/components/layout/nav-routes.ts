@@ -13,8 +13,10 @@
 
 import {
   BarChart3,
+  Bell,
   BellRing,
   Building2,
+  Clock,
   FileText,
   History,
   LayoutDashboard,
@@ -44,23 +46,20 @@ export const NAV_ROUTES: readonly NavRoute[] = [
   { href: "/clients", labelKey: "clients", icon: Building2, group: "management" },
   { href: "/licences", labelKey: "licences", icon: FileText, group: "management" },
   { href: "/renewals", labelKey: "renewals", icon: RefreshCw, group: "management" },
+  { href: "/volumes", labelKey: "volumes", icon: BarChart3, group: "management" },
   // Surveillance
   { href: "/notifications", labelKey: "notifications", icon: BellRing, group: "monitoring" },
+  { href: "/alerts", labelKey: "alerts", icon: Bell, group: "monitoring", minRole: "ADMIN" },
   // Rapports
   { href: "/reports", labelKey: "reportsList", icon: BarChart3, group: "reports" },
+  { href: "/files", labelKey: "files", icon: FileText, group: "reports", minRole: "ADMIN" },
   // Système
   { href: "/audit", labelKey: "auditLog", icon: History, group: "system", minRole: "ADMIN" },
+  { href: "/history", labelKey: "history", icon: Clock, group: "system" },
   { href: "/batches", labelKey: "batches", icon: Workflow, group: "system", minRole: "ADMIN" },
   // Paramétrage isolé en bas (SADMIN uniquement)
   { href: "/settings", labelKey: "settings", icon: Settings, group: "settings", minRole: "SADMIN" },
 ];
-
-// Phase 11.C — Routes orphelines retirées de la sidebar (stubs sans page
-// réelle) : `/alerts` (config alertes Phase 13+), `/volumes` (per-licence
-// /licences/[id]/articles), `/files` (per-licence /licences/[id]/resume
-// bouton générer + tab fichiers Phase 13+), `/history` (renommée `/audit`
-// Phase 7.C). Les pages stub peuvent rester sur disque comme stubs explicites
-// mais ne sont plus référencées dans la navigation principale.
 
 /** Ordre d'affichage des 4 groupes principaux. Paramétrage est rendu séparément
  *  (pied de sidebar via mt-auto). */

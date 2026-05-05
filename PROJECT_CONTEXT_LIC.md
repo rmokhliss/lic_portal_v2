@@ -43,7 +43,20 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phases 1 → 13 closes + Phase 3 PKI (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI. MVP livré, prêt pour premier déploiement préprod.
+**Phase actuelle** : **Phases 1 → 13 closes + Phase 3 PKI + Tickets UX T-01..T-06 (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI + raffinements UX post-livraison. MVP livré, prêt pour premier déploiement préprod.
+
+**Tickets UX post-Phase-3 (Mai 2026)** — corrections et améliorations UX issues de la revue post-livraison, sans nouvelle phase métier.
+
+- T-01 (commit `9667c10`) : `ClientDialog` enrichi — selects référentiels SADMIN (pays/devise/langue) + selects team-members SALES/AM (volet A) au lieu d'`<Input>` libres + section contacts read-only en mode edit avec lien vers la page CRUD dédiée. DETTE-LIC-017 ouverte (embedded edit contacts différé).
+- T-02 (commit `2c4548e`) : 6 KPI cards Dashboard cliquables (`/clients?statut=ACTIF`, `/licences?statut=ACTIF|EXPIRE|SUSPENDU`, `/renewals?statut=EN_COURS`, `/notifications?lu=false`). Card `licencesSuspendues` ajoutée à la grille (était absente du rendu malgré la valeur déjà calculée par `getDashboardStatsUseCase`).
+- T-03 (commit `3610bf3`) : page `/licences` globale réelle (anciennement stub Phase 5) — vue cross-clients avec filtres GET (`statut`, `q` recherche reference ILIKE), pagination cursor, lien Détail par ligne, colonne Client résolue post-fetch. Use-case `listAllLicencesUseCase` + extension port `findPaginated.q?`.
+- T-04 (commit `018e6fe`) : `/settings/smtp` libellé "Non implémenté (SMTP)" au lieu de "Disponible Phase 8". `PhaseStub.phase` accepte `null` (clé i18n `notImplemented`).
+- T-05 (pas de commit) : catalogues vides — investigation environnementale, `pnpm db:seed` relancé (5 produits + 15 articles + 55 clients + 55 licences). Pas de bug applicatif.
+- T-06 (commit `7b643b7`) : i18n onglet `settings.tabs.team` "Équipe" → "Référentiels" / "Team" → "References" (la route reste `/settings/team`, seul le label affiché change).
+- F-13 fix (commit `db5488f`) : afterAll TRUNCATE+reseed sur les 3 specs crypto qui touchent `lic_settings` — élimine la régression du test `update-settings.usecase.int.spec.ts > payload vide est un no-op` causée par les nouveaux tests d'intégration Phase 3.C/3.E.
+- Sidebar fix : 4 routes orphelines (`/volumes`, `/alerts`, `/files`, `/history`) ré-ajoutées dans `nav-routes.ts` (anciennement retirées Phase 11.C). Pages stub passées en `<PhaseStub phase={null}>` stylé DS au lieu de placeholder texte. `/settings/demo` aussi en `phase={null}` (anciennement Phase 4).
+
+**Phase 3 PKI close (Mai 2026)** — module crypto + CA + cert clients + sandbox + endpoint public.
 
 **Phase 3 PKI close (Mai 2026)** — module crypto + CA + cert clients + sandbox + endpoint public.
 

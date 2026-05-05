@@ -1,10 +1,15 @@
-// LIC v2 — Placeholder /alerts (F-12, vrai écran Phase 8 EC-07)
+// LIC v2 — /alerts (stub PhaseStub stylé DS).
+
+import { PhaseStub } from "@/components/shared/PhaseStub";
 
 export default function AlertsPage() {
   return (
     <div className="p-8">
-      <h1 className="font-display text-foreground text-2xl">Configuration des alertes</h1>
-      <p className="text-muted-foreground mt-2">Écran à venir (Phase 8).</p>
+      <PhaseStub
+        phase={null}
+        label="Alertes"
+        description="Configuration et historique des alertes de seuil."
+      />
     </div>
   );
 }

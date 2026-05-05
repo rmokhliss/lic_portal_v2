@@ -19,6 +19,8 @@ export interface FindLicencesPaginatedInput {
   readonly clientId?: string;
   readonly entiteId?: string;
   readonly status?: LicenceStatus | readonly LicenceStatus[];
+  /** Sous-chaîne ILIKE sur reference (T-03 — recherche page /licences). */
+  readonly q?: string;
   readonly cursor?: string;
   readonly limit?: number;
 }

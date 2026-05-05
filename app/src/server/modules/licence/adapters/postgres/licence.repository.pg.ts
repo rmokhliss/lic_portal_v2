@@ -8,7 +8,7 @@
 // DESC en cursor pagination (uuidv7 ordre chronologique).
 // ==============================================================================
 
-import { and, desc, eq, inArray, like, lt, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, like, lt, sql } from "drizzle-orm";
 import type { drizzle } from "drizzle-orm/postgres-js";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 
@@ -78,6 +78,9 @@ export class LicenceRepositoryPg extends LicenceRepository {
       } else {
         conditions.push(inArray(licences.status, [...s]));
       }
+    }
+    if (input.q !== undefined && input.q.trim().length > 0) {
+      conditions.push(ilike(licences.reference, `%${input.q.trim()}%`));
     }
     if (input.cursor !== undefined) {
       const { id } = decodeCursor(input.cursor);

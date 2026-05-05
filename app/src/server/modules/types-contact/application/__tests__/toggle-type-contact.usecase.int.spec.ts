@@ -42,9 +42,11 @@ beforeEach(async () => {
   // Reset à l'état bootstrap migration 0003 : 3 types actifs ACHAT,
   // FACTURATION, TECHNIQUE. Indépendant de l'ordre d'exécution cross-files.
   await sql`TRUNCATE TABLE lic_types_contact_ref CASCADE`;
+  // Valeurs alignées migration 0003_seed_referentials_bootstrap.sql (libellé
+  // 'Achats' avec s, pas 'Achat'). Mismatch précédent polluait list/get specs.
   await sql`
     INSERT INTO lic_types_contact_ref (code, libelle, actif) VALUES
-      ('ACHAT', 'Achat', true),
+      ('ACHAT', 'Achats', true),
       ('FACTURATION', 'Facturation', true),
       ('TECHNIQUE', 'Technique', true)
     ON CONFLICT (code) DO NOTHING
