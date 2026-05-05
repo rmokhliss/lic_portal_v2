@@ -121,29 +121,43 @@ export function DashboardClient(props: DashboardClientProps) {
       {/* KPI cards */}
       <section
         aria-label={t("kpisAriaLabel")}
-        className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-5"
+        className="grid grid-cols-1 gap-3 md:grid-cols-3 lg:grid-cols-6"
       >
-        <KpiCard label={t("kpis.clientsActifs")} value={props.kpis.clientsActifs} />
+        {/* T-02 — 6 KPI cards cliquables avec liens filtrés vers les pages cibles. */}
+        <KpiCard
+          label={t("kpis.clientsActifs")}
+          value={props.kpis.clientsActifs}
+          href="/clients?statut=ACTIF"
+        />
         <KpiCard
           label={t("kpis.licencesActives")}
           value={props.kpis.licencesActives}
           tone="success"
+          href="/licences?statut=ACTIF"
         />
         <KpiCard
           label={t("kpis.licencesExpirees")}
           value={props.kpis.licencesExpirees}
           tone="destructive"
+          href="/licences?statut=EXPIRE"
+        />
+        <KpiCard
+          label={t("kpis.licencesSuspendues")}
+          value={props.kpis.licencesSuspendues}
+          tone="warning"
+          href="/licences?statut=SUSPENDU"
         />
         <KpiCard
           label={t("kpis.renouvellementsEnCours")}
           value={props.kpis.renouvellementsEnCours}
           tone="info"
+          href="/renewals?statut=EN_COURS"
         />
         <KpiCard
           label={t("kpis.notificationsUnread")}
           value={props.kpis.notificationsUnread}
           tone={props.kpis.notificationsUnread > 0 ? "warning" : undefined}
-          href="/notifications"
+          href="/notifications?lu=false"
         />
       </section>
 
@@ -365,7 +379,10 @@ function KpiCard({
   );
   if (href !== undefined) {
     return (
-      <Link href={href} className="hover:bg-accent block rounded-md transition">
+      <Link
+        href={href}
+        className="hover:ring-primary/40 block cursor-pointer rounded-md transition hover:ring-1"
+      >
         {inner}
       </Link>
     );
