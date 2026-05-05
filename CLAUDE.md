@@ -1,7 +1,7 @@
 # CLAUDE.md — s2m-lic (LIC v2)
 
 > Document lu en **début de chaque session** par Claude Code (Référentiel §4.1).
-> Format défini par le **Référentiel Technique S2M v2.0 §4.19** : ≤300 lignes, extraits opérationnels uniquement.
+> Format défini par le **Référentiel Technique S2M v2.1 §4.19** : ≤300 lignes, extraits opérationnels uniquement.
 > **Détails métier complets** dans `PROJECT_CONTEXT_LIC.md`.
 > **Règles transverses universelles** dans `docs/REFERENTIEL_S2M.pdf`.
 
@@ -9,7 +9,7 @@
 
 ## 1. Identité projet
 
-`s2m-lic` — **Licence Manager** (LIC), portail back-office S2M de gestion des licences SELECT-PX vendues aux banques africaines. Mono-tenant. Projet pilote du Référentiel S2M v2.0.
+`s2m-lic` — **Licence Manager** (LIC), portail back-office S2M de gestion des licences SELECT-PX vendues aux banques africaines. Mono-tenant. Projet pilote du Référentiel S2M v2.1.
 
 **Stack** : Node 24 + TypeScript 6 strict, Next.js 16 full-stack, PostgreSQL 18, Drizzle 0.45, Zod 4, Auth.js v5 sessions, pg-boss (pas de Redis), Tailwind 4 + shadcn/ui, Vitest, Playwright.
 
@@ -17,7 +17,7 @@
 
 ## 2. Sources à lire (par ordre)
 
-1. **Référentiel S2M v2.0** (`docs/REFERENTIEL_S2M.pdf`) — règles universelles 25 pages
+1. **Référentiel S2M v2.1** (`docs/REFERENTIEL_S2M.pdf`) — règles universelles 25 pages
 2. **Ce document** (CLAUDE.md racine) — règles condensées projet
 3. **`PROJECT_CONTEXT_LIC.md`** — métier + périmètre + état d'avancement
 4. **`app/CLAUDE.md`** — règles workspace
@@ -216,7 +216,7 @@ Référentiel §4.8 :
 ## 10. Liens utiles
 
 - **PROJECT_CONTEXT_LIC.md** : `/PROJECT_CONTEXT_LIC.md` (état projet, périmètre, périmètre)
-- **Référentiel S2M v2.0** : `docs/REFERENTIEL_S2M.pdf` (règles transverses)
+- **Référentiel S2M v2.1** : `docs/REFERENTIEL_S2M.pdf` (règles transverses)
 - **Design system** : `docs/design/index.html` + `gallery.html` (tokens + 8 templates)
 - **Spec format F2** : `docs/integration/F2_FORMATS.md`
 - **ADR fondateurs** : `docs/adr/0001-*.md` à `0006-*.md`

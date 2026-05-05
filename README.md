@@ -2,7 +2,7 @@
 
 Portail back-office S2M de gestion des licences contractuelles **SELECT-PX**.
 
-> **Projet pilote du Référentiel Technique S2M v2.0**
+> **Projet pilote du Référentiel Technique S2M v2.1**
 > Voir `docs/REFERENTIEL_S2M.pdf`, `PROJECT_CONTEXT_LIC.md` et `CLAUDE.md`.
 
 ---
@@ -82,7 +82,7 @@ L'application est disponible sur [http://localhost:3000](http://localhost:3000).
 | -------------------------------------------------------- | --------------------------------------------------- |
 | [`CLAUDE.md`](./CLAUDE.md)                               | Règles condensées Claude Code (≤300 lignes)         |
 | [`PROJECT_CONTEXT_LIC.md`](./PROJECT_CONTEXT_LIC.md)     | État projet, périmètre, écrans, ADR                 |
-| [`docs/REFERENTIEL_S2M.pdf`](./docs/REFERENTIEL_S2M.pdf) | Référentiel Technique S2M v2.0 (règles transverses) |
+| [`docs/REFERENTIEL_S2M.pdf`](./docs/REFERENTIEL_S2M.pdf) | Référentiel Technique S2M v2.1 (règles transverses) |
 | [`docs/adr/`](./docs/adr/)                               | Architecture Decision Records                       |
 | [`docs/design/index.html`](./docs/design/index.html)     | Design system SELECT-PX (tokens, brand)             |
 | [`docs/design/gallery.html`](./docs/design/gallery.html) | 8 templates de référence                            |

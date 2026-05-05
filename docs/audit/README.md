@@ -1,6 +1,6 @@
 # Audits LIC v2
 
-Archive des rapports d'audit conformité au Référentiel S2M v2.0, par phase.
+Archive des rapports d'audit conformité au Référentiel S2M v2.1, par phase.
 
 ## Méthode
 

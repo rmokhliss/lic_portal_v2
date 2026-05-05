@@ -2,7 +2,7 @@
 
 > Lu en début de chaque session par Claude Code, avec :
 >
-> 1. Le **Référentiel Technique S2M v2.0** (règles transverses universelles, 25 pages)
+> 1. Le **Référentiel Technique S2M v2.1** (règles transverses universelles, 25 pages)
 > 2. Le **CLAUDE.md** racine du projet (extrait condensé pour Claude Code, ≤300 lignes)
 > 3. Ce document — **spécifique LIC v2** (métier, périmètre, décisions, état)
 >
@@ -23,7 +23,7 @@
 | Repo cible       | https://github.com/rmokhliss/lic_portal_v2 (branche `main`)                                                         |
 | Type             | **Mono-tenant** (les "clients" sont des données, pas des tenants)                                                   |
 | Audience         | Équipes commerciales et finance S2M (interne)                                                                       |
-| Statut           | **Projet pilote** du Référentiel S2M v2.0                                                                           |
+| Statut           | **Projet pilote** du Référentiel S2M v2.1                                                                           |
 
 ### Métier en deux phrases
 
@@ -33,7 +33,7 @@ C'est **le seul endroit** où S2M sait qui a droit à quoi, jusqu'à quand, à q
 
 ### Statut pilote
 
-LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséquences :
+LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.1. Conséquences :
 
 - Les écarts justifiés vs Référentiel sont consignés en ADR (`docs/adr/`).
 - Les briques `@s2m/core-*` n'existent pas encore — implémentées **en local** dans LIC v2 (cf. section 7), elles remonteront en packages partagés une fois éprouvées.
@@ -794,7 +794,7 @@ Adapté du Référentiel §4.9 :
 
 | Source                             | Emplacement                                             | Rôle                                                                        |
 | ---------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------- |
-| **Référentiel Technique S2M v2.0** | `docs/REFERENTIEL_S2M.pdf` (à copier dans le repo)      | Règles transverses universelles, 25 pages                                   |
+| **Référentiel Technique S2M v2.1** | `docs/REFERENTIEL_S2M.pdf` (à copier dans le repo)      | Règles transverses universelles, 25 pages                                   |
 | **CLAUDE.md** racine               | `/CLAUDE.md`                                            | ≤300 lignes, lu en début de session par Claude Code                         |
 | **Ce document**                    | `/PROJECT_CONTEXT_LIC.md`                               | État spécifique LIC v2 (cadrage + périmètre)                                |
 | **ADR fondateurs**                 | `docs/adr/0001-*.md` à `0006-*.md`                      | Décisions structurantes                                                     |
