@@ -44,7 +44,13 @@ import {
   toggleTeamMemberUseCase,
   toggleTypeContactUseCase,
   toggleUserActiveUseCase,
+  updateDeviseUseCase,
+  updateLangueUseCase,
+  updatePaysUseCase,
+  updateRegionUseCase,
   updateSettingsUseCase,
+  updateTeamMemberUseCase,
+  updateTypeContactUseCase,
   updateUserUseCase,
 } from "@/server/composition-root";
 import { env } from "@/server/infrastructure/env";
@@ -139,6 +145,92 @@ export async function createTeamMemberAction(input: unknown): Promise<void> {
   await requireRole(["SADMIN"]);
   const parsed = TeamMemberFormSchema.parse(input);
   await createTeamMemberUseCase.execute(parsed);
+  revalidatePath("/settings/team");
+}
+
+// --- Onglet team — update (6) — Phase 14 (DETTE-LIC-006 résolue) -----------
+//
+// Schémas patch partiel : tous les champs sauf le sélecteur (code/id) sont
+// optionnels. Convention `null` (clear) vs `undefined` (no-op) alignée sur
+// les UpdateUseCases (cf. update-region.usecase.ts).
+
+const UpdateRegionFormSchema = z.object({
+  regionCode: z.string().min(1).max(50),
+  nom: z.string().min(1).max(100).optional(),
+  dmResponsable: z.string().max(100).nullable().optional(),
+});
+
+const UpdatePaysFormSchema = z.object({
+  codePays: z.string().length(2),
+  nom: z.string().min(1).max(100).optional(),
+  regionCode: z.string().min(1).max(50).nullable().optional(),
+});
+
+const UpdateDeviseFormSchema = z.object({
+  codeDevise: z.string().length(3),
+  nom: z.string().min(1).max(100).optional(),
+  symbole: z.string().min(1).max(10).nullable().optional(),
+});
+
+const UpdateLangueFormSchema = z.object({
+  codeLangue: z.string().length(2),
+  nom: z.string().min(1).max(100).optional(),
+});
+
+const UpdateTypeContactFormSchema = z.object({
+  code: z.string().min(1).max(50),
+  libelle: z.string().min(1).max(100).optional(),
+});
+
+const UpdateTeamMemberFormSchema = z.object({
+  id: z.number().int().positive(),
+  nom: z.string().min(1).max(100).optional(),
+  prenom: z.string().min(1).max(100).nullable().optional(),
+  email: z.email().max(150).nullable().optional(),
+  telephone: z.string().max(50).nullable().optional(),
+  roleTeam: z.enum(["SALES", "AM", "DM"]).optional(),
+  regionCode: z.string().min(1).max(50).nullable().optional(),
+});
+
+export async function updateRegionAction(input: unknown): Promise<void> {
+  await requireRole(["SADMIN"]);
+  const parsed = UpdateRegionFormSchema.parse(input);
+  await updateRegionUseCase.execute(parsed);
+  revalidatePath("/settings/team");
+}
+
+export async function updatePaysAction(input: unknown): Promise<void> {
+  await requireRole(["SADMIN"]);
+  const parsed = UpdatePaysFormSchema.parse(input);
+  await updatePaysUseCase.execute(parsed);
+  revalidatePath("/settings/team");
+}
+
+export async function updateDeviseAction(input: unknown): Promise<void> {
+  await requireRole(["SADMIN"]);
+  const parsed = UpdateDeviseFormSchema.parse(input);
+  await updateDeviseUseCase.execute(parsed);
+  revalidatePath("/settings/team");
+}
+
+export async function updateLangueAction(input: unknown): Promise<void> {
+  await requireRole(["SADMIN"]);
+  const parsed = UpdateLangueFormSchema.parse(input);
+  await updateLangueUseCase.execute(parsed);
+  revalidatePath("/settings/team");
+}
+
+export async function updateTypeContactAction(input: unknown): Promise<void> {
+  await requireRole(["SADMIN"]);
+  const parsed = UpdateTypeContactFormSchema.parse(input);
+  await updateTypeContactUseCase.execute(parsed);
+  revalidatePath("/settings/team");
+}
+
+export async function updateTeamMemberAction(input: unknown): Promise<void> {
+  await requireRole(["SADMIN"]);
+  const parsed = UpdateTeamMemberFormSchema.parse(input);
+  await updateTeamMemberUseCase.execute(parsed);
   revalidatePath("/settings/team");
 }
 

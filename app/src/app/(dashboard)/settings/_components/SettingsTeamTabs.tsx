@@ -57,7 +57,15 @@ import {
   toggleRegionAction,
   toggleTeamMemberAction,
   toggleTypeContactAction,
+  updateDeviseAction,
+  updateLangueAction,
+  updatePaysAction,
+  updateRegionAction,
+  updateTeamMemberAction,
+  updateTypeContactAction,
 } from "../_actions";
+
+import { RefEditDialog } from "./RefEditDialog";
 
 export interface SettingsTeamTabsProps {
   readonly regions: readonly RegionDTO[];
@@ -208,10 +216,38 @@ function RegionsSection({ rows }: { readonly rows: readonly RegionDTO[] }) {
                   <ActifBadge actif={r.actif} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <ToggleButton
-                    actif={r.actif}
-                    onToggle={() => toggleRegionAction({ regionCode: r.regionCode })}
-                  />
+                  <div className="inline-flex gap-2">
+                    <RefEditDialog
+                      title={`Modifier ${r.regionCode}`}
+                      fields={[
+                        {
+                          name: "regionCode",
+                          label: "Code",
+                          defaultValue: r.regionCode,
+                          immutable: true,
+                        },
+                        {
+                          name: "nom",
+                          label: "Nom",
+                          defaultValue: r.nom,
+                          required: true,
+                          maxLength: 100,
+                        },
+                        {
+                          name: "dmResponsable",
+                          label: "DM responsable",
+                          defaultValue: r.dmResponsable ?? "",
+                          nullable: true,
+                          maxLength: 100,
+                        },
+                      ]}
+                      onSubmit={(p) => updateRegionAction(p)}
+                    />
+                    <ToggleButton
+                      actif={r.actif}
+                      onToggle={() => toggleRegionAction({ regionCode: r.regionCode })}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))
@@ -312,10 +348,38 @@ function PaysSection({ rows }: { readonly rows: readonly PaysDTO[] }) {
                   <ActifBadge actif={r.actif} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <ToggleButton
-                    actif={r.actif}
-                    onToggle={() => togglePaysAction({ codePays: r.codePays })}
-                  />
+                  <div className="inline-flex gap-2">
+                    <RefEditDialog
+                      title={`Modifier ${r.codePays}`}
+                      fields={[
+                        {
+                          name: "codePays",
+                          label: "Code ISO",
+                          defaultValue: r.codePays,
+                          immutable: true,
+                        },
+                        {
+                          name: "nom",
+                          label: "Nom",
+                          defaultValue: r.nom,
+                          required: true,
+                          maxLength: 100,
+                        },
+                        {
+                          name: "regionCode",
+                          label: "Code région",
+                          defaultValue: r.regionCode ?? "",
+                          nullable: true,
+                          maxLength: 50,
+                        },
+                      ]}
+                      onSubmit={(p) => updatePaysAction(p)}
+                    />
+                    <ToggleButton
+                      actif={r.actif}
+                      onToggle={() => togglePaysAction({ codePays: r.codePays })}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))
@@ -416,10 +480,38 @@ function DevisesSection({ rows }: { readonly rows: readonly DeviseDTO[] }) {
                   <ActifBadge actif={r.actif} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <ToggleButton
-                    actif={r.actif}
-                    onToggle={() => toggleDeviseAction({ codeDevise: r.codeDevise })}
-                  />
+                  <div className="inline-flex gap-2">
+                    <RefEditDialog
+                      title={`Modifier ${r.codeDevise}`}
+                      fields={[
+                        {
+                          name: "codeDevise",
+                          label: "Code ISO 4217",
+                          defaultValue: r.codeDevise,
+                          immutable: true,
+                        },
+                        {
+                          name: "nom",
+                          label: "Nom",
+                          defaultValue: r.nom,
+                          required: true,
+                          maxLength: 100,
+                        },
+                        {
+                          name: "symbole",
+                          label: "Symbole",
+                          defaultValue: r.symbole ?? "",
+                          nullable: true,
+                          maxLength: 10,
+                        },
+                      ]}
+                      onSubmit={(p) => updateDeviseAction(p)}
+                    />
+                    <ToggleButton
+                      actif={r.actif}
+                      onToggle={() => toggleDeviseAction({ codeDevise: r.codeDevise })}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))
@@ -518,10 +610,31 @@ function LanguesSection({ rows }: { readonly rows: readonly LangueDTO[] }) {
                   <ActifBadge actif={r.actif} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <ToggleButton
-                    actif={r.actif}
-                    onToggle={() => toggleLangueAction({ codeLangue: r.codeLangue })}
-                  />
+                  <div className="inline-flex gap-2">
+                    <RefEditDialog
+                      title={`Modifier ${r.codeLangue}`}
+                      fields={[
+                        {
+                          name: "codeLangue",
+                          label: "Code ISO 639-1",
+                          defaultValue: r.codeLangue,
+                          immutable: true,
+                        },
+                        {
+                          name: "nom",
+                          label: "Nom",
+                          defaultValue: r.nom,
+                          required: true,
+                          maxLength: 100,
+                        },
+                      ]}
+                      onSubmit={(p) => updateLangueAction(p)}
+                    />
+                    <ToggleButton
+                      actif={r.actif}
+                      onToggle={() => toggleLangueAction({ codeLangue: r.codeLangue })}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))
@@ -618,10 +731,26 @@ function TypesContactSection({ rows }: { readonly rows: readonly TypeContactDTO[
                   <ActifBadge actif={r.actif} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <ToggleButton
-                    actif={r.actif}
-                    onToggle={() => toggleTypeContactAction({ code: r.code })}
-                  />
+                  <div className="inline-flex gap-2">
+                    <RefEditDialog
+                      title={`Modifier ${r.code}`}
+                      fields={[
+                        { name: "code", label: "Code", defaultValue: r.code, immutable: true },
+                        {
+                          name: "libelle",
+                          label: "Libellé",
+                          defaultValue: r.libelle,
+                          required: true,
+                          maxLength: 100,
+                        },
+                      ]}
+                      onSubmit={(p) => updateTypeContactAction(p)}
+                    />
+                    <ToggleButton
+                      actif={r.actif}
+                      onToggle={() => toggleTypeContactAction({ code: r.code })}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))
@@ -724,10 +853,72 @@ function TeamMembersSection({ rows }: { readonly rows: readonly TeamMemberDTO[] 
                   <ActifBadge actif={r.actif} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <ToggleButton
-                    actif={r.actif}
-                    onToggle={() => toggleTeamMemberAction({ id: r.id })}
-                  />
+                  <div className="inline-flex gap-2">
+                    <RefEditDialog
+                      title={`Modifier ${r.prenom ?? ""} ${r.nom}`}
+                      fields={[
+                        { name: "id", label: "ID", defaultValue: String(r.id), immutable: true },
+                        {
+                          name: "nom",
+                          label: "Nom",
+                          defaultValue: r.nom,
+                          required: true,
+                          maxLength: 100,
+                        },
+                        {
+                          name: "prenom",
+                          label: "Prénom",
+                          defaultValue: r.prenom ?? "",
+                          nullable: true,
+                          maxLength: 100,
+                        },
+                        {
+                          name: "email",
+                          label: "Email",
+                          type: "email",
+                          defaultValue: r.email ?? "",
+                          nullable: true,
+                          maxLength: 150,
+                        },
+                        {
+                          name: "telephone",
+                          label: "Téléphone",
+                          defaultValue: r.telephone ?? "",
+                          nullable: true,
+                          maxLength: 50,
+                        },
+                        {
+                          name: "roleTeam",
+                          label: "Rôle",
+                          type: "select",
+                          defaultValue: r.roleTeam,
+                          required: true,
+                          options: [
+                            { value: "SALES", label: "SALES" },
+                            { value: "AM", label: "AM (Account Manager)" },
+                            { value: "DM", label: "DM (Directeur Métier)" },
+                          ],
+                        },
+                        {
+                          name: "regionCode",
+                          label: "Code région",
+                          defaultValue: r.regionCode ?? "",
+                          nullable: true,
+                          maxLength: 50,
+                        },
+                      ]}
+                      onSubmit={async (p) => {
+                        // RefEditDialog passe `id` en string ; le use-case attend number.
+                        const idStr = p.id;
+                        if (idStr === null || idStr === undefined) return;
+                        await updateTeamMemberAction({ ...p, id: Number(idStr) });
+                      }}
+                    />
+                    <ToggleButton
+                      actif={r.actif}
+                      onToggle={() => toggleTeamMemberAction({ id: r.id })}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))
