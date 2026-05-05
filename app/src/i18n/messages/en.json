@@ -28,11 +28,13 @@
       "licences": "Licences",
       "articles": "Articles",
       "renewals": "Renewals",
+      "volumes": "Articles & Volumes",
       "alerts": "Alerts",
       "notifications": "Notifications",
       "reportsList": "Reports",
       "files": "Files",
       "auditLog": "Audit log",
+      "history": "History",
       "batches": "Batches",
       "settings": "Settings"
     },
@@ -80,7 +82,7 @@
       "security": "Security",
       "smtp": "SMTP",
       "catalogues": "Catalogues",
-      "team": "Team",
+      "team": "References",
       "users": "Users",
       "sandbox": "Sandbox",
       "demo": "Demo",
@@ -88,6 +90,7 @@
     },
     "stub": {
       "available": "Available in Phase {phase}",
+      "notImplemented": "Not implemented ({label})",
       "security": {
         "label": "PKI Security",
         "description": "Internal CA generation, client certificates, rotation and revocation."
@@ -651,6 +654,7 @@
       "clientsActifs": "Active clients",
       "licencesActives": "Active licences",
       "licencesExpirees": "Expired licences",
+      "licencesSuspendues": "Suspended licences",
       "renouvellementsEnCours": "Renewals in progress",
       "notificationsUnread": "Unread notifs"
     },
