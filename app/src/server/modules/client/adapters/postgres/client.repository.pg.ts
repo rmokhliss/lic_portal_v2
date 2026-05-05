@@ -31,6 +31,7 @@ import type { Client, PersistedClient } from "../../domain/client.entity";
 import { clientVersionConflict } from "../../domain/client.errors";
 import {
   ClientRepository,
+  type ClientCredentials,
   type DbTransaction,
   type FindClientsPaginatedInput,
   type FindClientsPaginatedOutput,
@@ -267,5 +268,32 @@ export class ClientRepositoryPg extends ClientRepository {
         clientCertificateExpiresAt: data.expiresAt,
       })
       .where(eq(clients.id, clientId));
+  }
+
+  // Phase 14 — lecture des 3 colonnes PKI pour signer un `.lic`. Retourne null
+  // si le client n'a pas (encore) de cert, ou si l'une des 3 colonnes est
+  // null (cas client legacy pré-Phase-3 non backfillé).
+  async findClientCredentials(
+    clientId: string,
+    tx?: DbTransaction,
+  ): Promise<ClientCredentials | null> {
+    const target = (tx as PgDatabase<never> | undefined) ?? this.db;
+    const rows = await target
+      .select({
+        privateKeyEnc: clients.clientPrivateKeyEnc,
+        certificatePem: clients.clientCertificatePem,
+        expiresAt: clients.clientCertificateExpiresAt,
+      })
+      .from(clients)
+      .where(eq(clients.id, clientId))
+      .limit(1);
+    const row = rows[0];
+    const privateKeyEnc = row?.privateKeyEnc;
+    const certificatePem = row?.certificatePem;
+    const expiresAt = row?.expiresAt;
+    if (privateKeyEnc === null || privateKeyEnc === undefined) return null;
+    if (certificatePem === null || certificatePem === undefined) return null;
+    if (expiresAt === null || expiresAt === undefined) return null;
+    return { privateKeyEnc, certificatePem, expiresAt };
   }
 }

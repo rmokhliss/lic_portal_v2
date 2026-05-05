@@ -1,44 +1,49 @@
 // ==============================================================================
-// LIC v2 — ImportHealthcheckUseCase (Phase 10.D)
+// LIC v2 — ImportHealthcheckUseCase (Phase 10.D + Phase 14 — AES-GCM bouclage)
 //
-// Parse un fichier healthcheck (JSON ou CSV) déposé via UI et applique les
-// volumes consommés sur les liaisons licence-article. Trace via fichier-log
-// (statut IMPORTED ou ERREUR).
+// Parse un fichier healthcheck déposé via UI et applique les volumes consommés
+// sur les liaisons licence-article. Trace via fichier-log (statut IMPORTED ou
+// ERREUR).
 //
-// Format JSON attendu :
-//   {
-//     "licenceReference": "LIC-2026-001",
-//     "articles": [{ "code": "USERS", "volConsomme": 250 }, ...]
-//   }
+// Format `.hc` Phase 14 (ADR-0002 + ADR-0019) :
+//   AES-256-GCM(plaintext, lic_settings.healthcheck_shared_aes_key) →
+//   `<iv_b64>:<tag_b64>:<ciphertext_b64>`. Le plaintext déchiffré est ensuite
+//   parsé comme JSON ou CSV (fallback compat ascendante).
 //
-// Format CSV attendu :
+// Format JSON attendu (après déchiffrement) :
+//   { "licenceReference": "LIC-2026-001",
+//     "articles": [{ "code": "USERS", "volConsomme": 250 }, ...] }
+//
+// Format CSV attendu (après déchiffrement) :
 //   article_code,vol_consomme
 //   USERS,250
-//   TX-MOIS,1500
 //
-// Pour chaque article du payload :
-//   - lookup article par code
-//   - lookup liaison licence-article (licenceId + articleId)
-//   - appel updateArticleVolumeUseCase (audit MANUEL — l'utilisateur déclenche)
+// Mode AES (Phase 14, settingRepository injecté) :
+//   - Lecture lic_settings.healthcheck_shared_aes_key — throw 411 si absente
+//   - decryptAes256Gcm(uploadedContent, sharedKey) — throw 402 si tag mismatch
+//   - parse du plaintext JSON/CSV
 //
-// ⚠️  STUB PKI — Phase 3 différée (DETTE-LIC-008) :
-//     - Pas de vérification de signature certificat client
-//     - Pas de validation que le fichier provient bien de la licence cible
-//   À ce stade, n'importe qui ayant accès UI peut uploader n'importe quoi.
-//   La sécurité repose sur la garde Server Action (ADMIN/SADMIN).
+// Mode legacy (tests d'intégration sans settingRepository) :
+//   - parse direct du contenu uploadé (pre-Phase 14)
 // ==============================================================================
 
 import { createHash } from "node:crypto";
 
 import type { ArticleRepository } from "@/server/modules/article/ports/article.repository";
+import { decryptAes256Gcm } from "@/server/modules/crypto/domain/aes";
+import { aesGcmTagMismatch } from "@/server/modules/crypto/domain/aes.errors";
+import { caAbsentOrInvalid } from "@/server/modules/crypto/domain/x509.errors";
 import { ValidationError } from "@/server/modules/error";
 import { licenceNotFoundById } from "@/server/modules/licence/domain/licence.errors";
 import type { LicenceRepository } from "@/server/modules/licence/ports/licence.repository";
 import type { LicenceArticleRepository } from "@/server/modules/licence-article/ports/licence-article.repository";
 import type { UpdateArticleVolumeUseCase } from "@/server/modules/licence-article/application/update-article-volume.usecase";
+import type { SettingRepository } from "@/server/modules/settings/ports/setting.repository";
 
 import type { FichierLogDTO } from "../adapters/postgres/fichier-log.mapper";
 import type { LogHealthcheckImporteUseCase } from "./log-healthcheck-importe.usecase";
+
+export const HEALTHCHECK_SHARED_KEY_SETTING = "healthcheck_shared_aes_key" as const;
 
 export interface ImportHealthcheckInput {
   readonly licenceId: string;
@@ -65,6 +70,10 @@ export class ImportHealthcheckUseCase {
     private readonly licenceArticleRepository: LicenceArticleRepository,
     private readonly updateArticleVolumeUseCase: UpdateArticleVolumeUseCase,
     private readonly logHealthcheckImporteUseCase: LogHealthcheckImporteUseCase,
+    /** Phase 14 — optionnel pour rétrocompat tests d'intégration legacy.
+     *  Composition-root le câble systématiquement en prod. Si absent → skip
+     *  AES decrypt (mode test legacy uniquement). */
+    private readonly settingRepository?: SettingRepository,
   ) {}
 
   async execute(input: ImportHealthcheckInput, actorId: string): Promise<ImportHealthcheckOutput> {
@@ -74,9 +83,29 @@ export class ImportHealthcheckUseCase {
     const hash = createHash("sha256").update(input.content, "utf8").digest("hex");
     const path = `healthcheck/${licence.reference}-${Date.now().toString()}-${input.filename}`;
 
+    // Phase 14 — déchiffrement AES-GCM si settingRepository injecté.
+    // Mode legacy (tests sans settingRepository) → passe-plat.
+    let plaintext = input.content;
+    if (this.settingRepository !== undefined) {
+      try {
+        plaintext = await decryptHealthcheckContent(input.content, this.settingRepository);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "déchiffrement échoué";
+        await this.logHealthcheckImporteUseCase.execute({
+          licenceId: licence.id,
+          path,
+          hash,
+          statut: "ERREUR",
+          errorMessage: `AES decrypt: ${message}`,
+          creePar: actorId,
+        });
+        throw err;
+      }
+    }
+
     let entries: readonly ParsedArticleEntry[];
     try {
-      entries = parseHealthcheck(input.content);
+      entries = parseHealthcheck(plaintext);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Format invalide";
       const fichierLog = await this.logHealthcheckImporteUseCase.execute({
@@ -87,7 +116,6 @@ export class ImportHealthcheckUseCase {
         errorMessage: message,
         creePar: actorId,
       });
-      // TODO Phase 3 PKI : vérifier signature certificat client avant parse.
       throw new ValidationError({
         code: "SPX-LIC-901",
         message: `Healthcheck illisible : ${message}`,
@@ -148,6 +176,36 @@ export class ImportHealthcheckUseCase {
     });
 
     return { fichierLog, updated, errors, errorDetails };
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Phase 14 — Déchiffrement AES-256-GCM. Lit la clé partagée depuis
+// `lic_settings.healthcheck_shared_aes_key`. Throw 411 si absente, 402 si tag
+// mismatch (contenu altéré OU clé incorrecte côté banque/S2M).
+// ----------------------------------------------------------------------------
+
+async function decryptHealthcheckContent(
+  encrypted: string,
+  settingRepo: SettingRepository,
+): Promise<string> {
+  const settings = await settingRepo.findAll();
+  const setting = settings.find((s) => s.key === HEALTHCHECK_SHARED_KEY_SETTING);
+  const sharedKey = typeof setting?.value === "string" ? setting.value : "";
+  if (sharedKey.length === 0) {
+    throw caAbsentOrInvalid(
+      "Clé partagée healthcheck (`healthcheck_shared_aes_key`) absente. Configurer la clé dans /settings/security.",
+    );
+  }
+  try {
+    return decryptAes256Gcm(encrypted.trim(), sharedKey);
+  } catch (err) {
+    if (err instanceof ValidationError && err.code === "SPX-LIC-402") {
+      throw aesGcmTagMismatch(
+        "Healthcheck altéré ou clé partagée incorrecte (tag d'authentification mismatch).",
+      );
+    }
+    throw err;
   }
 }
 

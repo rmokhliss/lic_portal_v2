@@ -318,6 +318,9 @@ async function seedSettings(sql: postgres.Sql): Promise<void> {
   // sont JSON-encodées avant INSERT. updated_by = SYSTEM_USER_ID (nil uuid seedé
   // par la migration 0000).
   // Données par défaut alignées data-model.md §lic_settings.
+  // Phase 14 : healthcheck_shared_aes_key généré via generateAes256Key (clé
+  // AES-256 partagée S2M ↔ banque pour chiffrer les `.hc` — ADR-0002 + 0019).
+  const { generateAes256Key } = await import("@/server/modules/crypto/domain/aes");
   const seeds: readonly { key: string; value: unknown }[] = [
     { key: "seuil_alerte_defaut", value: 80 },
     { key: "tolerance_volume_pct", value: 5 },
@@ -326,6 +329,7 @@ async function seedSettings(sql: postgres.Sql): Promise<void> {
     { key: "warning_date_jours", value: 60 },
     { key: "licence_file_aes_key", value: "" },
     { key: "healthcheck_aes_key", value: "" },
+    { key: "healthcheck_shared_aes_key", value: generateAes256Key() },
     { key: "smtp_configured", value: false },
     { key: "app_name", value: "Portail Licences SELECT-PX" },
   ];

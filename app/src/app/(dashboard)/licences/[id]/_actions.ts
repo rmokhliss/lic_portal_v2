@@ -123,12 +123,14 @@ export async function updateRenouvellementAction(input: unknown, ctx: unknown) {
 }
 
 // ============================================================================
-// Phase 10.C — Génération fichier .lic (stub PKI, signature RSA Phase 3)
+// Phase 10.C + Phase 14 — Génération fichier .lic (PKI bouclage, DETTE-LIC-008)
 // ============================================================================
 
+import { env } from "@/server/infrastructure/env";
 import { generateLicenceFichierUseCase, importHealthcheckUseCase } from "@/server/composition-root";
 
 export async function generateLicenceFichierAction(input: unknown): Promise<{
+  /** Payload .lic complet : JSON + signature + cert client (ADR-0002 + 0019). */
   contentJson: string;
   hash: string;
   filename: string;
@@ -138,10 +140,11 @@ export async function generateLicenceFichierAction(input: unknown): Promise<{
   const result = await generateLicenceFichierUseCase.execute(
     { licenceId: parsed.licenceId },
     actor.id,
+    { appMasterKey: env.APP_MASTER_KEY },
   );
   revalidatePath(pathFor(parsed.licenceId, "resume"));
   return {
-    contentJson: result.contentJson,
+    contentJson: result.signedPayload,
     hash: result.hash,
     filename: `${result.content.reference}.lic`,
   };

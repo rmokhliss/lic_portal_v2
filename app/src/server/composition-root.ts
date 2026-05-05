@@ -419,8 +419,9 @@ export const generateLicenceFichierUseCase = new GenerateLicenceFichierUseCase(
   logFichierGenereSingleton,
 );
 
-// --- Phase 10.D : import healthcheck (cross-module : licence + article +
-// licence-article + fichier-log + updateArticleVolumeUseCase) ---------------
+// --- Phase 10.D + Phase 14 : import healthcheck (cross-module : licence +
+// article + licence-article + fichier-log + updateArticleVolumeUseCase +
+// settings pour la clé AES-GCM partagée — DETTE-LIC-008 résolue) -----------
 
 export const importHealthcheckUseCase = new ImportHealthcheckUseCase(
   licenceRepository,
@@ -428,6 +429,7 @@ export const importHealthcheckUseCase = new ImportHealthcheckUseCase(
   licenceArticleRepoPhase10,
   updateArticleVolumeUseCase,
   logHealthcheckImporteSingleton,
+  settingRepository,
 );
 
 // --- Phase 11.A : dashboard EC-01 (lecture seule, agrégats SQL) ------------

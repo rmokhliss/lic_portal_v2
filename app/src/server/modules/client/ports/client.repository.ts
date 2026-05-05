@@ -63,6 +63,15 @@ export interface SaveWithSiegeEntiteOutput {
   readonly siegeEntiteId: string;
 }
 
+/** Phase 14 — credentials PKI client lus pour la signature des `.lic`. La
+ *  clé privée reste chiffrée (AES-256-GCM) ; le déchiffrement est porté par
+ *  le use-case avec `APP_MASTER_KEY`. */
+export interface ClientCredentials {
+  readonly privateKeyEnc: string;
+  readonly certificatePem: string;
+  readonly expiresAt: Date;
+}
+
 export abstract class ClientRepository {
   abstract findById(id: string, tx?: DbTransaction): Promise<PersistedClient | null>;
 
@@ -105,4 +114,12 @@ export abstract class ClientRepository {
     },
     tx?: DbTransaction,
   ): Promise<void>;
+
+  /** Phase 14 — lit les colonnes PKI (Phase 3.B) pour signer un `.lic`.
+   *  Retourne null si le client n'existe pas OU si une des 3 colonnes est
+   *  null (cas client legacy pré-Phase-3 sans backfill). */
+  abstract findClientCredentials(
+    clientId: string,
+    tx?: DbTransaction,
+  ): Promise<ClientCredentials | null>;
 }
