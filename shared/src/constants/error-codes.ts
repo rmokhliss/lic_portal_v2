@@ -94,6 +94,7 @@ export type ErrorCode =
   | "SPX-LIC-800"
   | "SPX-LIC-801"
   | "SPX-LIC-802"
+  | "SPX-LIC-803"
   | "SPX-LIC-900"
   | "SPX-LIC-901"
   | "SPX-LIC-902"
@@ -606,6 +607,12 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     httpStatus: 400,
     defaultMessage: "Rendu template email échoué",
     className: "ValidationError",
+  },
+  "SPX-LIC-803": {
+    code: "SPX-LIC-803",
+    httpStatus: 401,
+    defaultMessage: "Compte verrouillé après plusieurs échecs de connexion",
+    className: "UnauthorizedError",
   },
 
   // --- Système + erreurs génériques transverses (900-999) ------------------

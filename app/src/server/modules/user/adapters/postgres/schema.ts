@@ -44,6 +44,11 @@ export const users = pgTable(
     role: userRole("role").notNull(),
     actif: boolean("actif").notNull().default(true),
     derniereConnexion: timestamp("derniere_connexion", { withTimezone: true }),
+    // Phase 15 — brute-force lockout (Référentiel v2.1 §4.17 + audit Master C1).
+    // Compteur d'échecs login consécutifs ; reset à 0 sur succès. Lockout 60 min
+    // après 5 échecs (compté via last_failed_login_at).
+    failedLoginCount: integer("failed_login_count").notNull().default(0),
+    lastFailedLoginAt: timestamp("last_failed_login_at", { withTimezone: true }),
     ...timestamps(),
     // Auto-références : annotation `(): AnyPgColumn` requise pour rompre la
     // dépendance cyclique de typage (users référence users.id avant d'être défini).

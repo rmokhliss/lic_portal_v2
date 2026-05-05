@@ -81,4 +81,24 @@ export abstract class UserRepository {
    *  (révoque les sessions actives). Distinct d'updatePassword (qui pose
    *  must_change_password=FALSE pour le change-password user-initié). */
   abstract resetPassword(id: string, newHash: string, tx?: DbTransaction): Promise<void>;
+
+  // --- Phase 15 — brute-force lockout (audit Master C1) ---------------------
+
+  /** Lit le couple (failed_login_count, last_failed_login_at) pour évaluer
+   *  le lockout. Retourne null si l'utilisateur n'existe pas. */
+  abstract findLoginCounters(
+    id: string,
+    tx?: DbTransaction,
+  ): Promise<{ failedLoginCount: number; lastFailedLoginAt: Date | null } | null>;
+
+  /** Sur échec login : incrémente compteur + horodatage. */
+  abstract recordLoginFailure(
+    id: string,
+    newCount: number,
+    failedAt: Date,
+    tx?: DbTransaction,
+  ): Promise<void>;
+
+  /** Sur succès login : reset compteur + horodatage à NULL. */
+  abstract resetLoginCounters(id: string, tx?: DbTransaction): Promise<void>;
 }

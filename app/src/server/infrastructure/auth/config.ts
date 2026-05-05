@@ -20,7 +20,18 @@ import { LoginSchema } from "@s2m-lic/shared/schemas/auth.schema";
 import { db } from "@/server/infrastructure/db/client";
 import { env } from "@/server/infrastructure/env";
 import { createChildLogger } from "@/server/infrastructure/logger";
+import { auditRepository } from "@/server/modules/audit/audit.module";
 import { users } from "@/server/modules/user/adapters/postgres/schema";
+import { UserRepositoryPg } from "@/server/modules/user/adapters/postgres/user.repository.pg";
+import { RecordLoginAttemptUseCase } from "@/server/modules/user/application/record-login-attempt.usecase";
+
+// Phase 15 — instanciation locale pour éviter d'importer depuis composition-root
+// (cycle potentiel : composition-root → auth/config → composition-root via
+// re-exports — Turbopack EBADF côté Windows).
+const recordLoginAttemptUseCase = new RecordLoginAttemptUseCase(
+  new UserRepositoryPg(),
+  auditRepository,
+);
 
 const log = createChildLogger("auth");
 
@@ -28,6 +39,13 @@ const log = createChildLogger("auth");
  *  Auth.js expose `code` côté caller via `error.code` sur le retour de signIn(). */
 class InvalidCredentialsError extends CredentialsSignin {
   override code = "SPX-LIC-002";
+}
+
+/** Phase 15 — Erreur typée portant SPX-LIC-803 (compte verrouillé brute-force).
+ *  Distinct de SPX-LIC-002 pour permettre à l'UI d'afficher un message dédié
+ *  ("Compte temporairement verrouillé, réessayer dans 60 minutes"). */
+class AccountLockedError extends CredentialsSignin {
+  override code = "SPX-LIC-803";
 }
 
 export const authConfig: NextAuthConfig = {
@@ -70,6 +88,8 @@ export const authConfig: NextAuthConfig = {
             passwordHash: users.passwordHash,
             mustChangePassword: users.mustChangePassword,
             tokenVersion: users.tokenVersion,
+            failedLoginCount: users.failedLoginCount,
+            lastFailedLoginAt: users.lastFailedLoginAt,
           })
           .from(users)
           .where(and(eq(users.email, parsed.data.email), eq(users.actif, true)))
@@ -78,8 +98,32 @@ export const authConfig: NextAuthConfig = {
         const user = rows[0];
         if (!user) throw new InvalidCredentialsError();
 
+        // Phase 15 — Brute-force lockout (audit Master C1, Référentiel v2.1 §4.17).
+        // Vérification AVANT bcrypt.compare pour éviter le coût CPU sur un compte
+        // verrouillé.
+        if (recordLoginAttemptUseCase.isLockedOut(user.failedLoginCount, user.lastFailedLoginAt)) {
+          log.warn(
+            { userId: user.id, matricule: user.matricule, failedCount: user.failedLoginCount },
+            "Login refused — account locked (brute-force lockout active)",
+          );
+          throw new AccountLockedError();
+        }
+
         const ok = await bcryptjs.compare(parsed.data.password, user.passwordHash);
-        if (!ok) throw new InvalidCredentialsError();
+        if (!ok) {
+          // Phase 15 — Incrément compteur d'échecs + audit LOGIN_FAILED_LOCKOUT
+          // si le seuil 5 est atteint pour la première fois.
+          const userDisplay = `${user.prenom} ${user.nom.toUpperCase()} (${user.matricule})`;
+          await recordLoginAttemptUseCase.recordFailure(
+            user.id,
+            userDisplay,
+            user.failedLoginCount,
+          );
+          throw new InvalidCredentialsError();
+        }
+
+        // Phase 15 — Reset compteur d'échecs sur succès.
+        await recordLoginAttemptUseCase.recordSuccess(user.id);
 
         // Update derniere_connexion (fire-and-forget hors transaction auth).
         await db.update(users).set({ derniereConnexion: new Date() }).where(eq(users.id, user.id));

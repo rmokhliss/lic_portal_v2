@@ -150,4 +150,48 @@ export class UserRepositoryPg extends UserRepository {
       })
       .where(eq(users.id, id));
   }
+
+  // --- Phase 15 — brute-force lockout (audit Master C1) ---------------------
+
+  async findLoginCounters(
+    id: string,
+    tx?: DbTransaction,
+  ): Promise<{ failedLoginCount: number; lastFailedLoginAt: Date | null } | null> {
+    const target = (tx as PgDatabase<never> | undefined) ?? this.db;
+    const rows = await target
+      .select({
+        failedLoginCount: users.failedLoginCount,
+        lastFailedLoginAt: users.lastFailedLoginAt,
+      })
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+    const row = rows[0];
+    if (row === undefined) return null;
+    return {
+      failedLoginCount: row.failedLoginCount,
+      lastFailedLoginAt: row.lastFailedLoginAt,
+    };
+  }
+
+  async recordLoginFailure(
+    id: string,
+    newCount: number,
+    failedAt: Date,
+    tx?: DbTransaction,
+  ): Promise<void> {
+    const target = (tx as PgDatabase<never> | undefined) ?? this.db;
+    await target
+      .update(users)
+      .set({ failedLoginCount: newCount, lastFailedLoginAt: failedAt })
+      .where(eq(users.id, id));
+  }
+
+  async resetLoginCounters(id: string, tx?: DbTransaction): Promise<void> {
+    const target = (tx as PgDatabase<never> | undefined) ?? this.db;
+    await target
+      .update(users)
+      .set({ failedLoginCount: 0, lastFailedLoginAt: null })
+      .where(eq(users.id, id));
+  }
 }

@@ -61,9 +61,17 @@ import { userRepository } from "@/server/modules/user/user.module";
 // Phase 15 — port PasswordHasher (audit Master 5.1). Adapter prod = bcryptjs
 // avec cost configurable via env.BCRYPT_COST (default 10).
 import { BcryptPasswordHasher } from "@/server/modules/user/adapters/bcrypt/password-hasher.bcrypt";
+import { RecordLoginAttemptUseCase } from "@/server/modules/user/application/record-login-attempt.usecase";
 import { env } from "@/server/infrastructure/env";
 
 const passwordHasher = new BcryptPasswordHasher(env.BCRYPT_COST);
+
+// Phase 15 — brute-force lockout (audit Master C1). Consommé par
+// `infrastructure/auth/config.ts` (Variante B — auth boundary).
+export const recordLoginAttemptUseCase = new RecordLoginAttemptUseCase(
+  userRepository,
+  auditRepository,
+);
 
 // Use-case user qui orchestre user + audit dans une seule transaction (règle L3).
 // Reçoit auditRepository directement (option (b) Stop #1 F-08).
