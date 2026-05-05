@@ -43,7 +43,9 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.1. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phases 1 → 14 closes + Phase 3 PKI + Tickets UX T-01..T-06 + Phase 14 (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée (`.lic` signés + healthcheck AES) + raffinements UX post-livraison + module email opérationnel. MVP livré, prêt pour premier déploiement préprod.
+**Phase actuelle** : **Phases 1 → 15 closes + Phase 3 PKI + Tickets UX T-01..T-06 + Phase 14 + Phase 15 (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée (`.lic` signés + healthcheck AES) + raffinements UX post-livraison + module email opérationnel + alignement Référentiel v2.1 (audit Master). MVP livré, prêt pour premier déploiement préprod.
+
+**Audit Master Référentiel reçu Mai 2026** : alignement v2.0 → v2.1 livré Phase 15. 3 corrections critiques (redaction PII pino, ADR application→infrastructure/db, sync docs) + 4 importantes (split /api/health en /live + /ready, archive audits par phase, port PasswordHasher, liste configs Stop validate) + 1 mineure (brute-force lockout). 2 mineures différées (MFA TOTP DETTE-LIC-021, audit lectures sensibles DETTE-LIC-022).
 
 **Phase 14 close (Mai 2026)** — clôture des vraies dettes pré-prod.
 
@@ -621,6 +623,43 @@ Phase 14 livre les contacts à la **création** client (cross-aggregate atomique
 - Tests : 3 nouveaux dans `create-client.usecase.spec.ts` (contacts OK, rollback FK invalide, sans contacts inchangé).
 
 L'édition embarquée des contacts existants en mode edit (ajout/edit/delete inline dans `ClientDialog` mode edit) reste différée — la page dédiée `/clients/[id]/contacts` (lien depuis le Dialog) reste le chemin pour les opérations post-création.
+
+### DETTE-LIC-020 — PDF Référentiel S2M v2.1 non encore intégré
+
+- **Cause** : Audit Master Mai 2026 cible v2.1 (alignement Phase 15 livré) mais le PDF v2.1 du Référentiel S2M n'est pas encore poussé dans le repo. `docs/REFERENTIEL_S2M.pdf` reste v2.0 jusqu'à publication officielle (T+2 semaines selon note S2M direction technique).
+- **Impact** : la doc projet (CLAUDE.md, PROJECT_CONTEXT_LIC.md, README.md) référence v2.1 alors que le PDF dans le repo est encore v2.0. Cohérence visuelle à compléter quand le PDF arrive.
+- **Workaround** : `docs/REFERENTIEL_S2M_v2_1_PENDING.md` documente la situation + table des différences v2.0 → v2.1 recensées via l'audit Master.
+- **Solution future** :
+  1. Remplacer `docs/REFERENTIEL_S2M.pdf` par la version v2.1 quand publiée.
+  2. Supprimer `docs/REFERENTIEL_S2M_v2_1_PENDING.md`.
+  3. Vérifier qu'aucune règle Phase 15 ne diverge des nouvelles sections du PDF v2.1.
+- **Priorité** : basse (cohérence documentaire, pas de blocage technique).
+- **Phase cible** : Phase 16+ ou réception PDF v2.1.
+
+### DETTE-LIC-021 — MFA TOTP différé (audit Master C2)
+
+- **Cause** : Audit Master Mai 2026 a identifié l'absence de MFA (TOTP / Authenticator App) sur le login back-office. Acceptable Phase 15 pour mono-tenant interne avec audience SADMIN/ADMIN restreinte (≤20 comptes BO S2M, accès depuis réseau corporate).
+- **Impact** : un attaquant qui obtient un mot de passe SADMIN par phishing/leak n'est pas bloqué par un facteur supplémentaire. Risque atténué Phase 15 par : (a) brute-force lockout C1, (b) cookies session SameSite=strict, (c) bcrypt cost 10.
+- **Solution future** :
+  1. Module `mfa/` hexagonal avec port `TotpProvider` + adapter `OtpauthTotpProvider` (lib `otpauth`).
+  2. Migration `lic_users.mfa_secret_enc text NULL` (chiffré AES-GCM `APP_MASTER_KEY`) + `mfa_enrolled boolean`.
+  3. Flow d'enrôlement : QR code provisioning → vérification TOTP → activation.
+  4. Step login : si `mfa_enrolled=true`, exiger code TOTP avant émission JWT.
+  5. Code de récupération hash bcrypt en BD pour secours.
+- **Priorité** : moyenne (sécurité défense en profondeur). Devient haute si déploiement client multi-banques avec accès distant SADMIN ou audit régulateur.
+- **Phase cible** : Phase 16+ (jalon dédié sécurité auth post-MVP).
+
+### DETTE-LIC-022 — Audit des lectures sensibles différé (audit Master C3)
+
+- **Cause** : Audit Master Mai 2026 a identifié que `lic_audit_log` capture exclusivement les **mutations** (CREATE/UPDATE/DELETE/STATUS_CHANGED, etc.) — aucune entrée pour les **lectures** sensibles (consultation détail client, export CSV, téléchargement `.lic`). RGPD encourage l'audit "qui consulte quoi" pour les données personnelles (contacts clients).
+- **Impact** : impossible de reconstruire le journal des consultations en cas de demande RGPD ou enquête sécurité. Limitation acceptable Phase 15 pour MVP back-office mono-tenant interne.
+- **Solution future** :
+  1. Étendre `AuditEntry` avec actions `LIST` / `READ_DETAIL` / `EXPORT_CSV` / `DOWNLOAD_LIC` (nouvel enum `audit_action_kind` ou prefix convention).
+  2. Décorer les use-cases lecture (`getClientUseCase`, `listClientsUseCase`, `exportLicencesCsvUseCase`, `generateLicenceFichierUseCase` côté lecture) avec audit après succès.
+  3. Réfléchir au volume / coût stockage : 1 entrée par GET = volume potentiel 10-100× supérieur aux mutations. Politique de rétention dédiée (ex: lectures conservées 90 jours, mutations 5 ans).
+  4. Filtre / pagination dédiée sur les actions de lecture dans `/audit` UI (séparer onglets "mutations" vs "lectures").
+- **Priorité** : moyenne (compliance RGPD, faisabilité technique faible — pattern audit déjà en place).
+- **Phase cible** : Phase 16+ ou demande compliance régulateur.
 
 ### DETTE-LIC-010 — Liste `typeContactCode` statique dans `ContactDialog`
 
