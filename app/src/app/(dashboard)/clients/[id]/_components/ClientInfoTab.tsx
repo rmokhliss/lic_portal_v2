@@ -24,7 +24,7 @@ import {
 import { Label } from "@/components/ui/label";
 
 import { changeClientStatusAction } from "../../_actions";
-import { ClientDialog } from "../../_components/ClientDialog";
+import { ClientDialog, type RefItem } from "../../_components/ClientDialog";
 import { ClientStatusBadge } from "../../_components/ClientStatusBadge";
 import type { ClientDTO, ClientStatutClient } from "../../_components/clients-types";
 
@@ -33,11 +33,26 @@ const STATUTS: readonly ClientStatutClient[] = ["PROSPECT", "ACTIF", "SUSPENDU",
 export interface ClientInfoTabProps {
   readonly client: ClientDTO;
   readonly canEdit: boolean;
+  /** T-01 : référentiels SADMIN propagés au ClientDialog. */
+  readonly paysList: readonly RefItem[];
+  readonly devisesList: readonly RefItem[];
+  readonly languesList: readonly RefItem[];
+  /** T-01 Volet A : team-members SALES / AM. */
+  readonly salesList: readonly RefItem[];
+  readonly amList: readonly RefItem[];
 }
 
 type DialogState = { kind: "none" } | { kind: "edit" } | { kind: "status" };
 
-export function ClientInfoTab({ client, canEdit }: ClientInfoTabProps) {
+export function ClientInfoTab({
+  client,
+  canEdit,
+  paysList,
+  devisesList,
+  languesList,
+  salesList,
+  amList,
+}: ClientInfoTabProps) {
   const t = useTranslations("clients.detail.info");
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
 
@@ -106,6 +121,11 @@ export function ClientInfoTab({ client, canEdit }: ClientInfoTabProps) {
         }}
         mode="edit"
         client={client}
+        paysList={paysList}
+        devisesList={devisesList}
+        languesList={languesList}
+        salesList={salesList}
+        amList={amList}
       />
 
       {/* Dialog Changer statut */}

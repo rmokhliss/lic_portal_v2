@@ -7,7 +7,13 @@ import { notFound } from "next/navigation";
 
 import { isAppError } from "@/server/modules/error";
 import { requireAuthPage } from "@/server/infrastructure/auth";
-import { getClientUseCase } from "@/server/composition-root";
+import {
+  getClientUseCase,
+  listDevisesUseCase,
+  listLanguesUseCase,
+  listPaysUseCase,
+  listTeamMembersUseCase,
+} from "@/server/composition-root";
 
 import { ClientInfoTab } from "../_components/ClientInfoTab";
 
@@ -27,7 +33,38 @@ export default async function ClientInfoPage({ params }: PageProps) {
     throw err;
   }
 
+  // T-01 — référentiels SADMIN pour <select> ClientDialog (codes actifs only).
+  const [paysAll, devisesAll, languesAll, salesAll, amAll] = await Promise.all([
+    listPaysUseCase.execute({}),
+    listDevisesUseCase.execute({}),
+    listLanguesUseCase.execute({}),
+    listTeamMembersUseCase.execute({ actif: true, roleTeam: "SALES" }),
+    listTeamMembersUseCase.execute({ actif: true, roleTeam: "AM" }),
+  ]);
+  const paysList = paysAll.filter((p) => p.actif).map((p) => ({ code: p.codePays, label: p.nom }));
+  const devisesList = devisesAll
+    .filter((d) => d.actif)
+    .map((d) => ({ code: d.codeDevise, label: d.nom }));
+  const languesList = languesAll
+    .filter((l) => l.actif)
+    .map((l) => ({ code: l.codeLangue, label: l.nom }));
+  const formatTeamMember = (m: { prenom: string | null; nom: string }): string =>
+    m.prenom !== null && m.prenom !== "" ? `${m.prenom} ${m.nom}` : m.nom;
+  const salesList = salesAll.map((m) => ({
+    code: formatTeamMember(m),
+    label: formatTeamMember(m),
+  }));
+  const amList = amAll.map((m) => ({ code: formatTeamMember(m), label: formatTeamMember(m) }));
+
   return (
-    <ClientInfoTab client={client} canEdit={user.role === "ADMIN" || user.role === "SADMIN"} />
+    <ClientInfoTab
+      client={client}
+      canEdit={user.role === "ADMIN" || user.role === "SADMIN"}
+      paysList={paysList}
+      devisesList={devisesList}
+      languesList={languesList}
+      salesList={salesList}
+      amList={amList}
+    />
   );
 }

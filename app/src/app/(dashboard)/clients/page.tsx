@@ -12,7 +12,14 @@
 import Link from "next/link";
 
 import { requireAuthPage } from "@/server/infrastructure/auth";
-import { getCAStatusUseCase, listClientsUseCase } from "@/server/composition-root";
+import {
+  getCAStatusUseCase,
+  listClientsUseCase,
+  listDevisesUseCase,
+  listLanguesUseCase,
+  listPaysUseCase,
+  listTeamMembersUseCase,
+} from "@/server/composition-root";
 
 import { ClientsTable } from "./_components/ClientsTable";
 import type { ClientStatutClient } from "./_components/clients-types";
@@ -41,7 +48,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       ? (params.statut as ClientStatutClient)
       : undefined;
 
-  const [result, caStatus] = await Promise.all([
+  const [result, caStatus, paysAll, devisesAll, languesAll, salesAll, amAll] = await Promise.all([
     listClientsUseCase.execute({
       ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
       ...(params.q !== undefined && params.q.trim().length > 0 ? { q: params.q.trim() } : {}),
@@ -49,7 +56,31 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       limit: 25,
     }),
     getCAStatusUseCase.execute(),
+    // T-01 — référentiels SADMIN pour <select> ClientDialog (codes actifs only).
+    listPaysUseCase.execute({}),
+    listDevisesUseCase.execute({}),
+    listLanguesUseCase.execute({}),
+    // T-01 Volet A — team members SALES + AM pour selects salesResponsable / accountManager.
+    listTeamMembersUseCase.execute({ actif: true, roleTeam: "SALES" }),
+    listTeamMembersUseCase.execute({ actif: true, roleTeam: "AM" }),
   ]);
+
+  const paysList = paysAll.filter((p) => p.actif).map((p) => ({ code: p.codePays, label: p.nom }));
+  const devisesList = devisesAll
+    .filter((d) => d.actif)
+    .map((d) => ({ code: d.codeDevise, label: d.nom }));
+  const languesList = languesAll
+    .filter((l) => l.actif)
+    .map((l) => ({ code: l.codeLangue, label: l.nom }));
+  // T-01 : valeur stockée = display "Prénom NOM" (lic_clients.* sont des string
+  // libres, pas FK). Format aligné L9 (sans matricule — team_members n'en a pas).
+  const formatTeamMember = (m: { prenom: string | null; nom: string }): string =>
+    m.prenom !== null && m.prenom !== "" ? `${m.prenom} ${m.nom}` : m.nom;
+  const salesList = salesAll.map((m) => ({
+    code: formatTeamMember(m),
+    label: formatTeamMember(m),
+  }));
+  const amList = amAll.map((m) => ({ code: formatTeamMember(m), label: formatTeamMember(m) }));
 
   // Phase 3.H — bandeau alerte si CA absente : la création client est bloquée
   // (createClientUseCase throw SPX-LIC-411 sans CA). On désactive le bouton
@@ -84,6 +115,11 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         currentQuery={params.q ?? ""}
         currentStatut={statutFilter ?? null}
         canCreate={canCreateBase && !caMissing}
+        paysList={paysList}
+        devisesList={devisesList}
+        languesList={languesList}
+        salesList={salesList}
+        amList={amList}
       />
     </div>
   );

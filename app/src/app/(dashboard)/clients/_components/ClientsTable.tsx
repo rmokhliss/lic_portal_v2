@@ -35,7 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { ClientDialog } from "./ClientDialog";
+import { ClientDialog, type RefItem } from "./ClientDialog";
 import { ClientStatusBadge } from "./ClientStatusBadge";
 import type { ClientDTO, ClientStatutClient } from "./clients-types";
 
@@ -48,6 +48,13 @@ export interface ClientsTableProps {
   readonly currentQuery: string;
   readonly currentStatut: ClientStatutClient | null;
   readonly canCreate: boolean;
+  /** T-01 : référentiels SADMIN propagés au ClientDialog. */
+  readonly paysList: readonly RefItem[];
+  readonly devisesList: readonly RefItem[];
+  readonly languesList: readonly RefItem[];
+  /** T-01 Volet A : team-members SALES / AM pour selects salesResponsable / accountManager. */
+  readonly salesList: readonly RefItem[];
+  readonly amList: readonly RefItem[];
 }
 
 type DialogState = { kind: "none" } | { kind: "create" } | { kind: "edit"; client: ClientDTO };
@@ -224,6 +231,11 @@ export function ClientsTable(props: ClientsTableProps) {
         }}
         mode={dialog.kind === "edit" ? "edit" : "create"}
         client={dialog.kind === "edit" ? dialog.client : undefined}
+        paysList={props.paysList}
+        devisesList={props.devisesList}
+        languesList={props.languesList}
+        salesList={props.salesList}
+        amList={props.amList}
       />
 
       {/* Indicateur silencieux pour réutiliser searchParams (évite warning lint) */}

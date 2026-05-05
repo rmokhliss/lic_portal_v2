@@ -32,14 +32,37 @@ import { createClientAction, updateClientAction } from "../_actions";
 
 import type { ClientDTO } from "./clients-types";
 
+/** Item référentiel minimal (code + libellé affichage). T-01. */
+export interface RefItem {
+  readonly code: string;
+  readonly label: string;
+}
+
 export interface ClientDialogProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly mode: "create" | "edit";
   readonly client?: ClientDTO;
+  /** T-01 : listes référentiels chargées par le Server Component parent. */
+  readonly paysList: readonly RefItem[];
+  readonly devisesList: readonly RefItem[];
+  readonly languesList: readonly RefItem[];
+  /** T-01 Volet A : team-members SALES / AM pour les selects sales/AM. */
+  readonly salesList: readonly RefItem[];
+  readonly amList: readonly RefItem[];
 }
 
-export function ClientDialog({ open, onOpenChange, mode, client }: ClientDialogProps) {
+export function ClientDialog({
+  open,
+  onOpenChange,
+  mode,
+  client,
+  paysList,
+  devisesList,
+  languesList,
+  salesList,
+  amList,
+}: ClientDialogProps) {
   const t = useTranslations("clients.dialog");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
@@ -154,29 +177,29 @@ export function ClientDialog({ open, onOpenChange, mode, client }: ClientDialogP
             maxLength={200}
           />
 
+          {/* T-01 : <select> peuplés depuis les référentiels SADMIN au lieu
+               des <Input> libres. Le SADMIN administre la liste autoritative
+               via /settings/team — l'UI client la respecte ici. */}
           <div className="grid grid-cols-2 gap-3">
-            <Field
+            <RefSelect
               name="codePays"
               label={t("fields.codePays")}
+              items={paysList}
               defaultValue={mode === "edit" ? (client?.codePays ?? "") : ""}
-              maxLength={2}
-              className="font-mono uppercase"
             />
-            <Field
+            <RefSelect
               name="codeDevise"
               label={t("fields.codeDevise")}
+              items={devisesList}
               defaultValue={mode === "edit" ? (client?.codeDevise ?? "") : ""}
-              maxLength={10}
-              className="font-mono uppercase"
             />
           </div>
 
-          <Field
+          <RefSelect
             name="codeLangue"
             label={t("fields.codeLangue")}
-            defaultValue={mode === "edit" ? (client?.codeLangue ?? "") : "fr"}
-            maxLength={5}
-            className="font-mono"
+            items={languesList}
+            defaultValue={mode === "edit" ? (client?.codeLangue ?? "fr") : "fr"}
           />
 
           <Field
@@ -203,23 +226,46 @@ export function ClientDialog({ open, onOpenChange, mode, client }: ClientDialogP
             />
           </div>
 
+          {/* T-01 Volet A : selects depuis team-members SALES / AM (string libre
+               stockée = display "Prénom NOM"). Si la liste est vide (référentiel
+               non peuplé) le select n'a que l'option vide — l'admin doit alors
+               passer par /settings/team pour ajouter des membres. */}
           <div className="grid grid-cols-2 gap-3">
-            <Field
+            <RefSelect
               name="salesResponsable"
               label={t("fields.salesResponsable")}
+              items={salesList}
               defaultValue={mode === "edit" ? (client?.salesResponsable ?? "") : ""}
-              maxLength={100}
             />
-            <Field
+            <RefSelect
               name="accountManager"
               label={t("fields.accountManager")}
+              items={amList}
               defaultValue={mode === "edit" ? (client?.accountManager ?? "") : ""}
-              maxLength={100}
             />
           </div>
 
           {mode === "create" && (
             <Field name="siegeNom" label={t("fields.siegeNom")} maxLength={200} />
+          )}
+
+          {/* T-01 : section contacts en mode edit — lien vers la page dédiée
+               où l'admin gère les contacts groupés par type (ACHAT, FACTURATION,
+               TECHNIQUE, etc.). L'embedded edit est différé (DETTE-LIC-017). */}
+          {mode === "edit" && client !== undefined && (
+            <div className="border-spx-ink/10 bg-spx-ink/5 mt-4 rounded-md border p-3">
+              <p className="text-spx-ink text-sm font-medium">Contacts du client</p>
+              <p className="text-spx-ink/70 mt-1 text-xs">
+                Les contacts (ACHAT, FACTURATION, TECHNIQUE…) se gèrent dans la page dédiée pour
+                permettre l&apos;ajout, l&apos;édition et la suppression par type.
+              </p>
+              <a
+                href={`/clients/${client.id}/contacts`}
+                className="text-spx-blue-600 mt-2 inline-block text-xs font-medium underline-offset-2 hover:underline"
+              >
+                Ouvrir la page contacts →
+              </a>
+            </div>
           )}
 
           {error && <p className="text-destructive text-sm">{error}</p>}
@@ -280,6 +326,45 @@ function Field({
         maxLength={maxLength}
         className={className}
       />
+    </div>
+  );
+}
+
+/** T-01 : <select> peuplé par référentiel (paysList, devisesList, languesList,
+ *  salesList, amList). Première option vide = "non spécifié" (FK nullable ou
+ *  string libre). Si `defaultValue` n'est pas dans `items` (cas legacy d'un
+ *  client édité dont la valeur a été retirée du référentiel), on l'ajoute en
+ *  tête comme option grisée pour ne pas effacer silencieusement la donnée. */
+function RefSelect({
+  name,
+  label,
+  items,
+  defaultValue,
+}: {
+  readonly name: string;
+  readonly label: string;
+  readonly items: readonly RefItem[];
+  readonly defaultValue?: string;
+}) {
+  const dv = defaultValue ?? "";
+  const inItems = dv === "" || items.some((it) => it.code === dv);
+  return (
+    <div className="space-y-1">
+      <Label htmlFor={name}>{label}</Label>
+      <select
+        id={name}
+        name={name}
+        defaultValue={dv}
+        className="border-input bg-background text-foreground h-9 w-full rounded-md border px-3 text-sm"
+      >
+        <option value="">—</option>
+        {!inItems && <option value={dv}>{dv} (existant — hors référentiel)</option>}
+        {items.map((item) => (
+          <option key={item.code} value={item.code}>
+            {item.code === item.label ? item.label : `${item.code} — ${item.label}`}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

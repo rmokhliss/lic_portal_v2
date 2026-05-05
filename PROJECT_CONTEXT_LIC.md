@@ -591,6 +591,17 @@ Tab `/licences/[id]/articles` débloquée : sections produits + sous-tables arti
 - **Priorité** : moyenne (sale architecture + test coverage manquant sur chemin sécurité critique).
 - **Phase cible** : Phase 3.x (cleanup post-3.H).
 
+### DETTE-LIC-017 — Section contacts par type embarquée dans `ClientDialog` différée
+
+- **Cause** : Ticket T-01 — `ClientDialog` en mode edit affiche désormais les selects référentiels SADMIN (pays/devise/langue/sales/AM) mais la "section contacts par type" demandée au brief est livrée en mode read-only avec un simple lien vers la page CRUD `/clients/[id]/contacts`. L'embedded edit (ajout/édition/suppression de contacts par type ACHAT/FACTURATION/TECHNIQUE/… directement depuis le Dialog) n'est pas implémenté.
+- **Impact** : double clic pour gérer les contacts d'un client (ouvrir Dialog → fermer → naviguer vers /contacts). UX OK mais pas optimal.
+- **Solution future** :
+  1. Charger les contacts du client en parallèle dans la page parent (`/clients/[id]/info`) et passer en prop `contactsByType: Record<string, ContactDTO[]>`.
+  2. Sous-composant `ContactsSection` dans le Dialog : groupe par type, expose des actions inline `Add/Edit/Delete` qui appellent les Server Actions existantes (`createContactAction`, `updateContactAction`, `deleteContactAction`).
+  3. Garder le lien vers `/clients/[id]/contacts` comme fallback pour la vue détaillée.
+- **Priorité** : basse (UX confort, fonctionnalité présente sur la page dédiée).
+- **Phase cible** : jalon polish UX dédié.
+
 ### DETTE-LIC-010 — Liste `typeContactCode` statique dans `ContactDialog`
 
 - **Cause** : Phase 4.F livre `ContactDialog` avec un `<select>` peuplé d'une liste statique `TYPES_CONTACT_OPTIONS` (6 valeurs : ACHAT/FACTURATION/TECHNIQUE/JURIDIQUE/TECHNIQUE_F2/DIRECTION). Le SADMIN administre la vraie liste depuis `/settings/team` (Phase 2.B) via `lic_types_contact_ref`, mais le Dialog ne fetch pas cette liste dynamiquement.
