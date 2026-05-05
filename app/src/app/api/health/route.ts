@@ -1,38 +1,18 @@
 // ==============================================================================
-// LIC v2 — Endpoint /api/health (Référentiel §1.4 + PROJECT_CONTEXT §8.4)
+// LIC v2 — Endpoint /api/health (DEPRECATED Phase 15 — alias /api/health/ready)
 //
-// Endpoint public sans auth : probes Docker/k8s/CI doivent pouvoir l'atteindre
-// sans session. Vérifie la chaîne complète env → pool → BD via SELECT 1.
+// Compat ascendante : Phase 1 → 14 utilisaient `/api/health` comme probe unique
+// (process + DB). Phase 15 (Référentiel v2.1 §4.19) sépare en deux probes
+// Kubernetes :
+//   - `/api/health/live`  : liveness (process up uniquement, pas de check DB)
+//   - `/api/health/ready` : readiness (process up + DB up via SELECT 1)
 //
-//   200 { status: "ok", db: "ok" }
-//   503 { status: "ko", db: "error", code: "SPX-LIC-900" }
-//
-// Le payload 503 ne renvoie QUE le code public. Aucune fuite de message,
-// stack ou cause (l'erreur originale postgres.js peut contenir hostname/user
-// /port). Le wrapping `InternalError` reste pour cohérence + log serveur.
+// Cette route reste fonctionnelle et délègue à la logique readiness pour ne
+// pas casser les configs Docker/k8s existantes (Phase 13.E `Dockerfile`
+// HEALTHCHECK pointe encore ici). À retirer Phase 16+ une fois les configs
+// migrées vers `/api/health/ready`.
 // ==============================================================================
 
-import { sql } from "@/server/infrastructure/db/client";
-import { createChildLogger } from "@/server/infrastructure/logger";
-import { InternalError } from "@/server/modules/error";
+import { GET as readyGet } from "./ready/route";
 
-const log = createChildLogger("api/health");
-
-export async function GET(): Promise<Response> {
-  try {
-    await sql`SELECT 1`;
-    return Response.json({ status: "ok", db: "ok" }, { status: 200 });
-  } catch (caughtError: unknown) {
-    log.error({ err: caughtError }, "Healthcheck DB failed");
-
-    // Wrapping pour cohérence cross-module (matérialise la sémantique typée
-    // SPX-LIC-900). Le payload client ne contient que le code public.
-    const appErr = new InternalError({
-      code: "SPX-LIC-900",
-      message: "Healthcheck DB failed",
-      cause: caughtError,
-    });
-
-    return Response.json({ status: "ko", db: "error", code: appErr.code }, { status: 503 });
-  }
-}
+export const GET = readyGet;
