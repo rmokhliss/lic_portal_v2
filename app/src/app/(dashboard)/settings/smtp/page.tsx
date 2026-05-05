@@ -1,11 +1,30 @@
-// LIC v2 — /settings/smtp (T-04 — libellé "Non implémenté (SMTP)")
+// ==============================================================================
+// LIC v2 — /settings/smtp (Phase 14 — DETTE-003 résolue)
+//
+// Lecture seule de la config SMTP (env vars). Bouton "Tester l'envoi"
+// (SADMIN) → email à l'utilisateur connecté via testEmailAction.
+// ==============================================================================
 
-import { getTranslations } from "next-intl/server";
+import { requireAuthPage } from "@/server/infrastructure/auth";
+import { getEmailStatus } from "@/server/composition-root";
 
-import { PhaseStub } from "@/components/shared/PhaseStub";
+import { SmtpPanel } from "./_components/SmtpPanel";
 
 export default async function SettingsSmtpPage() {
-  const t = await getTranslations("settings.stub.smtp");
-  // T-04 : phase=null → bandeau "Non implémenté (SMTP)" au lieu de "Disponible Phase 8".
-  return <PhaseStub phase={null} label={t("label")} description={t("description")} />;
+  const user = await requireAuthPage();
+  const status = getEmailStatus();
+  const canTest = user.role === "SADMIN";
+
+  return (
+    <div className="space-y-4 p-6">
+      <header>
+        <h1 className="font-display text-foreground text-2xl">Configuration SMTP</h1>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Configuration en lecture seule (variables d&apos;environnement). Pour modifier, éditer
+          <code className="bg-muted mx-1 rounded px-1 text-xs">.env</code> + redéployer.
+        </p>
+      </header>
+      <SmtpPanel status={status} canTest={canTest} />
+    </div>
+  );
 }

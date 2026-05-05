@@ -461,6 +461,15 @@ export const backfillClientCertificatesUseCase = new BackfillClientCertificatesU
   auditRepository,
 );
 
+// --- Phase 14 : module email (DETTE-003 résolue) ---------------------------
+
+export {
+  emailSender,
+  getEmailStatus,
+  renderTemplateUseCase,
+  sendEmailUseCase,
+} from "@/server/modules/email/email.module";
+
 // --- Phase 11.B : exports CSV rapports (cross-module) ----------------------
 
 import { ExportLicencesCsvUseCase } from "@/server/modules/dashboard/application/export-licences-csv.usecase";

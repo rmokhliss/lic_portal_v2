@@ -91,6 +91,9 @@ export type ErrorCode =
   | "SPX-LIC-758"
   | "SPX-LIC-759"
   | "SPX-LIC-760"
+  | "SPX-LIC-800"
+  | "SPX-LIC-801"
+  | "SPX-LIC-802"
   | "SPX-LIC-900"
   | "SPX-LIC-901"
   | "SPX-LIC-902"
@@ -583,6 +586,26 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     httpStatus: 403,
     defaultMessage: "Notification appartient à un autre utilisateur",
     className: "ForbiddenError",
+  },
+
+  // --- Email (800-899) -----------------------------------------------------
+  "SPX-LIC-800": {
+    code: "SPX-LIC-800",
+    httpStatus: 500,
+    defaultMessage: "Échec d'envoi d'email",
+    className: "InternalError",
+  },
+  "SPX-LIC-801": {
+    code: "SPX-LIC-801",
+    httpStatus: 400,
+    defaultMessage: "Message email invalide (destinataire ou contenu)",
+    className: "ValidationError",
+  },
+  "SPX-LIC-802": {
+    code: "SPX-LIC-802",
+    httpStatus: 400,
+    defaultMessage: "Rendu template email échoué",
+    className: "ValidationError",
   },
 
   // --- Système + erreurs génériques transverses (900-999) ------------------

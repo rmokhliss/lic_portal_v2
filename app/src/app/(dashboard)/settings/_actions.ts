@@ -34,7 +34,9 @@ import {
   createTeamMemberUseCase,
   createTypeContactUseCase,
   createUserUseCase,
+  renderTemplateUseCase,
   resetUserPasswordUseCase,
+  sendEmailUseCase,
   toggleDeviseUseCase,
   toggleLangueUseCase,
   togglePaysUseCase,
@@ -45,6 +47,7 @@ import {
   updateSettingsUseCase,
   updateUserUseCase,
 } from "@/server/composition-root";
+import { env } from "@/server/infrastructure/env";
 
 const userActionsLogger = createChildLogger("settings/users");
 
@@ -217,6 +220,17 @@ export async function createUserAction(input: unknown) {
     },
     "Mot de passe utilisateur à transmettre par canal sécurisé",
   );
+  // Phase 14 — best-effort welcome email. Échec n'invalide pas la création.
+  await sendUserEmailBestEffort(
+    "user-welcome",
+    {
+      prenom: result.user.prenom,
+      email: result.user.email,
+      motDePasseInitial: result.generatedPassword,
+      urlConnexion: env.APP_URL,
+    },
+    result.user.email,
+  );
   revalidatePath("/settings/users");
   return result;
 }
@@ -256,8 +270,48 @@ export async function resetUserPasswordAction(input: unknown) {
     },
     "Mot de passe utilisateur à transmettre par canal sécurisé",
   );
+  // Phase 14 — best-effort password-reset email. Échec n'invalide pas le reset.
+  await sendUserEmailBestEffort(
+    "password-reset",
+    {
+      prenom: result.user.prenom,
+      motDePasseTemp: result.newPassword,
+      urlConnexion: env.APP_URL,
+    },
+    result.user.email,
+  );
   revalidatePath("/settings/users");
   return result;
+}
+
+// Phase 14 — wrapper email best-effort. Toute erreur est loggée Pino mais ne
+// remonte pas — l'envoi email ne doit pas casser la mutation principale
+// (création / reset password). Le log Pino reste la source de vérité du flow
+// MDP transitoire (cf. event "user_password_to_communicate").
+async function sendUserEmailBestEffort(
+  template: "user-welcome" | "password-reset",
+  variables: Readonly<Record<string, string | number>>,
+  to: string,
+): Promise<void> {
+  try {
+    const rendered = renderTemplateUseCase.execute(template, variables);
+    await sendEmailUseCase.execute({
+      to,
+      subject: rendered.subject,
+      bodyHtml: rendered.html,
+      bodyText: rendered.text,
+    });
+  } catch (err) {
+    userActionsLogger.warn(
+      {
+        event: "email_send_failed",
+        template,
+        to,
+        error: err instanceof Error ? err.message : String(err),
+      },
+      "Échec envoi email user (best-effort, mutation OK)",
+    );
+  }
 }
 
 // ============================================================================
