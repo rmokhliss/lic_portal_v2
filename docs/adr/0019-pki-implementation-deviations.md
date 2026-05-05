@@ -148,11 +148,58 @@ L'ADR 0002 (Avril 2026) a fixé l'architecture PKI : CA auto-signée S2M + certi
 - ADR 0002 reste en place (architecture). ADR 0019 = précisions et dérogations vocabulaire/algo.
 - `EXPOSE_S2M_CA_PUBLIC` env var supprimée. Migration : aucune (var par défaut `false`, comportement identique à BD setting absent → 404).
 
+### 10. Phase 14 — PKI bouclage `.lic` + healthcheck AES (DETTE-LIC-008 résolue)
+
+**Décision** : la génération `.lic` et l'import healthcheck quittent leur état stub Phase 10 et activent les chemins crypto réels.
+
+**`.lic` — signature RSA + cert client embarqué** :
+
+- `GenerateLicenceFichierUseCase` accepte un nouveau paramètre `options?: { appMasterKey: string }`. Quand fourni (Server Action prod), le use-case :
+  1. Lit les colonnes `client_private_key_enc`, `client_certificate_pem`, `client_certificate_expires_at` via `clientRepository.findClientCredentials(clientId)`. Throw `SPX-LIC-411` si une des 3 est null (cas client legacy non backfillé).
+  2. Déchiffre la clé privée client avec `decryptAes256Gcm(privateKeyEnc, appMasterKey)` (AES-256-GCM, ADR-0019 §6).
+  3. Signe le `contentJson` avec `signPayload()` — RSASSA-PKCS1-v1_5 + SHA-256 (ADR-0019 §4).
+  4. Concatène le payload final selon ADR-0002 :
+     ```
+     <contentJson>
+     --- SIGNATURE S2M ---
+     <signatureBase64>
+     --- CERTIFICATE S2M ---
+     <client_certificate_pem>
+     ```
+  5. Calcule le hash SHA-256 sur le **payload complet signé** (anti-altération end-to-end, pas seulement contenu JSON).
+
+- Mode legacy conservé (rétrocompat tests d'intégration sans PKI) : si `options` absent, retombe sur le chemin stub Phase 10 (JSON brut, pas de signature). Server Action prod injecte toujours `appMasterKey`.
+
+**`.hc` healthcheck — chiffrement AES-256-GCM symétrique** :
+
+- `ImportHealthcheckUseCase` accepte un nouveau paramètre constructor `settingRepository?: SettingRepository`. Quand câblé (composition-root prod) :
+  1. Lit la clé partagée depuis `lic_settings.healthcheck_shared_aes_key`. Throw `SPX-LIC-411` si absente (configuration manquante).
+  2. `decryptAes256Gcm(uploadedContent, sharedKey)` → plaintext. Throw `SPX-LIC-402` si tag mismatch (contenu altéré OU clé partagée incorrecte côté banque/S2M).
+  3. Parse le plaintext déchiffré (JSON ou CSV — comportement Phase 10 inchangé).
+
+- Mode legacy conservé : tests sans `settingRepository` injecté passent en passe-plat (parse direct).
+
+- Seed bootstrap (`seed.ts`) génère `healthcheck_shared_aes_key` via `generateAes256Key()` lors du premier `pnpm db:seed`. Idempotent (`ON CONFLICT DO NOTHING`). La rotation de clé reste manuelle SADMIN.
+
+**Asymétrie justifiée** :
+
+- `.lic` = S2M → F2 : authentification S2M obligatoire (signature RSA), cert client distribué embarqué pour vérification autonome F2.
+- `.hc` = F2 → S2M : confidentialité volumes consommés (AES-GCM partagé). Pas d'asymétrie utile — l'authentification du flux F2 → S2M est portée par la session UI ADMIN/SADMIN qui upload.
+
+**Tests** :
+
+- `generate-licence-fichier-pki.int.spec.ts` : 3 tests — signature vérifiable via clé publique, format ADR-0002 conforme, throw 411 sans cert.
+- `import-healthcheck-aes.int.spec.ts` : 3 tests — round-trip encrypt/decrypt, tag mismatch (contenu altéré), clé partagée absente.
+
+**Conséquence rétrocompat** : aucune migration BD requise — les colonnes PKI Phase 3.B sont déjà en place. Les `.lic` v1 (legacy non signés) restent générables si la Server Action n'injecte pas `appMasterKey` (cas test uniquement).
+
 ## Références
 
 - ADR 0002 — PKI S2M : CA auto-signée + certificats clients
 - ADR 0009 — Variante B Next.js full-stack
 - `app/src/server/modules/crypto/` — implémentation Phase 3.A
+- `app/src/server/modules/fichier-log/application/generate-licence-fichier.usecase.ts` — Phase 14
+- `app/src/server/modules/fichier-log/application/import-healthcheck.usecase.ts` — Phase 14
 - `migration 0010` — colonnes PKI sur `lic_clients` (Phase 3.B)
 - `migration 0011` — ALTER TYPE audit_mode ADD VALUE SCRIPT (Phase 3.E.0)
 - RFC 8017 §8.2 — RSASSA-PKCS1-v1_5

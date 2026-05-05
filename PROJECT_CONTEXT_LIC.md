@@ -43,7 +43,14 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.0. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phases 1 → 13 closes + Phase 3 PKI + Tickets UX T-01..T-06 (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI + raffinements UX post-livraison. MVP livré, prêt pour premier déploiement préprod.
+**Phase actuelle** : **Phases 1 → 14 closes + Phase 3 PKI + Tickets UX T-01..T-06 + Phase 14 (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée (`.lic` signés + healthcheck AES) + raffinements UX post-livraison + module email opérationnel. MVP livré, prêt pour premier déploiement préprod.
+
+**Phase 14 close (Mai 2026)** — clôture des vraies dettes pré-prod.
+
+- Chantier A — DETTE-LIC-008 réelle (PKI `.lic` + healthcheck `.hc`) : `generateLicenceFichierUseCase` accepte `options.appMasterKey` → signe le contentJson via clé privée client (RSA-PKCS1-v1_5 + SHA-256) et embarque le cert client selon ADR-0002 (séparateurs `--- SIGNATURE S2M ---` / `--- CERTIFICATE S2M ---`). `importHealthcheckUseCase` accepte `settingRepository` → déchiffre via `lic_settings.healthcheck_shared_aes_key` (AES-256-GCM symétrique, throw 411 si absente, 402 si tag mismatch). Seed génère la clé partagée. ADR-0019 §10. Tests : 3 PKI + 3 AES (`fichier-log/__tests__/`). Ports `clientRepository.findClientCredentials` ajouté.
+- Chantier B — DETTE-003 (module email) : module hexagonal `email/` avec `EmailMessage` (validation), port `EmailSender`, adapters `EmailSenderSmtp` (nodemailer) et `EmailSenderConsole` (Pino logs simulés), `TemplateRendererMjml` (5 templates : password-reset, password-changed, user-welcome, licence-expiring, volume-threshold). Composition root sélectionne smtp vs console selon `env.SMTP_HOST`. Intégrations best-effort dans `createUserAction` (welcome) et `resetUserPasswordAction` (mot de passe temp) — échec email ne bloque pas la mutation. UI `/settings/smtp` réelle avec statut + bouton "Tester l'envoi" SADMIN. Codes SPX-LIC-800..802. Tests : 7.
+- Chantier C — DETTE-LIC-006 (UI Edit 6 référentiels) : 6 Server Actions `update*Action` + composant générique `RefEditDialog` (factorisé) câblé dans les 6 sous-onglets `/settings/team` (Régions, Pays, Devises, Langues, Types contact, Équipe). Bouton "Modifier" par row → dialog pré-rempli + submit → revalidatePath. Selecteurs immuables (codeISO/id) désactivés dans le formulaire.
+- Chantier D — DETTE-LIC-017 (contacts à création client) : `createClientUseCase` accepte `input.contacts` (max 5) + `contactRepository` injecté. Persistance atomique client + Siège + N contacts dans la même `db.transaction` avec audit `CONTACT_CREATED` par contact (règle L3). Schéma Zod `CreateClientSchema.contacts` ajouté. UI `ClientDialog` mode create : section dynamique "Contacts (Siège)" avec ajout/retrait jusqu'à 5 (typeContact, nom, prénom, email, téléphone). Tests : 3 nouveaux (contacts OK, rollback FK invalide, sans contacts inchangé).
 
 **Tickets UX post-Phase-3 (Mai 2026)** — corrections et améliorations UX issues de la revue post-livraison, sans nouvelle phase métier.
 
@@ -533,7 +540,7 @@ Format : `DETTE-LIC-NNN — Titre court`. Une dette = limitation acceptée à co
 
 - **DETTE-LIC-003 — `app/scripts/load-env.ts` throw `ENOENT` si `app/.env` absent** : `process.loadEnvFile(".env")` (Node 21.7+) crashe quand le fichier est absent, alors que les variables peuvent déjà être présentes dans `process.env`. Le loader devrait être permissif dans ce cas. **Priorité** : moyenne. **Workaround actuel** : générer un `app/.env` (peuplé depuis le job `env:` block) en step CI avant `pnpm db:migrate` (cf. `.github/workflows/ci.yml`). À traiter Phase 13.x+.
 - **DETTE-LIC-005 — i18n namespace `files.*` manquant** : `AppSidebar` rend déjà l'item `nav.items.files` (clé existante) mais aucune clé `files.*` n'est définie pour le futur écran EC-Files. À ajouter quand la Phase 10 introduira la page `/files`. **Priorité** : basse. **Phase** : 10 (fichiers + génération `.lic`).
-- **DETTE-LIC-006 — UI Edit absente sur les 6 référentiels SADMIN (`/settings/team`)** : les use-cases `update*UseCase` existent côté backend (Phase 2.B étapes 2-4) et sont ré-exportés via `composition-root.ts`, mais l'onglet team n'expose que Create + Toggle (pas de bouton Edit par row). Limitation acceptée pour le périmètre étape 7 — Edit modal Dialog identique au pattern Create + Server Action `update*Action`. **Priorité** : basse. **Phase** : Phase 13.x+ (jalon dédié refinement /settings post-MVP).
+- ~~**DETTE-LIC-006 — UI Edit absente sur les 6 référentiels SADMIN**~~ — **résolue Phase 14 (Chantier C)** : 6 Server Actions `update*Action` + composant `RefEditDialog` factorisé câblé dans les 6 sous-onglets `/settings/team`. Bouton "Modifier" par row → dialog pré-rempli (sélecteurs immuables désactivés) → submit → revalidatePath.
 
 ### ~~DETTE-LIC-008 — PKI absente à la création client (Phase 4 avant Phase 3)~~ — **résolue Phase 3.D + 3.E**
 
@@ -604,16 +611,16 @@ Tab `/licences/[id]/articles` débloquée : sections produits + sous-tables arti
 - **Priorité** : moyenne (sale architecture + test coverage manquant sur chemin sécurité critique).
 - **Phase cible** : Phase 3.x (cleanup post-3.H).
 
-### DETTE-LIC-017 — Section contacts par type embarquée dans `ClientDialog` différée
+### ~~DETTE-LIC-017 — Section contacts par type embarquée dans `ClientDialog`~~ — **résolue Phase 14 (Chantier D)**
 
-- **Cause** : Ticket T-01 — `ClientDialog` en mode edit affiche désormais les selects référentiels SADMIN (pays/devise/langue/sales/AM) mais la "section contacts par type" demandée au brief est livrée en mode read-only avec un simple lien vers la page CRUD `/clients/[id]/contacts`. L'embedded edit (ajout/édition/suppression de contacts par type ACHAT/FACTURATION/TECHNIQUE/… directement depuis le Dialog) n'est pas implémenté.
-- **Impact** : double clic pour gérer les contacts d'un client (ouvrir Dialog → fermer → naviguer vers /contacts). UX OK mais pas optimal.
-- **Solution future** :
-  1. Charger les contacts du client en parallèle dans la page parent (`/clients/[id]/info`) et passer en prop `contactsByType: Record<string, ContactDTO[]>`.
-  2. Sous-composant `ContactsSection` dans le Dialog : groupe par type, expose des actions inline `Add/Edit/Delete` qui appellent les Server Actions existantes (`createContactAction`, `updateContactAction`, `deleteContactAction`).
-  3. Garder le lien vers `/clients/[id]/contacts` comme fallback pour la vue détaillée.
-- **Priorité** : basse (UX confort, fonctionnalité présente sur la page dédiée).
-- **Phase cible** : jalon polish UX dédié.
+Phase 14 livre les contacts à la **création** client (cross-aggregate atomique) :
+
+- `createClientUseCase` accepte `input.contacts?: ReadonlyArray<{typeContactCode, nom, prenom?, email?, telephone?}>` (max 5) + nouvelle dépendance `contactRepository?` injectée. Persistance dans la **même `db.transaction`** que client + Siège + 1 audit `CONTACT_CREATED` par contact (règle L3 préservée).
+- Schéma Zod `CreateClientSchema.contacts` ajouté à `shared/src/schemas/client.schema.ts` (+ `ContactInputSchema` ré-exporté).
+- UI `ClientDialog` mode create : section dynamique "Contacts (Siège)" avec ajout/retrait jusqu'à 5 (typeContact, nom, prénom, email, téléphone). Liste types_contact propagée depuis `clients/page.tsx`.
+- Tests : 3 nouveaux dans `create-client.usecase.spec.ts` (contacts OK, rollback FK invalide, sans contacts inchangé).
+
+L'édition embarquée des contacts existants en mode edit (ajout/edit/delete inline dans `ClientDialog` mode edit) reste différée — la page dédiée `/clients/[id]/contacts` (lien depuis le Dialog) reste le chemin pour les opérations post-création.
 
 ### DETTE-LIC-010 — Liste `typeContactCode` statique dans `ContactDialog`
 
