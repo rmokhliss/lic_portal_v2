@@ -887,3 +887,27 @@ _Fin de l'archive. Capitalisation close en Mai 2026._
 L'audit Master Référentiel reçu Mai 2026 a couvert 3 bloquants (redaction PII, ADR application→infrastructure, sync docs) + 4 importants (split /health probes, archive audits, port PasswordHasher, liste configs Stop validate) + 3 mineurs (brute-force lockout C1 traité, MFA TOTP différé DETTE-LIC-021, audit lectures sensibles différé DETTE-LIC-022).
 
 R-39 et R-40 ci-dessus formalisent les 2 remontées issues de cet audit pour le Référentiel v2.2.
+
+---
+
+### R-41 — Séquences PG pour références métier monotones (Phase 16 / DETTE-LIC-011)
+
+- **Type** : Pattern Drizzle / PostgreSQL — anti-race sans lock applicatif
+- **Phase LIC** : Phase 16 — DETTE-LIC-011 résolue (allocateNextReference)
+- **Contexte** : LIC v2 alloue des références licences au format `LIC-{YYYY}-{NNN}`. Pré-Phase-16, l'implémentation faisait `SELECT MAX(reference) WHERE reference LIKE 'LIC-2026-%'` → parse régex → +1 → INSERT. Race possible : 2 transactions concurrentes qui lisent la même valeur MAX → 2 INSERTs avec la même référence → l'une échoue sur la contrainte UNIQUE. Le caller wrap en SPX-LIC-736 ConflictError, retry idempotent.
+
+  Phase 16 livre la solution propre : **séquence Postgres dédiée** (`CREATE SEQUENCE lic_licence_reference_seq START 1`). `nextval()` est atomique côté serveur PG, élimine la race condition sans aucun lock applicatif.
+
+  Trade-off accepté : la séquence est globale (non resetée par année) → numérotation continue cross-années (LIC-2027-123 si dernière 2026 était LIC-2026-122). Pour les cas d'usage qui exigent un reset annuel strict (numérotation comptable, certaines réglementations), une fonction PG `next_yearly_reference()` peut combiner `nextval()` année courante + `setval()` au passage d'année (pattern plus complexe, à introduire seulement si requis).
+
+- **Décision LIC v2** :
+  - Migration 0013 — `CREATE SEQUENCE IF NOT EXISTS` + bootstrap `setval()` aligné sur `MAX(NNN)` des licences existantes.
+  - `allocateNextReference(tx?)` utilise `db.execute(sql\`SELECT nextval(...)\`)` — atomique.
+  - Tests : 3 cas — format LIC-{YYYY}-{NNN} avec padding 3, 10 appels séquentiels monotones distincts, 10 appels concurrents (`Promise.all`) tous distincts.
+
+- **Reco évolution Référentiel v2.2+** : ajouter en §4.11 (Drizzle / Adapters) un encart **« Références métier monotones »** :
+  - Privilégier les **séquences Postgres dédiées** pour toute référence métier au format `<PREFIX>-{NNN}` ou `<PREFIX>-{YYYY}-{NNN}` qui doit être unique et monotone.
+  - Anti-pattern : `SELECT MAX(...) + 1` en applicatif. Race condition garantie sous concurrence.
+  - Pattern recommandé : `nextval('seq_name')` consommé via `db.execute(sql\`SELECT nextval(...)\`)`. Format final composé en TS pour respecter le préfixe / padding.
+  - Si reset annuel strict requis : fonction PG dédiée combinant `nextval()` + `setval()` au pivot d'année. Sinon (cas LIC v2), accepter la numérotation continue cross-années.
+  - Bootstrap idempotent : sur BDs existantes pré-séquence, `setval(seq, MAX(N), true)` au premier déploiement.

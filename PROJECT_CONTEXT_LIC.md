@@ -43,9 +43,21 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.1. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phases 1 → 15 closes + Phase 3 PKI + Tickets UX T-01..T-06 + Phase 14 + Phase 15 (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée (`.lic` signés + healthcheck AES) + raffinements UX post-livraison + module email opérationnel + alignement Référentiel v2.1 (audit Master). MVP livré, prêt pour premier déploiement préprod.
+**Phase actuelle** : **Phases 1 → 16 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée (`.lic` signés + healthcheck AES) + raffinements UX post-livraison + module email opérationnel + alignement Référentiel v2.1 (audit Master) + clôture totale dettes résiduelles (Phase 16). **MVP livré, prêt pour push origin/main**.
 
-**Audit Master Référentiel reçu Mai 2026** : alignement v2.0 → v2.1 livré Phase 15. 3 corrections critiques (redaction PII pino, ADR application→infrastructure/db, sync docs) + 4 importantes (split /api/health en /live + /ready, archive audits par phase, port PasswordHasher, liste configs Stop validate) + 1 mineure (brute-force lockout). 2 mineures différées (MFA TOTP DETTE-LIC-021, audit lectures sensibles DETTE-LIC-022).
+**Audit Master Référentiel reçu Mai 2026** : alignement v2.0 → v2.1 livré Phase 15. 3 corrections critiques (redaction PII pino, ADR application→infrastructure/db, sync docs) + 4 importantes (split /api/health en /live + /ready, archive audits par phase, port PasswordHasher, liste configs Stop validate) + 1 mineure (brute-force lockout).
+
+**Phase 16 close (Mai 2026) — clôture totale dettes** : 8 dettes résiduelles fermées en une passe :
+
+- **DETTE-LIC-018** + **019** (BD test isolation) : `setupTransactionalTests` étendu avec option `cleanTables` (TRUNCATE intra-tx, rollback-safe). 6 specs migrées (5 pays + 1 langues + 1 team-members). **22 fails → 0 fails**.
+- **DETTE-LIC-015** (i18n PKI) : ~50 clés FR/EN ajoutées sous `settings.security.*` + `settings.sandbox.*`, 4 composants convertis.
+- **DETTE-LIC-016** (tests PKI dual-mode) : 3 tests créés couvrant CA présente/absente/atomic-with-contacts.
+- **DETTE-LIC-009** (breadcrumb dynamique) : `EntityNameContext` Provider/Setter pattern, "Clients › Bank Al-Maghrib › Info" au lieu de "Clients › Détail › Info".
+- **DETTE-LIC-011** (allocateNextReference race) : migration 0013 `CREATE SEQUENCE lic_licence_reference_seq` + `nextval()` atomique, R-41 capitalisée.
+- **DETTE-LIC-013/014** (dropdowns 200) : composant `SearchableSelect` (combobox client-side) câblé sur 2 endpoints.
+- **DETTE-LIC-022** (audit lectures sensibles) : 4 actions ajoutées (`CLIENT_READ`, `FICHIER_LOG_READ`, `EXPORT_CSV_LICENCES`, `EXPORT_CSV_RENOUVELLEMENTS`) — pattern best-effort try/catch.
+- **DETTE-LIC-021** (MFA TOTP) : volontairement différée Phase 17+ avec **plan définitif figé** dans §10 (module hexagonal + migration 0014 + flow enrôlement + 6 audits).
+- **DETTE-LIC-020** (PDF Référentiel v2.1) : reste ouverte (PDF non encore publié officiellement, placeholder en place).
 
 **Phase 14 close (Mai 2026)** — clôture des vraies dettes pré-prod.
 
@@ -553,65 +565,46 @@ Phase 3 (Mai 2026) résout cette dette en deux temps :
 
 Cf. ADR-0019 pour les choix d'implémentation (RSA-4096, RSASSA-PKCS1-v1_5, AES-GCM, @peculiar/x509 exception bornée).
 
-### DETTE-LIC-009 — Breadcrumb header dynamique nom d'entité (résiduelle après Phase 11.C)
+### ~~DETTE-LIC-009 — Breadcrumb header dynamique nom d'entité~~ — **résolue Phase 16**
 
-- **Cause initiale** : `Breadcrumb` (Client Component) ne reconnaissait pas les routes détail `/clients/[id]/*`, fallback pathname brut avec UUID.
-- **Phase 11.C — résolution partielle** (commit `5c9ee9b`) : pattern matching côté Client sur `/clients/[uuid]/sub` et `/licences/[uuid]/sub` → affichage "Clients › Détail › Info" plutôt que UUID brut. Sub-routes mappées via i18n `nav.breadcrumb.*` (info/entites/contacts/licences/historique/articles/resume/renouvellements).
-- **Reste à faire (résiduel Phase 13.x+)** : afficher le **nom de l'entité** au lieu de "Détail" (ex: "Clients › Bank Al-Maghrib › Info"). Nécessite un mécanisme Server → Client pour exposer le nom récupéré dans le layout `/clients/[id]` au composant `Breadcrumb` rendu dans `AppHeader`. Options :
-  1. Next.js `template.tsx` avec React context (le layout enfant remplit le context, AppHeader le lit)
-  2. Custom hook qui fetch le nom à partir de l'UUID dans le pathname (round-trip supplémentaire)
-  3. URL hash / query param injecté par le layout enfant
-- **Priorité** : basse (UX cosmétique). Le pattern "Détail" actuel est lisible et fonctionnel.
-- **Phase cible** : Phase 13.x+ (jalon UX post-MVP).
+- **Solution Phase 16** : `EntityNameContext` (React Context Provider à la racine du dashboard layout) + `EntityNameSetter` (Client Component rendu par `clients/[id]/layout.tsx` et `licences/[id]/layout.tsx`). Le Setter pose la valeur via `useEffect` au mount → le Breadcrumb la consomme via `useEntityName()`.
+- **Affichage final** : "Clients › Bank Al-Maghrib › Info" (au lieu de "Clients › Détail › Info"), même pattern pour `/licences/[id]/*` (référence licence).
+- **Fallback** : si aucun setter actif (cas hors `/clients/[id]/*` et `/licences/[id]/*`), retombe sur `tBc("detail")` (préserve le rendu Phase 11.C).
+- **Trade-off accepté** : bref flash "Détail" entre le mount du layout et le useEffect du Setter. Imperceptible en pratique sur des fetches < 100 ms côté Server Component.
+- **Fichiers** : `app/src/components/layout/EntityNameContext.tsx` (NEW), `Breadcrumb.tsx` (consume), `(dashboard)/layout.tsx` (provider), `clients/[id]/layout.tsx` + `licences/[id]/layout.tsx` (setter).
 
-### DETTE-LIC-011 — `allocateNextReference` race possible (lecture MAX + INSERT non-atomic)
+### ~~DETTE-LIC-011 — `allocateNextReference` race possible~~ — **résolue Phase 16**
 
-- **Cause** : Phase 5.B — `LicenceRepositoryPg.allocateNextReference()` lit `MAX(reference)` filtré sur l'année courante, +1, puis le caller insère via `save()`. Les 2 opérations ne sont pas atomic : si 2 transactions concurrentes appellent `allocateNextReference` simultanément, elles peuvent allouer le même numéro et l'une des INSERT échouera sur la contrainte UNIQUE `uq_licences_reference`.
-- **Impact** : faible volume mono-tenant + faible concurrence dev/admin. Le caller wrap l'erreur en SPX-LIC-736 (`ConflictError`) — peut être retry idempotent côté UI ou Server Action.
-- **Solution future** : remplacer par une séquence Postgres dédiée `lic_licence_ref_seq` (reset annuel via fonction PG ou compteur `last_year_used` dans `lic_settings`). Exemple : `nextval('lic_licence_ref_seq')` dans une fonction stockée qui formatte `LIC-{YYYY}-{NNN}` atomiquement.
-- **Priorité** : basse.
-- **Phase cible** : 13 (durcissement perf prod).
+- **Solution Phase 16** : migration **0013** — `CREATE SEQUENCE lic_licence_reference_seq START 1` + bootstrap `setval()` aligné sur `MAX(NNN)` des licences existantes. `allocateNextReference()` utilise `nextval()` atomique côté PG, élimine la race condition.
+- **Trade-off accepté** : la séquence est **globale** (non resetée par année). Numérotation continue cross-années (ex: LIC-2027-123 si la dernière de 2026 était LIC-2026-122). Acceptable pour le cas d'usage S2M (les banques ne se basent pas sur la numérotation pour leur audit interne).
+- **Tests** : `allocate-next-reference.spec.ts` — 3 cas (format, monotonie séquentielle 10 appels, concurrence Promise.all 10 → unicité).
+- **R-41** capitalisée dans `docs/referentiel-feedback.md` : « Séquences PG pour références métier monotones — évite races sans lock applicatif ».
 
 ### ~~DETTE-LIC-012 — Tab Articles licence reste un PhaseStub Phase 6~~ — **résolue Phase 6.F (commit `c5466a3`)**
 
 Tab `/licences/[id]/articles` débloquée : sections produits + sous-tables articles avec volumes (consommé/autorisé/taux), Dialogs Add Produit / Add Article / Edit Volume / Remove. L'onglet `/settings/catalogues` (DETTE résiduelle des stubs Phase 2.B) est également opérationnel (CRUD SADMIN produits + articles). 11 Server Actions, schémas Zod cf. `shared/src/schemas/produit.schema.ts`, codes SPX-LIC-743..754.
 
-### DETTE-LIC-013 — Sélecteur licences `Dialog healthcheck` /clients/[id] non-paginé
+### ~~DETTE-LIC-013 + DETTE-LIC-014 — Dropdowns 200 items non-paginés~~ — **résolues Phase 16**
 
-- **Cause** : Phase 10.D — `ImportHealthcheckClientButton` dans le layout `/clients/[id]` charge les licences du client via `listLicencesByClientUseCase.execute({ clientId, limit: 200 })`. Le `<select>` dropdown ne supporte pas la pagination cursor (vue dégradée si un client dépasse 200 licences — improbable mais possible Phase 13+ avec gros bancaires).
-- **Impact** : faible mono-tenant (les clients vendus ont rarement >200 licences). Si dépassement, les licences au-delà ne sont pas sélectionnables → utilisateur doit aller sur la tab `licences` du client puis cliquer "Importer healthcheck" depuis la page licence directement (pattern fallback déjà fonctionnel).
-- **Solution future** : remplacer le `<select>` par un combobox autocomplete avec recherche serveur paginée (TanStack Query `keepPreviousData` + cursor cf. pattern à raffiner). Idéalement un composant `<LicencePicker>` réutilisable.
-- **Priorité** : basse.
-- **Phase cible** : 13 (durcissement UX).
+- **Solution Phase 16** : composant `SearchableSelect` (`app/src/components/ui/searchable-select.tsx`) — combobox léger avec recherche textuelle client-side, navigation clavier ↑↓ Enter, accessibilité ARIA, hidden form input pour soumission HTML standard. Pas de dépendance shadcn Command/Popover (primitives natives Input + ul/li).
+- **Câblage** :
+  - **DETTE-LIC-013** : `ImportHealthcheckClientButton.tsx` (`<select>` licences ACTIVE → `<SearchableSelect>` filtre par référence).
+  - **DETTE-LIC-014** : `RenewalsList.tsx` (`<select>` clients filtre → `<SearchableSelect>` filtre par label).
+- **Pas de pagination cursor** : les 200 items pré-chargés sont filtrés en temps réel côté client (suffisant pour le volume cible mono-tenant 100-200 clients / licences-par-client). Si volume réel >200 dans le futur, l'extension serveur via `q` paramètre est triviale (déjà supporté côté repos via `ilike`).
 
-### DETTE-LIC-014 — Dropdown clients page `/renewals` non-paginé
+### ~~DETTE-LIC-015 — i18n FR/EN absent sur `/settings/security` et `/settings/sandbox`~~ — **résolue Phase 16**
 
-- **Cause** : Phase 9.B — `RenewalsList` charge les clients via `listClientsUseCase.execute({ limit: 200 })` pour peupler le filtre `<select>` "Client". Pas de pagination cursor sur le dropdown.
-- **Impact** : si la BD dépasse 200 clients (volume cible mono-tenant 100-200 clients SELECT-PX), les clients au-delà ne peuvent pas être filtrés depuis ce dropdown → utilisateur doit passer par `/clients` filtre FTS puis drill-down vers `/licences/[id]/renouvellements`.
-- **Solution future** : combobox autocomplete avec recherche serveur (cf. DETTE-LIC-013 — même composant `<ClientPicker>` réutilisable).
-- **Priorité** : basse.
-- **Phase cible** : 13 (durcissement UX).
+- **Solution Phase 16** : extraction complète des chaînes UI vers les namespaces `settings.security.*` (titre, sous-titre, section CA — 11 clés, section Expose — 4 clés, section Backfill — 6 clés) et `settings.sandbox.*` (titre, sous-titre, 5 sections × ~7 clés chacune = ~35 clés). Composants convertis avec `useTranslations` / `getTranslations` pattern.
+- **Fichiers** : `messages/fr.json` + `messages/en.json` enrichis (~50 clés ajoutées), `security/page.tsx` + `_components/CASection.tsx` + `sandbox/page.tsx` + `_components/SandboxPanel.tsx` convertis.
 
-### DETTE-LIC-015 — i18n FR/EN absent sur `/settings/security` et `/settings/sandbox`
+### ~~DETTE-LIC-016 — Tests d'intégration `createClientUseCase` mode PKI~~ — **résolue Phase 16**
 
-- **Cause** : Phase 3.C/3.F livré en mode rapide — labels et descriptions UI hardcodés en FR (sections CA, Backfill, Toggle, Sandbox 5 boutons). Pas de namespace `settings.security.*` ni `settings.sandbox.*` dans `messages/fr.json` + `messages/en.json`.
-- **Impact** : un user EN voit du FR sur ces 2 pages. Pas bloquant pour le MVP S2M Maroc (utilisateurs francophones).
-- **Solution future** : extraire toutes les chaînes UI vers `useTranslations("settings.security")` + `useTranslations("settings.sandbox")` ; ajouter clés FR/EN.
-- **Priorité** : basse (UX cosmétique).
-- **Phase cible** : Phase 3.x ou jalon polish UX dédié.
-
-### DETTE-LIC-016 — Tests d'intégration `createClientUseCase` mode PKI obligatoire absents + signature dual-mode
-
-- **Cause** : Phase 3.D — `CreateClientUseCase` accepte `settingRepository?` et `options?` optionnels pour rétrocompat avec 14+ tests d'intégration legacy (entité, licence, licence-article, licence-produit, renouvellement, volume-history) qui instanciaient `new CreateClientUseCase(...)` à 3 args. Sans cette rétrocompat, ces tests cassent au typecheck. La rétrocompat actuelle introduit une logique conditionnelle (`if (settingRepo !== undefined && options !== undefined) ... else skip PKI`) — sale niveau architecture.
-- **Impact** : la couverture du chemin PKI obligatoire (3.D strict) n'est pas testée — uniquement le chemin legacy l'est. La règle 3.D `throw SPX-LIC-411 si CA absente` n'est validée que par revue de code.
-- **Solution future** :
-  1. Extraire un port `ClientCertIssuer` (interface) injectable à 4e position obligatoire.
-  2. Adapter `CryptoClientCertIssuer` (utilise `settingRepository` + `appMasterKey`) pour la prod (composition-root).
-  3. `MockClientCertIssuer` réutilisable pour tous les tests legacy d'intégration (renvoie cert dummy).
-  4. Refactor `CreateClientUseCase` pour supprimer les chemins conditionnels et faire de l'issuer une dépendance obligatoire.
-  5. Écrire `create-client.usecase.int.spec.ts` qui teste à la fois le chemin happy + SPX-LIC-411.
-- **Priorité** : moyenne (sale architecture + test coverage manquant sur chemin sécurité critique).
-- **Phase cible** : Phase 3.x (cleanup post-3.H).
+- **Solution Phase 16** : 3 tests PKI dual-mode ajoutés à `create-client.usecase.spec.ts` :
+  1. **CA présente** : cert client généré + `client_private_key_enc` + `client_certificate_pem` + `client_certificate_expires_at` persistés + audit `CLIENT_CREATED` + `CERTIFICATE_ISSUED` dans la même tx.
+  2. **CA absente** : throw SPX-LIC-411 + aucun client persisté (pré-check hors tx).
+  3. **PKI + contacts** : atomicité préservée (cert + Siège + 2 contacts dans la même tx — 4 audits posés).
+- **Fixtures réelles** : `generateRsaKeyPair()` + `generateCACert()` + `packCARecord()` insérés dans `lic_settings` (clé `s2m_root_ca`) avant chaque test PKI. `appMasterKey` aléatoire généré par test. Variante `useCasePki` du use-case avec `settingRepository` + `contactRepository` câblés.
+- **Architecture dual-mode conservée** : la solution future "port `ClientCertIssuer` obligatoire" reste pertinente pour un cleanup architectural plus tard, mais la couverture est maintenant complète.
 
 ### ~~DETTE-LIC-017 — Section contacts par type embarquée dans `ClientDialog`~~ — **résolue Phase 14 (Chantier D)**
 
@@ -636,30 +629,55 @@ L'édition embarquée des contacts existants en mode edit (ajout/edit/delete inl
 - **Priorité** : basse (cohérence documentaire, pas de blocage technique).
 - **Phase cible** : Phase 16+ ou réception PDF v2.1.
 
-### DETTE-LIC-021 — MFA TOTP différé (audit Master C2)
+### DETTE-LIC-021 — MFA TOTP différé (audit Master C2) — **plan définitif Phase 16**
 
-- **Cause** : Audit Master Mai 2026 a identifié l'absence de MFA (TOTP / Authenticator App) sur le login back-office. Acceptable Phase 15 pour mono-tenant interne avec audience SADMIN/ADMIN restreinte (≤20 comptes BO S2M, accès depuis réseau corporate).
-- **Impact** : un attaquant qui obtient un mot de passe SADMIN par phishing/leak n'est pas bloqué par un facteur supplémentaire. Risque atténué Phase 15 par : (a) brute-force lockout C1, (b) cookies session SameSite=strict, (c) bcrypt cost 10.
-- **Solution future** :
-  1. Module `mfa/` hexagonal avec port `TotpProvider` + adapter `OtpauthTotpProvider` (lib `otpauth`).
-  2. Migration `lic_users.mfa_secret_enc text NULL` (chiffré AES-GCM `APP_MASTER_KEY`) + `mfa_enrolled boolean`.
-  3. Flow d'enrôlement : QR code provisioning → vérification TOTP → activation.
-  4. Step login : si `mfa_enrolled=true`, exiger code TOTP avant émission JWT.
-  5. Code de récupération hash bcrypt en BD pour secours.
-- **Priorité** : moyenne (sécurité défense en profondeur). Devient haute si déploiement client multi-banques avec accès distant SADMIN ou audit régulateur.
-- **Phase cible** : Phase 16+ (jalon dédié sécurité auth post-MVP).
+- **Statut Phase 16** : volontairement différé post-déploiement client v1. Le plan ci-dessous est figé pour l'implémentation future (Phase 17+ ou demande client).
+- **Cause** : Audit Master Mai 2026 a identifié l'absence de MFA (TOTP / Authenticator App) sur le login back-office. Acceptable mono-tenant interne avec audience SADMIN/ADMIN restreinte (≤20 comptes BO S2M, accès depuis réseau corporate).
+- **Impact** : un attaquant qui obtient un mot de passe SADMIN par phishing/leak n'est pas bloqué par un facteur supplémentaire. Risque atténué Phases 15-16 par :
+  - **(a) Brute-force lockout** (Phase 15 C1) : 5 échecs consécutifs → 60 min lockout + audit `LOGIN_FAILED_LOCKOUT`.
+  - **(b) Cookies session** : `SameSite=strict` + `httpOnly` + `secure` en prod.
+  - **(c) bcrypt cost 10** : ~100 ms/hash, ralentit les attaques offline si dump BD.
+  - **(d) Audit lectures sensibles** (Phase 16 C3) : `CLIENT_READ` + `EXPORT_CSV_*` tracés → forensics post-incident.
+- **Plan définitif** (à exécuter Phase 17+ si déclenchement) :
+  1. **Module hexagonal `mfa/`** :
+     - `domain/mfa-secret.entity.ts` : entité MfaSecret (encryptedSecret, recoveryCodesHashes[]).
+     - `ports/totp-provider.ts` : abstract class avec `generateSecret()`, `verifyCode(secret, code, window=1)`, `generateProvisioningUri(account, secret)`.
+     - `adapters/otpauth/totp-provider.otpauth.ts` : impl via lib `otpauth` (RFC 6238 standard).
+     - `application/enroll-mfa.usecase.ts`, `verify-mfa.usecase.ts`, `disable-mfa.usecase.ts`, `regenerate-recovery-codes.usecase.ts`.
+  2. **Migration 0014 — schéma users** :
+     - `mfa_secret_enc text NULL` (chiffré AES-256-GCM avec `APP_MASTER_KEY`, format `iv:tag:ct`).
+     - `mfa_enabled boolean NOT NULL DEFAULT false`.
+     - `mfa_recovery_codes jsonb NULL` (array de hashes bcrypt — 10 codes one-shot).
+     - `mfa_enrolled_at timestamptz NULL`.
+  3. **Flow d'enrôlement (UI `/profile/mfa/enroll`)** :
+     - Génère secret aléatoire (32 octets base32) + chiffre AES-GCM avant persistance.
+     - Affiche QR code provisioning (otpauth://totp/...).
+     - User scanne avec Google Authenticator / Authy / 1Password.
+     - User saisit code 6 chiffres pour activation → `verifyCode()` → `mfa_enabled=true`.
+     - Affiche 10 codes de récupération one-shot (hashs persistés en BD).
+  4. **Step login (`auth/config.ts`)** :
+     - Si `mfa_enabled=true` après vérif password → ne PAS encore émettre JWT complet.
+     - Émettre JWT court-durée (5 min, `mfa_pending: true`) → redirige `/login/mfa-challenge`.
+     - Page `/login/mfa-challenge` : input 6 chiffres → vérif TOTP → JWT complet.
+     - Bypass via code de récupération : if input matches one of the bcrypt hashes → consume + JWT complet.
+  5. **Audit** : `MFA_ENROLLED`, `MFA_DISABLED`, `MFA_VERIFIED`, `MFA_RECOVERY_USED`, `MFA_FAILED_LOCKOUT` (réutilise C1 lockout sur les codes TOTP).
+  6. **Tests** : enroll + verify happy path, mauvais code, recovery code, lockout après 5 échecs TOTP, disable.
+- **Priorité** : moyenne (sécurité défense en profondeur). Devient **haute** si :
+  - Déploiement client multi-banques avec accès distant SADMIN.
+  - Audit régulateur (Bank Al-Maghrib, BCEAO) demande facteur multiple.
+  - Incident sécurité (phishing réussi sur un BO S2M).
+- **Phase cible** : Phase 17+ (jalon dédié sécurité auth post-déploiement client v1).
 
-### DETTE-LIC-022 — Audit des lectures sensibles différé (audit Master C3)
+### ~~DETTE-LIC-022 — Audit des lectures sensibles~~ — **résolue Phase 16 (périmètre MVP minimal)**
 
-- **Cause** : Audit Master Mai 2026 a identifié que `lic_audit_log` capture exclusivement les **mutations** (CREATE/UPDATE/DELETE/STATUS_CHANGED, etc.) — aucune entrée pour les **lectures** sensibles (consultation détail client, export CSV, téléchargement `.lic`). RGPD encourage l'audit "qui consulte quoi" pour les données personnelles (contacts clients).
-- **Impact** : impossible de reconstruire le journal des consultations en cas de demande RGPD ou enquête sécurité. Limitation acceptable Phase 15 pour MVP back-office mono-tenant interne.
-- **Solution future** :
-  1. Étendre `AuditEntry` avec actions `LIST` / `READ_DETAIL` / `EXPORT_CSV` / `DOWNLOAD_LIC` (nouvel enum `audit_action_kind` ou prefix convention).
-  2. Décorer les use-cases lecture (`getClientUseCase`, `listClientsUseCase`, `exportLicencesCsvUseCase`, `generateLicenceFichierUseCase` côté lecture) avec audit après succès.
-  3. Réfléchir au volume / coût stockage : 1 entrée par GET = volume potentiel 10-100× supérieur aux mutations. Politique de rétention dédiée (ex: lectures conservées 90 jours, mutations 5 ans).
-  4. Filtre / pagination dédiée sur les actions de lecture dans `/audit` UI (séparer onglets "mutations" vs "lectures").
-- **Priorité** : moyenne (compliance RGPD, faisabilité technique faible — pattern audit déjà en place).
-- **Phase cible** : Phase 16+ ou demande compliance régulateur.
+- **Solution Phase 16** : 4 actions audit ajoutées + use-cases instrumentés best-effort :
+  - **`CLIENT_READ`** : `getClientUseCase` accepte `actorId?` + ports audit/user optionnels. Câblé cross-module dans composition-root. Émis quand l'utilisateur consulte le détail d'un client (page `/clients/[id]/info`).
+  - **`FICHIER_LOG_READ`** : `listFichiersByLicenceUseCase` même pattern — câblé cross-module, prêt à recevoir actorId quand un consommateur UI direct sera ajouté.
+  - **`EXPORT_CSV_LICENCES`** + **`EXPORT_CSV_RENOUVELLEMENTS`** : audit dans `reports/_actions.ts` après chaque export réussi (pattern Server Action via `recordAuditEntryUseCase`).
+- **Pattern best-effort** : try/catch + log Pino warn sur échec audit (l'erreur d'audit ne propage pas — la lecture/export reste OK pour l'utilisateur).
+- **Limitation acceptée** : seul `clients/[id]/info` propage `actorId` côté Server Component (les layouts + listings restent sans audit pour ne pas spammer l'audit log avec des entrées par chaque navigation).
+- **Politique de rétention** différée : la séparation audits "mutations 5 ans" vs "lectures 90 jours" reste à définir si volume devient un souci (volume actuel : ~100-500 lectures/jour estimé sur back-office S2M ≤20 BO, négligeable face aux mutations).
+- **Phase cible "extension complète"** : si compliance régulateur (Bank Al-Maghrib, BCEAO) demande audit exhaustif des consultations PII, étendre le pattern aux autres use-cases lecture (`listClientsUseCase`, `getLicenceUseCase`, etc.) et ajouter UI audit-query filtrée par "kind" (mutation vs lecture).
 
 ### DETTE-LIC-010 — Liste `typeContactCode` statique dans `ContactDialog`
 
