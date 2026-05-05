@@ -18,8 +18,9 @@ import { getTranslations } from "next-intl/server";
 import { Card, CardContent } from "@/components/ui/card";
 
 export interface PhaseStubProps {
-  /** Numéro de phase d'arrivée (ex: "3", "6", "8", "12"). */
-  readonly phase: string;
+  /** Numéro de phase d'arrivée (ex: "3", "6", "8", "12"). Si `null` (T-04),
+   *  affiche "Non implémenté ({label})" au lieu de "Disponible Phase X". */
+  readonly phase: string | null;
   /** Label court de l'onglet (ex: "Sécurité PKI"). */
   readonly label: string;
   /** Description optionnelle plus longue (1-2 phrases). */
@@ -28,12 +29,13 @@ export interface PhaseStubProps {
 
 export async function PhaseStub({ phase, label, description }: PhaseStubProps) {
   const t = await getTranslations("settings.stub");
+  const banner = phase === null ? t("notImplemented", { label }) : t("available", { phase });
   return (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center gap-4 px-8 py-16 text-center">
         <Construction className="text-muted-foreground size-12" aria-hidden />
         <p className="text-muted-foreground text-sm font-medium uppercase tracking-wide">
-          {t("available", { phase })}
+          {banner}
         </p>
         <h2 className="font-display text-foreground text-xl">{label}</h2>
         {description !== undefined && (
