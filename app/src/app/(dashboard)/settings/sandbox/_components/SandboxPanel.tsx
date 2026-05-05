@@ -1,12 +1,14 @@
 "use client";
 
 // ==============================================================================
-// LIC v2 — UI sandbox PKI (Phase 3.F)
+// LIC v2 — UI sandbox PKI (Phase 3.F, i18n Phase 16 — DETTE-LIC-015)
 //
 // 5 outils indépendants — règle L16 : ZÉRO écriture BD, tout en mémoire.
 // ==============================================================================
 
 import { useState, useTransition } from "react";
+
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
@@ -30,6 +32,7 @@ function downloadAsFile(content: string, filename: string, mime = "text/plain"):
 }
 
 export function SandboxPanel(): React.JSX.Element {
+  const t = useTranslations("settings.sandbox");
   const [isPending, startTransition] = useTransition();
 
   // Section 1 — Générer paire RSA
@@ -74,10 +77,8 @@ export function SandboxPanel(): React.JSX.Element {
     <div className="space-y-8">
       {/* ===== Section 1 — Générer paire RSA ===== */}
       <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">1. Générer paire RSA test</h2>
-        <p className="text-spx-ink/70 mt-1 text-sm">
-          Crée une paire RSA-4096 éphémère en mémoire. Aucune persistance.
-        </p>
+        <h2 className="text-lg font-semibold">{t("section1.title")}</h2>
+        <p className="text-spx-ink/70 mt-1 text-sm">{t("section1.description")}</p>
         <Button
           className="mt-3"
           disabled={isPending}
@@ -88,12 +89,14 @@ export function SandboxPanel(): React.JSX.Element {
             });
           }}
         >
-          Générer
+          {t("section1.button")}
         </Button>
         {rsaPair !== null && (
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div>
-              <label className="text-spx-ink/60 text-xs font-medium">Clé privée (PKCS#8 PEM)</label>
+              <label className="text-spx-ink/60 text-xs font-medium">
+                {t("section1.labelPrivate")}
+              </label>
               <textarea
                 readOnly
                 value={rsaPair.privateKeyPem}
@@ -101,7 +104,9 @@ export function SandboxPanel(): React.JSX.Element {
               />
             </div>
             <div>
-              <label className="text-spx-ink/60 text-xs font-medium">Clé publique (SPKI PEM)</label>
+              <label className="text-spx-ink/60 text-xs font-medium">
+                {t("section1.labelPublic")}
+              </label>
               <textarea
                 readOnly
                 value={rsaPair.publicKeyPem}
@@ -114,12 +119,10 @@ export function SandboxPanel(): React.JSX.Element {
 
       {/* ===== Section 2 — Signer .lic ===== */}
       <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">2. Signer un .lic test</h2>
-        <p className="text-spx-ink/70 mt-1 text-sm">
-          Signe un payload JSON exemple avec une clé privée RSA fournie.
-        </p>
+        <h2 className="text-lg font-semibold">{t("section2.title")}</h2>
+        <p className="text-spx-ink/70 mt-1 text-sm">{t("section2.description")}</p>
         <div className="mt-3 space-y-2">
-          <label className="text-xs font-medium">Payload JSON</label>
+          <label className="text-xs font-medium">{t("section2.labelPayload")}</label>
           <textarea
             value={signPayloadIn}
             onChange={(e) => {
@@ -127,7 +130,7 @@ export function SandboxPanel(): React.JSX.Element {
             }}
             className="border-spx-ink/20 h-24 w-full rounded border p-2 font-mono text-xs"
           />
-          <label className="text-xs font-medium">Clé privée PEM</label>
+          <label className="text-xs font-medium">{t("section2.labelPrivateKey")}</label>
           <textarea
             value={signPrivateKey}
             onChange={(e) => {
@@ -150,14 +153,17 @@ export function SandboxPanel(): React.JSX.Element {
             });
           }}
         >
-          Signer + télécharger .lic
+          {t("section2.button")}
         </Button>
         {signResult !== "" && (
           <>
+            <label className="text-spx-ink/60 mt-3 block text-xs font-medium">
+              {t("section2.labelResult")}
+            </label>
             <textarea
               readOnly
               value={signResult}
-              className="border-spx-ink/20 mt-3 h-32 w-full rounded border bg-gray-50 p-2 font-mono text-xs"
+              className="border-spx-ink/20 mt-1 h-32 w-full rounded border bg-gray-50 p-2 font-mono text-xs"
             />
             <Button
               variant="outline"
@@ -166,7 +172,7 @@ export function SandboxPanel(): React.JSX.Element {
                 downloadAsFile(signResult, "test.lic", "application/json");
               }}
             >
-              Télécharger
+              {t("section1.button")}
             </Button>
           </>
         )}
@@ -174,9 +180,10 @@ export function SandboxPanel(): React.JSX.Element {
 
       {/* ===== Section 3 — Vérifier signature ===== */}
       <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">3. Vérifier signature</h2>
+        <h2 className="text-lg font-semibold">{t("section3.title")}</h2>
+        <p className="text-spx-ink/70 mt-1 text-sm">{t("section3.description")}</p>
         <div className="mt-3 space-y-2">
-          <label className="text-xs font-medium">Contenu .lic</label>
+          <label className="text-xs font-medium">{t("section3.labelLic")}</label>
           <textarea
             value={verifyLic}
             onChange={(e) => {
@@ -184,7 +191,7 @@ export function SandboxPanel(): React.JSX.Element {
             }}
             className="border-spx-ink/20 h-32 w-full rounded border p-2 font-mono text-xs"
           />
-          <label className="text-xs font-medium">Clé publique PEM</label>
+          <label className="text-xs font-medium">{t("section3.labelPublicKey")}</label>
           <textarea
             value={verifyPublicKey}
             onChange={(e) => {
@@ -207,7 +214,7 @@ export function SandboxPanel(): React.JSX.Element {
             });
           }}
         >
-          Vérifier
+          {t("section3.button")}
         </Button>
         {verifyResult !== null && (
           <p
@@ -217,23 +224,25 @@ export function SandboxPanel(): React.JSX.Element {
                 : "border border-red-300 bg-red-50 text-red-800"
             }`}
           >
-            {verifyResult.valid ? "✓ Signature valide" : "✗ Invalide"} — {verifyResult.reason}
+            {verifyResult.valid ? `✓ ${t("section3.valid")}` : `✗ ${t("section3.invalid")}`} —{" "}
+            {verifyResult.reason}
           </p>
         )}
       </section>
 
       {/* ===== Section 4 — Chiffrer .hc ===== */}
       <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">4. Chiffrer un .hc test</h2>
+        <h2 className="text-lg font-semibold">{t("section4.title")}</h2>
+        <p className="text-spx-ink/70 mt-1 text-sm">{t("section4.description")}</p>
         <div className="mt-3 space-y-2">
-          <label className="text-xs font-medium">Clé AES-256 base64 (32 octets)</label>
+          <label className="text-xs font-medium">{t("section4.labelAesKey")}</label>
           <div className="flex gap-2">
             <input
               value={aesKey}
               onChange={(e) => {
                 setAesKey(e.target.value);
               }}
-              placeholder="44 caractères base64"
+              placeholder="base64 32 bytes"
               className="border-spx-ink/20 flex-1 rounded border p-2 font-mono text-xs"
             />
             <Button
@@ -246,10 +255,10 @@ export function SandboxPanel(): React.JSX.Element {
                 });
               }}
             >
-              Générer
+              {t("section4.generateKey")}
             </Button>
           </div>
-          <label className="text-xs font-medium">Payload JSON</label>
+          <label className="text-xs font-medium">{t("section4.labelHcPayload")}</label>
           <textarea
             value={hcPayload}
             onChange={(e) => {
@@ -271,14 +280,17 @@ export function SandboxPanel(): React.JSX.Element {
             });
           }}
         >
-          Chiffrer
+          {t("section4.button")}
         </Button>
         {encryptedHc !== "" && (
           <>
+            <label className="text-spx-ink/60 mt-3 block text-xs font-medium">
+              {t("section4.labelEncrypted")}
+            </label>
             <textarea
               readOnly
               value={encryptedHc}
-              className="border-spx-ink/20 mt-3 h-32 w-full rounded border bg-gray-50 p-2 font-mono text-xs"
+              className="border-spx-ink/20 mt-1 h-32 w-full rounded border bg-gray-50 p-2 font-mono text-xs"
             />
             <Button
               variant="outline"
@@ -287,7 +299,7 @@ export function SandboxPanel(): React.JSX.Element {
                 downloadAsFile(encryptedHc, "test.hc", "application/json");
               }}
             >
-              Télécharger
+              {t("section1.button")}
             </Button>
           </>
         )}
@@ -295,9 +307,10 @@ export function SandboxPanel(): React.JSX.Element {
 
       {/* ===== Section 5 — Déchiffrer .hc ===== */}
       <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">5. Déchiffrer un .hc</h2>
+        <h2 className="text-lg font-semibold">{t("section5.title")}</h2>
+        <p className="text-spx-ink/70 mt-1 text-sm">{t("section5.description")}</p>
         <div className="mt-3 space-y-2">
-          <label className="text-xs font-medium">Contenu .hc</label>
+          <label className="text-xs font-medium">{t("section5.labelEncrypted")}</label>
           <textarea
             value={decryptHcInput}
             onChange={(e) => {
@@ -305,7 +318,7 @@ export function SandboxPanel(): React.JSX.Element {
             }}
             className="border-spx-ink/20 h-32 w-full rounded border p-2 font-mono text-xs"
           />
-          <label className="text-xs font-medium">Clé partagée (base64)</label>
+          <label className="text-xs font-medium">{t("section5.labelKey")}</label>
           <input
             value={decryptKeyInput}
             onChange={(e) => {
@@ -327,20 +340,25 @@ export function SandboxPanel(): React.JSX.Element {
             });
           }}
         >
-          Déchiffrer
+          {t("section5.button")}
         </Button>
         {decryptResult !== null && (
           <div className="mt-3">
             {decryptResult.error !== null ? (
               <p className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
-                ✗ {decryptResult.error}
+                ✗ {t("section5.errorPrefix")} — {decryptResult.error}
               </p>
             ) : (
-              <textarea
-                readOnly
-                value={decryptResult.payload}
-                className="h-32 w-full rounded border border-green-300 bg-green-50 p-2 font-mono text-xs text-green-900"
-              />
+              <>
+                <label className="text-spx-ink/60 block text-xs font-medium">
+                  {t("section5.labelPayload")}
+                </label>
+                <textarea
+                  readOnly
+                  value={decryptResult.payload}
+                  className="mt-1 h-32 w-full rounded border border-green-300 bg-green-50 p-2 font-mono text-xs text-green-900"
+                />
+              </>
             )}
           </div>
         )}

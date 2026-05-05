@@ -157,6 +157,85 @@
         "submit": "Save",
         "submitting": "..."
       }
+    },
+    "security": {
+      "title": "PKI security",
+      "subtitle": "S2M certificate authority and client certificates management.",
+      "ca": {
+        "title": "S2M Certificate Authority",
+        "description": "The S2M CA signs all client certificates used to generate .lic files.",
+        "statusLabel": "Status",
+        "statusActive": "Active",
+        "subjectLabel": "Subject",
+        "generatedAtLabel": "Generated at",
+        "expiresAtLabel": "Expires at",
+        "warningMissing": "⚠ S2M CA is not generated. It is required to create clients with their certificate.",
+        "generate": "Generate the CA",
+        "generating": "Generating…",
+        "download": "Download s2m-ca.pem",
+        "regenWarning": "⚠ Regenerating the CA would invalidate all existing client certificates. Operation not supported in Phase 3 — contact the S2M Reference team."
+      },
+      "expose": {
+        "title": "Public CA endpoint",
+        "description": "Enables the /.well-known/s2m-ca.pem route to allow S2M clients to retrieve the CA public key. Disabled: 404.",
+        "toggleActive": "Publicly exposed (active)",
+        "toggleInactive": "Publicly exposed (disabled)"
+      },
+      "backfill": {
+        "title": "Client certificates backfill",
+        "allOk": "All clients have a certificate. No action required.",
+        "pending": "{count} client(s) without certificate — deferred generation.",
+        "run": "Run backfill",
+        "running": "Backfill in progress…",
+        "done": "Backfill complete: {processed} certified.",
+        "doneWithFailed": "Backfill complete: {processed} certified, {failed} failed."
+      }
+    },
+    "sandbox": {
+      "title": "PKI Sandbox",
+      "subtitle": "Test tools for signing, verification and encryption. All operations are in memory — no data persisted.",
+      "section1": {
+        "title": "1. Generate test RSA pair",
+        "description": "Creates an ephemeral RSA-4096 key pair in memory. No persistence.",
+        "button": "Generate",
+        "labelPrivate": "Private key (PKCS#8 PEM)",
+        "labelPublic": "Public key (SPKI PEM)"
+      },
+      "section2": {
+        "title": "2. Sign test .lic",
+        "description": "Signs an arbitrary JSON payload with an RSA private key — equivalent to prod .lic flow.",
+        "labelPayload": "JSON payload",
+        "labelPrivateKey": "PKCS#8 PEM private key",
+        "button": "Sign",
+        "labelResult": "Result (.lic with JSON envelope + base64 signature)"
+      },
+      "section3": {
+        "title": "3. Verify .lic signature",
+        "description": "Validates a .lic signature with the corresponding public key.",
+        "labelLic": "Full .lic (with signature envelope)",
+        "labelPublicKey": "SPKI PEM public key",
+        "button": "Verify",
+        "valid": "Valid signature",
+        "invalid": "Invalid signature"
+      },
+      "section4": {
+        "title": "4. Encrypt test .hc (AES-256-GCM)",
+        "description": "Encrypts a JSON payload with a shared AES-256 key — .hc healthcheck flow.",
+        "generateKey": "Generate AES-256 key",
+        "labelAesKey": "AES-256 key (base64)",
+        "labelHcPayload": ".hc payload",
+        "button": "Encrypt",
+        "labelEncrypted": "Encrypted result (iv:tag:ciphertext)"
+      },
+      "section5": {
+        "title": "5. Decrypt test .hc",
+        "description": "Decrypts a .hc with the corresponding shared key.",
+        "labelEncrypted": "Encrypted content",
+        "labelKey": "AES-256 key",
+        "button": "Decrypt",
+        "labelPayload": "Decrypted payload",
+        "errorPrefix": "Error"
+      }
     }
   },
   "clients": {

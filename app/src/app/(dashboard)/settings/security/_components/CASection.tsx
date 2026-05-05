@@ -1,13 +1,15 @@
 "use client";
 
 // ==============================================================================
-// LIC v2 — UI section CA S2M (Phase 3.C)
+// LIC v2 — UI section CA S2M (Phase 3.C, i18n Phase 16 — DETTE-LIC-015)
 //
 // Affiche le statut de la CA + bouton "Générer la CA" (SADMIN, désactivé si
 // CA déjà présente) + bouton "Télécharger s2m-ca.pem" (si CA présente).
 // ==============================================================================
 
 import { useState, useTransition } from "react";
+
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 
@@ -31,6 +33,7 @@ export function CASection({
   initialBackfillStatus,
   initialExposeCaPublic,
 }: CASectionProps): React.JSX.Element {
+  const t = useTranslations("settings.security");
   const [status, setStatus] = useState<CAStatusActionOutput>(initialStatus);
   const [backfillStatus, setBackfillStatus] = useState<BackfillStatusOutput>(initialBackfillStatus);
   const [backfillResult, setBackfillResult] = useState<{
@@ -116,23 +119,21 @@ export function CASection({
 
   return (
     <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
-      <h2 className="text-spx-ink text-lg font-semibold">Autorité de certification S2M</h2>
-      <p className="text-spx-ink/70 mt-1 text-sm">
-        La CA S2M signe tous les certificats clients utilisés pour générer les fichiers .lic.
-      </p>
+      <h2 className="text-spx-ink text-lg font-semibold">{t("ca.title")}</h2>
+      <p className="text-spx-ink/70 mt-1 text-sm">{t("ca.description")}</p>
 
       {status.exists ? (
         <dl className="mt-4 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-spx-ink/60 font-medium">Statut</dt>
-            <dd className="text-green-700">Active</dd>
+            <dt className="text-spx-ink/60 font-medium">{t("ca.statusLabel")}</dt>
+            <dd className="text-green-700">{t("ca.statusActive")}</dd>
           </div>
           <div>
-            <dt className="text-spx-ink/60 font-medium">Sujet</dt>
+            <dt className="text-spx-ink/60 font-medium">{t("ca.subjectLabel")}</dt>
             <dd>{status.subjectCN}</dd>
           </div>
           <div>
-            <dt className="text-spx-ink/60 font-medium">Générée le</dt>
+            <dt className="text-spx-ink/60 font-medium">{t("ca.generatedAtLabel")}</dt>
             <dd>
               {status.generatedAt !== null
                 ? new Date(status.generatedAt).toLocaleString("fr-FR")
@@ -140,34 +141,26 @@ export function CASection({
             </dd>
           </div>
           <div>
-            <dt className="text-spx-ink/60 font-medium">Expire le</dt>
+            <dt className="text-spx-ink/60 font-medium">{t("ca.expiresAtLabel")}</dt>
             <dd>
               {status.expiresAt !== null ? new Date(status.expiresAt).toLocaleString("fr-FR") : "—"}
             </dd>
           </div>
         </dl>
       ) : (
-        <p className="mt-4 text-sm font-medium text-orange-700">
-          ⚠ La CA S2M n&apos;est pas générée. Elle est requise pour créer des clients avec leur
-          certificat.
-        </p>
+        <p className="mt-4 text-sm font-medium text-orange-700">{t("ca.warningMissing")}</p>
       )}
 
       <div className="mt-6 flex flex-wrap gap-3">
         <Button onClick={handleGenerate} disabled={status.exists || isPending}>
-          {isPending ? "Génération…" : "Générer la CA"}
+          {isPending ? t("ca.generating") : t("ca.generate")}
         </Button>
         <Button variant="outline" onClick={handleDownload} disabled={!status.exists || isPending}>
-          Télécharger s2m-ca.pem
+          {t("ca.download")}
         </Button>
       </div>
 
-      {status.exists && (
-        <p className="text-spx-ink/60 mt-4 text-xs">
-          ⚠ Régénérer la CA invaliderait tous les certificats clients existants. Opération non
-          supportée Phase 3 — contacter l&apos;équipe Référentiel S2M.
-        </p>
-      )}
+      {status.exists && <p className="text-spx-ink/60 mt-4 text-xs">{t("ca.regenWarning")}</p>}
 
       {error !== null && (
         <p className="mt-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">
@@ -178,11 +171,8 @@ export function CASection({
       {/* Phase 3.G — Toggle endpoint public CA */}
       {status.exists && (
         <div className="border-spx-ink/10 mt-8 border-t pt-6">
-          <h3 className="text-spx-ink text-base font-semibold">Endpoint public CA</h3>
-          <p className="text-spx-ink/70 mt-1 text-sm">
-            Active la route <code className="font-mono">/.well-known/s2m-ca.pem</code> pour
-            permettre aux clients S2M de récupérer la clé publique CA. Désactivé : 404.
-          </p>
+          <h3 className="text-spx-ink text-base font-semibold">{t("expose.title")}</h3>
+          <p className="text-spx-ink/70 mt-1 text-sm">{t("expose.description")}</p>
           <label className="mt-3 inline-flex items-center gap-2">
             <input
               type="checkbox"
@@ -192,7 +182,7 @@ export function CASection({
               className="border-spx-ink/30 h-4 w-4 rounded"
             />
             <span className="text-spx-ink text-sm">
-              Exposer publiquement {exposeCaPublic ? "(actif)" : "(désactivé)"}
+              {exposeCaPublic ? t("expose.toggleActive") : t("expose.toggleInactive")}
             </span>
           </label>
         </div>
@@ -201,23 +191,27 @@ export function CASection({
       {/* Phase 3.E — Backfill clients sans certificat */}
       {status.exists && (
         <div className="border-spx-ink/10 mt-8 border-t pt-6">
-          <h3 className="text-spx-ink text-base font-semibold">Backfill certificats clients</h3>
+          <h3 className="text-spx-ink text-base font-semibold">{t("backfill.title")}</h3>
           <p className="text-spx-ink/70 mt-1 text-sm">
             {backfillStatus.pendingCount === 0
-              ? "Tous les clients ont un certificat. Aucune action requise."
-              : `${String(backfillStatus.pendingCount)} client(s) sans certificat — génération différée.`}
+              ? t("backfill.allOk")
+              : t("backfill.pending", { count: backfillStatus.pendingCount })}
           </p>
           <Button
             className="mt-3"
             onClick={handleBackfill}
             disabled={backfillStatus.pendingCount === 0 || isPending}
           >
-            {isPending ? "Backfill en cours…" : "Lancer le backfill"}
+            {isPending ? t("backfill.running") : t("backfill.run")}
           </Button>
           {backfillResult !== null && (
             <p className="mt-3 text-sm text-green-700">
-              Backfill terminé : {backfillResult.processed} certifié(s)
-              {backfillResult.failed > 0 && `, ${String(backfillResult.failed)} en échec`}.
+              {backfillResult.failed > 0
+                ? t("backfill.doneWithFailed", {
+                    processed: backfillResult.processed,
+                    failed: backfillResult.failed,
+                  })
+                : t("backfill.done", { processed: backfillResult.processed })}
             </p>
           )}
         </div>

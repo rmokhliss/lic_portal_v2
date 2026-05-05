@@ -157,6 +157,85 @@
         "submit": "Enregistrer",
         "submitting": "..."
       }
+    },
+    "security": {
+      "title": "Sécurité PKI",
+      "subtitle": "Gestion de l'autorité de certification S2M et des certificats clients.",
+      "ca": {
+        "title": "Autorité de certification S2M",
+        "description": "La CA S2M signe tous les certificats clients utilisés pour générer les fichiers .lic.",
+        "statusLabel": "Statut",
+        "statusActive": "Active",
+        "subjectLabel": "Sujet",
+        "generatedAtLabel": "Générée le",
+        "expiresAtLabel": "Expire le",
+        "warningMissing": "⚠ La CA S2M n'est pas générée. Elle est requise pour créer des clients avec leur certificat.",
+        "generate": "Générer la CA",
+        "generating": "Génération…",
+        "download": "Télécharger s2m-ca.pem",
+        "regenWarning": "⚠ Régénérer la CA invaliderait tous les certificats clients existants. Opération non supportée Phase 3 — contacter l'équipe Référentiel S2M."
+      },
+      "expose": {
+        "title": "Endpoint public CA",
+        "description": "Active la route /.well-known/s2m-ca.pem pour permettre aux clients S2M de récupérer la clé publique CA. Désactivé : 404.",
+        "toggleActive": "Exposer publiquement (actif)",
+        "toggleInactive": "Exposer publiquement (désactivé)"
+      },
+      "backfill": {
+        "title": "Backfill certificats clients",
+        "allOk": "Tous les clients ont un certificat. Aucune action requise.",
+        "pending": "{count} client(s) sans certificat — génération différée.",
+        "run": "Lancer le backfill",
+        "running": "Backfill en cours…",
+        "done": "Backfill terminé : {processed} certifié(s).",
+        "doneWithFailed": "Backfill terminé : {processed} certifié(s), {failed} en échec."
+      }
+    },
+    "sandbox": {
+      "title": "Sandbox PKI",
+      "subtitle": "Outils de test pour la signature, vérification et chiffrement. Toutes les opérations sont en mémoire — aucune donnée persistée.",
+      "section1": {
+        "title": "1. Générer paire RSA test",
+        "description": "Crée une paire RSA-4096 éphémère en mémoire. Aucune persistance.",
+        "button": "Générer",
+        "labelPrivate": "Clé privée (PKCS#8 PEM)",
+        "labelPublic": "Clé publique (SPKI PEM)"
+      },
+      "section2": {
+        "title": "2. Signer .lic test",
+        "description": "Signe un payload JSON arbitraire avec une clé privée RSA — équivalent du flow .lic prod.",
+        "labelPayload": "Payload JSON",
+        "labelPrivateKey": "Clé privée PKCS#8 PEM",
+        "button": "Signer",
+        "labelResult": "Résultat (.lic encadré JSON + signature base64)"
+      },
+      "section3": {
+        "title": "3. Vérifier signature .lic",
+        "description": "Valide la signature d'un .lic avec la clé publique correspondante.",
+        "labelLic": ".lic complet (avec encadrés signature)",
+        "labelPublicKey": "Clé publique SPKI PEM",
+        "button": "Vérifier",
+        "valid": "Signature valide",
+        "invalid": "Signature invalide"
+      },
+      "section4": {
+        "title": "4. Chiffrer .hc test (AES-256-GCM)",
+        "description": "Chiffre un payload JSON avec une clé AES-256 partagée — flow .hc healthcheck.",
+        "generateKey": "Générer clé AES-256",
+        "labelAesKey": "Clé AES-256 (base64)",
+        "labelHcPayload": "Payload .hc",
+        "button": "Chiffrer",
+        "labelEncrypted": "Résultat chiffré (iv:tag:ciphertext)"
+      },
+      "section5": {
+        "title": "5. Déchiffrer .hc test",
+        "description": "Déchiffre un .hc avec la clé partagée correspondante.",
+        "labelEncrypted": "Contenu chiffré",
+        "labelKey": "Clé AES-256",
+        "button": "Déchiffrer",
+        "labelPayload": "Payload déchiffré",
+        "errorPrefix": "Erreur"
+      }
     }
   },
   "clients": {

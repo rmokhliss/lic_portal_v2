@@ -1,6 +1,8 @@
 // ==============================================================================
-// LIC v2 — /settings/security (Phase 3.C — CA management)
+// LIC v2 — /settings/security (Phase 3.C — CA management, i18n Phase 16)
 // ==============================================================================
+
+import { getTranslations } from "next-intl/server";
 
 import { requireRolePage } from "@/server/infrastructure/auth";
 import { backfillClientCertificatesUseCase, getCAStatusUseCase } from "@/server/composition-root";
@@ -10,6 +12,7 @@ import { CASection } from "./_components/CASection";
 
 export default async function SettingsSecurityPage(): Promise<React.JSX.Element> {
   await requireRolePage(["SADMIN"]);
+  const t = await getTranslations("settings.security");
   const status = await getCAStatusUseCase.execute();
   const initialStatus = {
     exists: status.exists,
@@ -25,10 +28,8 @@ export default async function SettingsSecurityPage(): Promise<React.JSX.Element>
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-spx-ink text-2xl font-bold">Sécurité PKI</h1>
-        <p className="text-spx-ink/70 text-sm">
-          Gestion de l&apos;autorité de certification S2M et des certificats clients.
-        </p>
+        <h1 className="text-spx-ink text-2xl font-bold">{t("title")}</h1>
+        <p className="text-spx-ink/70 text-sm">{t("subtitle")}</p>
       </header>
 
       <CASection
