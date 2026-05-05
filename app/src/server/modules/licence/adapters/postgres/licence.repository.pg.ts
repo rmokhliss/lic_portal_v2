@@ -8,7 +8,7 @@
 // DESC en cursor pagination (uuidv7 ordre chronologique).
 // ==============================================================================
 
-import { and, desc, eq, ilike, inArray, like, lt, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, lt, sql } from "drizzle-orm";
 import type { drizzle } from "drizzle-orm/postgres-js";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 
@@ -109,27 +109,28 @@ export class LicenceRepositoryPg extends LicenceRepository {
     return { items, nextCursor, effectiveLimit: limit };
   }
 
+  // Phase 16 — DETTE-LIC-011 résolue : séquence PG `lic_licence_reference_seq`
+  // (migration 0013). `nextval()` est atomique côté PG, élimine la race
+  // condition pré-Phase-16 (SELECT MAX + INSERT non atomique). La séquence
+  // n'est PAS resetée par année — numérotation continue cross-années
+  // (ex: LIC-2027-123 si la dernière de 2026 était LIC-2026-122). Acceptable
+  // pour le cas d'usage S2M (les banques ne se basent pas sur la numérotation
+  // pour leur audit interne).
   async allocateNextReference(tx?: DbTransaction): Promise<string> {
     const target = (tx as PgDatabase<never> | undefined) ?? this.db;
     const year = new Date().getFullYear();
-    const prefix = `LIC-${String(year)}-`;
-
-    const rows = await target
-      .select({ reference: licences.reference })
-      .from(licences)
-      .where(like(licences.reference, `${prefix}%`))
-      .orderBy(desc(licences.reference))
-      .limit(1);
-
-    let next = 1;
-    const lastRef = rows[0]?.reference;
-    if (lastRef !== undefined) {
-      const match = /^LIC-\d{4}-(\d+)$/.exec(lastRef);
-      if (match?.[1] !== undefined) {
-        next = parseInt(match[1], 10) + 1;
-      }
+    const result = await target.execute<{ next: string }>(
+      sql`SELECT nextval('lic_licence_reference_seq')::text AS next`,
+    );
+    const row = (result as unknown as readonly { next: string }[])[0];
+    if (row === undefined) {
+      throw new InternalError({
+        code: "SPX-LIC-900",
+        message: "nextval('lic_licence_reference_seq') n'a retourné aucune ligne",
+      });
     }
-    return `${prefix}${String(next).padStart(3, "0")}`;
+    const n = Number(row.next);
+    return `LIC-${String(year)}-${String(n).padStart(3, "0")}`;
   }
 
   async save(licence: Licence, actorId: string, tx?: DbTransaction): Promise<PersistedLicence> {

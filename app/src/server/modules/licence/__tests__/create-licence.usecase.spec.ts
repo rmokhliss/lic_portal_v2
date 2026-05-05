@@ -73,7 +73,7 @@ async function seedClientWithSiege(): Promise<{ clientId: string; entiteId: stri
 }
 
 describe("CreateLicenceUseCase", () => {
-  it("INSERT lic_licences + reference LIC-{YYYY}-001 + audit LICENCE_CREATED", async () => {
+  it("INSERT lic_licences + reference LIC-{YYYY}-{NNN} + audit LICENCE_CREATED", async () => {
     const { clientId, entiteId } = await seedClientWithSiege();
     const result = await useCase.execute(
       {
@@ -86,7 +86,9 @@ describe("CreateLicenceUseCase", () => {
     );
 
     const year = new Date().getFullYear();
-    expect(result.licence.reference).toBe(`LIC-${String(year)}-001`);
+    // Phase 16 — DETTE-LIC-011 résolue : la séquence PG est globale (non
+    // resetée par test), on vérifie le format au lieu de la valeur exacte.
+    expect(result.licence.reference).toMatch(new RegExp(`^LIC-${String(year)}-\\d{3,}$`));
     expect(result.licence.status).toBe("ACTIF");
     expect(result.licence.version).toBe(0);
 
@@ -97,7 +99,7 @@ describe("CreateLicenceUseCase", () => {
     expect(audit[0]?.action).toBe("LICENCE_CREATED");
   });
 
-  it("alloue références incrémentales LIC-{YYYY}-001, 002, 003", async () => {
+  it("alloue références incrémentales et distinctes (séquence PG)", async () => {
     const { clientId, entiteId } = await seedClientWithSiege();
     const r1 = await useCase.execute(
       { clientId, entiteId, dateDebut: new Date("2026-01-01"), dateFin: new Date("2027-12-31") },
@@ -111,10 +113,17 @@ describe("CreateLicenceUseCase", () => {
       { clientId, entiteId, dateDebut: new Date("2026-01-01"), dateFin: new Date("2027-12-31") },
       ACTOR_ID,
     );
+    // Phase 16 — DETTE-LIC-011 : la séquence PG garantit unicité + monotonie
+    // mais pas reset à 001 entre tests. On vérifie le format + que les 3
+    // valeurs sont strictement croissantes.
     const year = new Date().getFullYear();
-    expect(r1.licence.reference).toBe(`LIC-${String(year)}-001`);
-    expect(r2.licence.reference).toBe(`LIC-${String(year)}-002`);
-    expect(r3.licence.reference).toBe(`LIC-${String(year)}-003`);
+    const refRegex = new RegExp(`^LIC-${String(year)}-(\\d{3,})$`);
+    const n1 = Number(refRegex.exec(r1.licence.reference)?.[1] ?? "0");
+    const n2 = Number(refRegex.exec(r2.licence.reference)?.[1] ?? "0");
+    const n3 = Number(refRegex.exec(r3.licence.reference)?.[1] ?? "0");
+    expect(n1).toBeGreaterThan(0);
+    expect(n2).toBe(n1 + 1);
+    expect(n3).toBe(n2 + 1);
   });
 
   it("rejette dateFin <= dateDebut — SPX-LIC-737", async () => {
