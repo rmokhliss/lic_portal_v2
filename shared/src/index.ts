@@ -33,15 +33,17 @@ export type { SettingsGeneralInput, SettingsGeneralKey } from "./schemas/setting
 export { CreateUserSchema, UpdateUserSchema } from "./schemas/user.schema";
 export type { CreateUserInput, UpdateUserInput, UserRoleInput } from "./schemas/user.schema";
 
-// --- Schémas client EC-Clients (Phase 4.B) ---------------------------------
+// --- Schémas client EC-Clients (Phase 4.B + Phase 14 contacts à création) --
 export {
   ChangeClientStatusSchema,
+  ContactInputSchema,
   CreateClientSchema,
   UpdateClientSchema,
 } from "./schemas/client.schema";
 export type {
   ChangeClientStatusInput,
   ClientStatutInput,
+  ContactInput,
   CreateClientInput,
   UpdateClientInput,
 } from "./schemas/client.schema";

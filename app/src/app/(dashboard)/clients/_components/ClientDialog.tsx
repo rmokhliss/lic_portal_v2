@@ -50,7 +50,22 @@ export interface ClientDialogProps {
   /** T-01 Volet A : team-members SALES / AM pour les selects sales/AM. */
   readonly salesList: readonly RefItem[];
   readonly amList: readonly RefItem[];
+  /** Phase 14 — DETTE-LIC-017 : types contact pour la section contacts à
+   *  création. Si liste vide, la section affiche un message de configuration. */
+  readonly typesContactList?: readonly RefItem[];
 }
+
+/** Phase 14 — état local d'un contact en cours de saisie. */
+interface DraftContact {
+  readonly localId: string;
+  typeContactCode: string;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string;
+}
+
+const MAX_CONTACTS_AT_CREATION = 5;
 
 export function ClientDialog({
   open,
@@ -62,10 +77,13 @@ export function ClientDialog({
   languesList,
   salesList,
   amList,
+  typesContactList = [],
 }: ClientDialogProps) {
   const t = useTranslations("clients.dialog");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
+  // Phase 14 — DETTE-LIC-017 : état local des contacts saisis à la création.
+  const [contacts, setContacts] = useState<DraftContact[]>([]);
 
   const onSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -90,6 +108,20 @@ export function ClientDialog({
       for (const f of fields) {
         const v = strOpt(fd.get(f));
         if (v !== undefined) payload[f] = v;
+      }
+
+      // Phase 14 : payload contacts (filtre lignes incomplètes côté client).
+      const validContacts = contacts.filter(
+        (c) => c.typeContactCode.length > 0 && c.nom.trim().length > 0,
+      );
+      if (validContacts.length > 0) {
+        payload.contacts = validContacts.map((c) => ({
+          typeContactCode: c.typeContactCode,
+          nom: c.nom.trim(),
+          ...(c.prenom.trim().length > 0 ? { prenom: c.prenom.trim() } : {}),
+          ...(c.email.trim().length > 0 ? { email: c.email.trim() } : {}),
+          ...(c.telephone.trim().length > 0 ? { telephone: c.telephone.trim() } : {}),
+        }));
       }
 
       startTransition(() => {
@@ -249,6 +281,15 @@ export function ClientDialog({
             <Field name="siegeNom" label={t("fields.siegeNom")} maxLength={200} />
           )}
 
+          {/* Phase 14 — DETTE-LIC-017 résolue : section contacts à création. */}
+          {mode === "create" && (
+            <ContactsSection
+              contacts={contacts}
+              setContacts={setContacts}
+              typesContactList={typesContactList}
+            />
+          )}
+
           {/* T-01 : section contacts en mode edit — lien vers la page dédiée
                où l'admin gère les contacts groupés par type (ACHAT, FACTURATION,
                TECHNIQUE, etc.). L'embedded edit est différé (DETTE-LIC-017). */}
@@ -377,4 +418,167 @@ function strOpt(v: FormDataEntryValue | null): string | undefined {
   if (typeof v !== "string") return undefined;
   const s = v.trim();
   return s.length === 0 ? undefined : s;
+}
+
+/** Phase 14 — DETTE-LIC-017 : saisie de contacts groupés à la création client.
+ *  Tous les contacts sont attachés à l'entité Siège (créée dans la même tx).
+ *  Cap UI : 5 contacts max — au-delà, l'admin passe par la page contacts dédiée. */
+function ContactsSection({
+  contacts,
+  setContacts,
+  typesContactList,
+}: {
+  readonly contacts: DraftContact[];
+  readonly setContacts: React.Dispatch<React.SetStateAction<DraftContact[]>>;
+  readonly typesContactList: readonly RefItem[];
+}) {
+  const canAdd = contacts.length < MAX_CONTACTS_AT_CREATION;
+  const noTypes = typesContactList.length === 0;
+
+  const addContact = () => {
+    setContacts((prev) => [
+      ...prev,
+      {
+        localId: `c${String(Date.now())}-${String(prev.length)}`,
+        typeContactCode: typesContactList[0]?.code ?? "",
+        nom: "",
+        prenom: "",
+        email: "",
+        telephone: "",
+      },
+    ]);
+  };
+
+  const updateContact = (localId: string, patch: Partial<DraftContact>) => {
+    setContacts((prev) => prev.map((c) => (c.localId === localId ? { ...c, ...patch } : c)));
+  };
+
+  const removeContact = (localId: string) => {
+    setContacts((prev) => prev.filter((c) => c.localId !== localId));
+  };
+
+  return (
+    <div className="border-spx-ink/10 mt-4 rounded-md border p-3">
+      <div className="flex items-center justify-between">
+        <p className="text-spx-ink text-sm font-medium">
+          Contacts (Siège) — {contacts.length}/{MAX_CONTACTS_AT_CREATION}
+        </p>
+        <button
+          type="button"
+          onClick={addContact}
+          disabled={!canAdd || noTypes}
+          className="text-spx-blue-600 disabled:text-spx-ink/40 text-xs font-medium underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:no-underline"
+        >
+          + Ajouter un contact
+        </button>
+      </div>
+      {noTypes && (
+        <p className="text-spx-ink/60 mt-2 text-xs">
+          Aucun type de contact configuré. Le SADMIN doit en créer dans /settings/team avant
+          d&apos;ajouter des contacts.
+        </p>
+      )}
+      {contacts.length > 0 && (
+        <ul className="mt-3 space-y-2">
+          {contacts.map((c) => (
+            <li
+              key={c.localId}
+              className="border-spx-ink/10 rounded-md border bg-white p-2 text-xs"
+            >
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label htmlFor={`type-${c.localId}`} className="text-[11px]">
+                    Type
+                  </Label>
+                  <select
+                    id={`type-${c.localId}`}
+                    value={c.typeContactCode}
+                    onChange={(e) => {
+                      updateContact(c.localId, { typeContactCode: e.target.value });
+                    }}
+                    className="border-input bg-background h-8 w-full rounded-md border px-2 text-xs"
+                  >
+                    {typesContactList.map((t) => (
+                      <option key={t.code} value={t.code}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`nom-${c.localId}`} className="text-[11px]">
+                    Nom *
+                  </Label>
+                  <Input
+                    id={`nom-${c.localId}`}
+                    value={c.nom}
+                    onChange={(e) => {
+                      updateContact(c.localId, { nom: e.target.value });
+                    }}
+                    className="h-8 text-xs"
+                    maxLength={100}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`prenom-${c.localId}`} className="text-[11px]">
+                    Prénom
+                  </Label>
+                  <Input
+                    id={`prenom-${c.localId}`}
+                    value={c.prenom}
+                    onChange={(e) => {
+                      updateContact(c.localId, { prenom: e.target.value });
+                    }}
+                    className="h-8 text-xs"
+                    maxLength={100}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor={`email-${c.localId}`} className="text-[11px]">
+                    Email
+                  </Label>
+                  <Input
+                    id={`email-${c.localId}`}
+                    type="email"
+                    value={c.email}
+                    onChange={(e) => {
+                      updateContact(c.localId, { email: e.target.value });
+                    }}
+                    className="h-8 text-xs"
+                    maxLength={200}
+                  />
+                </div>
+                <div className="col-span-2 space-y-1">
+                  <Label htmlFor={`tel-${c.localId}`} className="text-[11px]">
+                    Téléphone
+                  </Label>
+                  <Input
+                    id={`tel-${c.localId}`}
+                    type="tel"
+                    value={c.telephone}
+                    onChange={(e) => {
+                      updateContact(c.localId, { telephone: e.target.value });
+                    }}
+                    className="h-8 text-xs"
+                    maxLength={20}
+                  />
+                </div>
+              </div>
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    removeContact(c.localId);
+                  }}
+                  className="text-destructive text-[11px] underline-offset-2 hover:underline"
+                >
+                  Retirer
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }

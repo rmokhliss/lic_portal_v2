@@ -15,6 +15,7 @@ vi.mock("server-only", () => ({}));
 import "../../../../../scripts/load-env";
 
 import { AuditRepositoryPg } from "../../audit/adapters/postgres/audit.repository.pg";
+import { ContactRepositoryPg } from "../../contact/adapters/postgres/contact.repository.pg";
 import { UserRepositoryPg } from "../../user/adapters/postgres/user.repository.pg";
 import { ClientRepositoryPg } from "../adapters/postgres/client.repository.pg";
 import { CreateClientUseCase } from "../application/create-client.usecase";
@@ -25,6 +26,7 @@ const ACTOR_ID = "01928c8e-aaaa-bbbb-cccc-dddd00000001";
 
 let sql: postgres.Sql;
 let useCase: CreateClientUseCase;
+let useCaseWithContacts: CreateClientUseCase;
 
 beforeAll(() => {
   const url = process.env.DATABASE_URL;
@@ -37,6 +39,15 @@ beforeAll(() => {
     new ClientRepositoryPg(),
     new UserRepositoryPg(),
     new AuditRepositoryPg(),
+  );
+  // Phase 14 — DETTE-LIC-017 : variante avec contactRepository câblé pour
+  // tester la création atomique client + Siège + contacts dans une même tx.
+  useCaseWithContacts = new CreateClientUseCase(
+    new ClientRepositoryPg(),
+    new UserRepositoryPg(),
+    new AuditRepositoryPg(),
+    undefined, // settingRepository : skip PKI (mode legacy)
+    new ContactRepositoryPg(),
   );
 });
 
@@ -145,5 +156,98 @@ describe("CreateClientUseCase — validation domaine (SPX-LIC-726)", () => {
     await expect(
       useCase.execute({ codeClient: "bad code lower!", raisonSociale: "X" }, ACTOR_ID),
     ).rejects.toMatchObject({ code: "SPX-LIC-726" });
+  });
+});
+
+// ============================================================================
+// Phase 14 — DETTE-LIC-017 : contacts à création client (cross-aggregate tx)
+// ============================================================================
+
+async function seedTypesContact(): Promise<void> {
+  await sql`
+    INSERT INTO lic_types_contact_ref (code, libelle, actif)
+    VALUES ('ACHAT', 'Achats', true), ('TECHNIQUE', 'Technique', true)
+    ON CONFLICT (code) DO UPDATE SET actif = true
+  `;
+}
+
+describe("CreateClientUseCase — Phase 14 contacts à création (DETTE-LIC-017)", () => {
+  it("crée client + Siège + 2 contacts dans la même tx + 1 audit CONTACT_CREATED par contact", async () => {
+    await seedActor();
+    await seedTypesContact();
+
+    const result = await useCaseWithContacts.execute(
+      {
+        codeClient: "ATL",
+        raisonSociale: "Atlas Bank",
+        contacts: [
+          { typeContactCode: "ACHAT", nom: "MOULOUDI", prenom: "Karim", email: "k@atlas.ma" },
+          { typeContactCode: "TECHNIQUE", nom: "BENNANI", prenom: "Sara" },
+        ],
+      },
+      ACTOR_ID,
+    );
+
+    // 2 contacts persistés, attachés à l'entité Siège
+    const contacts = await sql<{ nom: string; type_contact_code: string }[]>`
+      SELECT nom, type_contact_code FROM lic_contacts_clients
+       WHERE entite_id = ${result.siegeEntiteId}::uuid
+       ORDER BY nom
+    `;
+    expect(contacts).toHaveLength(2);
+    expect(contacts[0]?.nom).toBe("BENNANI");
+    expect(contacts[0]?.type_contact_code).toBe("TECHNIQUE");
+    expect(contacts[1]?.nom).toBe("MOULOUDI");
+
+    // Audit : 1 CLIENT_CREATED + 2 CONTACT_CREATED (pas de CERTIFICATE_ISSUED
+    // car settingRepository non câblé dans useCaseWithContacts).
+    const audit = await sql<{ action: string }[]>`
+      SELECT action FROM lic_audit_log WHERE client_id = ${result.client.id}::uuid
+       ORDER BY created_at, action
+    `;
+    const actions = audit.map((a) => a.action);
+    expect(actions).toContain("CLIENT_CREATED");
+    expect(actions.filter((a) => a === "CONTACT_CREATED")).toHaveLength(2);
+  });
+
+  it("rollback complet si un contact a un type code invalide (cross-aggregate tx)", async () => {
+    await seedActor();
+    await seedTypesContact();
+
+    await expect(
+      useCaseWithContacts.execute(
+        {
+          codeClient: "ROLL",
+          raisonSociale: "Rollback Bank",
+          contacts: [
+            { typeContactCode: "ACHAT", nom: "OK" },
+            { typeContactCode: "INEXISTANT", nom: "FAIL" }, // FK violation
+          ],
+        },
+        ACTOR_ID,
+      ),
+    ).rejects.toBeDefined();
+
+    // Aucun client / entité / contact créé (rollback total).
+    const clients = await sql<{ count: string }[]>`
+      SELECT count(*)::text AS count FROM lic_clients WHERE code_client = 'ROLL'
+    `;
+    expect(clients[0]?.count).toBe("0");
+    const contacts = await sql<{ count: string }[]>`
+      SELECT count(*)::text AS count FROM lic_contacts_clients WHERE nom = 'OK'
+    `;
+    expect(contacts[0]?.count).toBe("0");
+  });
+
+  it("création sans contacts → comportement Phase 4 inchangé", async () => {
+    await seedActor();
+    const result = await useCaseWithContacts.execute(
+      { codeClient: "NOC", raisonSociale: "No Contacts" },
+      ACTOR_ID,
+    );
+    const contacts = await sql<{ count: string }[]>`
+      SELECT count(*)::text AS count FROM lic_contacts_clients WHERE entite_id = ${result.siegeEntiteId}::uuid
+    `;
+    expect(contacts[0]?.count).toBe("0");
   });
 });

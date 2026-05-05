@@ -19,6 +19,7 @@ import {
   listLanguesUseCase,
   listPaysUseCase,
   listTeamMembersUseCase,
+  listTypesContactUseCase,
 } from "@/server/composition-root";
 
 import { ClientsTable } from "./_components/ClientsTable";
@@ -48,22 +49,25 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       ? (params.statut as ClientStatutClient)
       : undefined;
 
-  const [result, caStatus, paysAll, devisesAll, languesAll, salesAll, amAll] = await Promise.all([
-    listClientsUseCase.execute({
-      ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
-      ...(params.q !== undefined && params.q.trim().length > 0 ? { q: params.q.trim() } : {}),
-      ...(statutFilter !== undefined ? { statutClient: statutFilter } : {}),
-      limit: 25,
-    }),
-    getCAStatusUseCase.execute(),
-    // T-01 — référentiels SADMIN pour <select> ClientDialog (codes actifs only).
-    listPaysUseCase.execute({}),
-    listDevisesUseCase.execute({}),
-    listLanguesUseCase.execute({}),
-    // T-01 Volet A — team members SALES + AM pour selects salesResponsable / accountManager.
-    listTeamMembersUseCase.execute({ actif: true, roleTeam: "SALES" }),
-    listTeamMembersUseCase.execute({ actif: true, roleTeam: "AM" }),
-  ]);
+  const [result, caStatus, paysAll, devisesAll, languesAll, salesAll, amAll, typesContactAll] =
+    await Promise.all([
+      listClientsUseCase.execute({
+        ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
+        ...(params.q !== undefined && params.q.trim().length > 0 ? { q: params.q.trim() } : {}),
+        ...(statutFilter !== undefined ? { statutClient: statutFilter } : {}),
+        limit: 25,
+      }),
+      getCAStatusUseCase.execute(),
+      // T-01 — référentiels SADMIN pour <select> ClientDialog (codes actifs only).
+      listPaysUseCase.execute({}),
+      listDevisesUseCase.execute({}),
+      listLanguesUseCase.execute({}),
+      // T-01 Volet A — team members SALES + AM pour selects salesResponsable / accountManager.
+      listTeamMembersUseCase.execute({ actif: true, roleTeam: "SALES" }),
+      listTeamMembersUseCase.execute({ actif: true, roleTeam: "AM" }),
+      // Phase 14 — DETTE-LIC-017 : types contact pour la section contacts à création.
+      listTypesContactUseCase.execute({}),
+    ]);
 
   const paysList = paysAll.filter((p) => p.actif).map((p) => ({ code: p.codePays, label: p.nom }));
   const devisesList = devisesAll
@@ -81,6 +85,10 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     label: formatTeamMember(m),
   }));
   const amList = amAll.map((m) => ({ code: formatTeamMember(m), label: formatTeamMember(m) }));
+  // Phase 14 — types contact actifs pour la section contacts à création.
+  const typesContactList = typesContactAll
+    .filter((t) => t.actif)
+    .map((t) => ({ code: t.code, label: t.libelle }));
 
   // Phase 3.H — bandeau alerte si CA absente : la création client est bloquée
   // (createClientUseCase throw SPX-LIC-411 sans CA). On désactive le bouton
@@ -120,6 +128,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         languesList={languesList}
         salesList={salesList}
         amList={amList}
+        typesContactList={typesContactList}
       />
     </div>
   );

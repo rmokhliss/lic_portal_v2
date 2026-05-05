@@ -19,6 +19,8 @@
 import { db } from "@/server/infrastructure/db/client";
 import { AuditEntry } from "@/server/modules/audit/domain/audit-entry.entity";
 import type { AuditRepository } from "@/server/modules/audit/ports/audit.repository";
+import { Contact } from "@/server/modules/contact/domain/contact.entity";
+import type { ContactRepository } from "@/server/modules/contact/ports/contact.repository";
 import {
   CA_SETTING_KEY,
   isCARecord,
@@ -37,9 +39,22 @@ import { Client, type CreateClientDomainInput } from "../domain/client.entity";
 import { clientCodeAlreadyExists } from "../domain/client.errors";
 import type { ClientRepository } from "../ports/client.repository";
 
+/** Phase 14 — DETTE-LIC-017 : contact saisi à la création client. Attaché à
+ *  l'entité Siège dans la même tx. Le `entiteId` est résolu par le use-case
+ *  (siegeEntiteId retourné par saveWithSiegeEntite). */
+export interface CreateClientContactInput {
+  readonly typeContactCode: string;
+  readonly nom: string;
+  readonly prenom?: string;
+  readonly email?: string;
+  readonly telephone?: string;
+}
+
 export interface CreateClientUseCaseInput extends CreateClientDomainInput {
   /** Nom de l'entité « Siège » créée dans la même tx. Default = raisonSociale. */
   readonly siegeNom?: string;
+  /** Phase 14 — contacts à créer dans la même tx que client + Siège (max 5). */
+  readonly contacts?: readonly CreateClientContactInput[];
 }
 
 export interface CreateClientUseCaseOptions {
@@ -66,6 +81,9 @@ export class CreateClientUseCase {
      *  Composition-root le câble systématiquement en prod. Si absent → skip PKI
      *  (mode test legacy uniquement). */
     private readonly settingRepository?: SettingRepository,
+    /** Phase 14 — DETTE-LIC-017 : optionnel pour rétrocompat. Si absent et
+     *  `input.contacts` non vide, throw InternalError. */
+    private readonly contactRepository?: ContactRepository,
   ) {}
 
   async execute(
@@ -180,6 +198,42 @@ export class CreateClientUseCase {
           mode: "MANUEL",
         });
         await this.auditRepository.save(certEntry, tx);
+      }
+
+      // Phase 14 — DETTE-LIC-017 : contacts à création (même tx, attachés à
+      // l'entité Siège). Audit CONTACT_CREATED par contact.
+      const contactsToCreate = input.contacts ?? [];
+      if (contactsToCreate.length > 0) {
+        if (this.contactRepository === undefined) {
+          throw new InternalError({
+            code: "SPX-LIC-900",
+            message:
+              "contactRepository non câblé : impossible de créer les contacts à création client.",
+          });
+        }
+        for (const c of contactsToCreate) {
+          const candidateContact = Contact.create({
+            entiteId: siegeEntiteId,
+            typeContactCode: c.typeContactCode,
+            nom: c.nom,
+            ...(c.prenom !== undefined ? { prenom: c.prenom } : {}),
+            ...(c.email !== undefined ? { email: c.email } : {}),
+            ...(c.telephone !== undefined ? { telephone: c.telephone } : {}),
+          });
+          const savedContact = await this.contactRepository.save(candidateContact, actorId, tx);
+          const contactEntry = AuditEntry.create({
+            entity: "contact",
+            entityId: savedContact.id,
+            action: "CONTACT_CREATED",
+            afterData: savedContact.toAuditSnapshot(),
+            userId: actor.id,
+            userDisplay: actor.toDisplay(),
+            clientId: persistedClient.id,
+            clientDisplay,
+            mode: "MANUEL",
+          });
+          await this.auditRepository.save(contactEntry, tx);
+        }
       }
 
       return { client: persistedClient, siegeEntiteId };

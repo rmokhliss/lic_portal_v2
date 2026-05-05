@@ -153,11 +153,13 @@ export {
 // ré-exportés ici pour la surface app-route.
 
 // Phase 3.D : injection settingRepository pour lecture CA dans createClient.
+// Phase 14 : injection contactRepository pour DETTE-LIC-017 (contacts à création).
 export const createClientUseCase = new CreateClientUseCase(
   clientRepository,
   userRepository,
   auditRepository,
   settingRepository,
+  contactRepository,
 );
 export const updateClientUseCase = new UpdateClientUseCase(
   clientRepository,

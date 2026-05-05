@@ -55,6 +55,8 @@ export interface ClientsTableProps {
   /** T-01 Volet A : team-members SALES / AM pour selects salesResponsable / accountManager. */
   readonly salesList: readonly RefItem[];
   readonly amList: readonly RefItem[];
+  /** Phase 14 — DETTE-LIC-017 : types contact pour la section contacts à création. */
+  readonly typesContactList?: readonly RefItem[];
 }
 
 type DialogState = { kind: "none" } | { kind: "create" } | { kind: "edit"; client: ClientDTO };
@@ -236,6 +238,7 @@ export function ClientsTable(props: ClientsTableProps) {
         languesList={props.languesList}
         salesList={props.salesList}
         amList={props.amList}
+        typesContactList={props.typesContactList}
       />
 
       {/* Indicateur silencieux pour réutiliser searchParams (évite warning lint) */}

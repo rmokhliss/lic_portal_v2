@@ -14,6 +14,21 @@ const ClientStatutSchema = z.enum(["PROSPECT", "ACTIF", "SUSPENDU", "RESILIE"]);
 // le repo convertit en Date ou laisse tel quel selon Drizzle.
 const IsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "format YYYY-MM-DD");
 
+/** Phase 14 — DETTE-LIC-017 résolue : contact saisi à la création client.
+ *  Les contacts sont attachés à l'entité « Siège » créée en même temps.
+ *  Max 5 contacts par création (UI cap — règle ergonomique). */
+export const ContactInputSchema = z
+  .object({
+    typeContactCode: z.string().min(1).max(30),
+    nom: z.string().min(1).max(100),
+    prenom: z.string().min(1).max(100).optional(),
+    email: z.email().max(200).optional(),
+    telephone: z.string().min(1).max(20).optional(),
+  })
+  .strict();
+
+export type ContactInput = z.infer<typeof ContactInputSchema>;
+
 export const CreateClientSchema = z
   .object({
     codeClient: z
@@ -38,6 +53,9 @@ export const CreateClientSchema = z
     /** Nom de l'entité « Siège » créée dans la même transaction. Default
      *  = raisonSociale (cohérent règle métier : 1 client = au moins 1 entité). */
     siegeNom: z.string().min(1).max(200).optional(),
+    /** Phase 14 — DETTE-LIC-017 : contacts attachés à l'entité Siège dans
+     *  la même transaction que la création client. Max 5 (UI cap). */
+    contacts: z.array(ContactInputSchema).max(5).optional(),
   })
   .strict();
 
