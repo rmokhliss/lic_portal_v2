@@ -251,3 +251,161 @@ describe("CreateClientUseCase — Phase 14 contacts à création (DETTE-LIC-017)
     expect(contacts[0]?.count).toBe("0");
   });
 });
+
+// ============================================================================
+// Phase 16 — DETTE-LIC-016 : tests PKI dual-mode createClientUseCase
+// ============================================================================
+//
+// Couvre le chemin PKI strict (settingRepository + appMasterKey injectés) :
+//   1. CA présente → cert généré + client_private_key_enc non null
+//   2. CA absente → throw SPX-LIC-411 (caAbsentOrInvalid)
+//   3. PKI + contacts → atomicité préservée (cert + Siège + contacts dans
+//      une même tx)
+// ============================================================================
+
+import { generateAes256Key } from "../../crypto/domain/aes";
+import { generateRsaKeyPair } from "../../crypto/domain/rsa";
+import { generateCACert } from "../../crypto/domain/x509";
+import { packCARecord } from "../../crypto/application/__shared/ca-storage";
+import { SettingRepositoryPg } from "../../settings/adapters/postgres/setting.repository.pg";
+
+let useCasePki: CreateClientUseCase;
+let appMasterKey: string;
+
+function setupPkiUseCase(): void {
+  // Variante PKI : settingRepository câblé. ContactRepository également pour
+  // tester atomicité PKI + contacts dans une même tx (cas réel prod).
+  appMasterKey = generateAes256Key();
+  useCasePki = new CreateClientUseCase(
+    new ClientRepositoryPg(),
+    new UserRepositoryPg(),
+    new AuditRepositoryPg(),
+    new SettingRepositoryPg(),
+    new ContactRepositoryPg(),
+  );
+}
+
+async function seedCAInSettings(): Promise<void> {
+  // Génère une CA réelle et l'insère sous la clé `s2m_root_ca` dans
+  // lic_settings au format CARecord (cf. ca-storage.ts).
+  const caKeys = generateRsaKeyPair();
+  const caCertPem = await generateCACert({
+    caPrivateKeyPem: caKeys.privateKeyPem,
+    caPublicKeyPem: caKeys.publicKeyPem,
+    subject: { commonName: "S2M Test CA", org: "S2M" },
+    validityYears: 20,
+  });
+  const caRecord = packCARecord({
+    certificatePem: caCertPem,
+    privateKeyPem: caKeys.privateKeyPem,
+    subjectCN: "S2M Test CA",
+    appMasterKey,
+  });
+  await sql`
+    INSERT INTO lic_settings (key, value, updated_by)
+    VALUES ('s2m_root_ca', ${JSON.stringify(caRecord)}::jsonb, ${SYSTEM_USER_ID}::uuid)
+    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+  `;
+}
+
+describe("CreateClientUseCase — Phase 16 PKI dual-mode (DETTE-LIC-016)", () => {
+  it("CA présente : cert client généré + colonnes PKI persistées", async () => {
+    setupPkiUseCase();
+    await seedActor();
+    await seedCAInSettings();
+
+    const result = await useCasePki.execute(
+      { codeClient: "PKI", raisonSociale: "PKI Bank" },
+      ACTOR_ID,
+      { appMasterKey },
+    );
+
+    expect(result.clientCertificatePem).not.toBeNull();
+    expect(result.clientCertificatePem).toContain("-----BEGIN CERTIFICATE-----");
+    expect(result.certificateExpiresAt).not.toBeNull();
+
+    // Colonnes PKI persistées dans lic_clients
+    const rows = await sql<
+      {
+        client_private_key_enc: string | null;
+        client_certificate_pem: string | null;
+        client_certificate_expires_at: Date | null;
+      }[]
+    >`
+      SELECT client_private_key_enc, client_certificate_pem, client_certificate_expires_at
+      FROM lic_clients WHERE id = ${result.client.id}
+    `;
+    expect(rows[0]?.client_private_key_enc).not.toBeNull();
+    expect(rows[0]?.client_private_key_enc).toMatch(
+      /^[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+$/,
+    );
+    expect(rows[0]?.client_certificate_pem).toContain("-----BEGIN CERTIFICATE-----");
+    expect(rows[0]?.client_certificate_expires_at).toBeInstanceOf(Date);
+
+    // Audit CLIENT_CREATED + CERTIFICATE_ISSUED dans la même tx
+    const audit = await sql<{ action: string }[]>`
+      SELECT action FROM lic_audit_log WHERE client_id = ${result.client.id}::uuid
+       ORDER BY created_at, action
+    `;
+    const actions = audit.map((a) => a.action);
+    expect(actions).toContain("CLIENT_CREATED");
+    expect(actions).toContain("CERTIFICATE_ISSUED");
+  });
+
+  it("CA absente : throw SPX-LIC-411 + aucun client créé (pré-check hors tx)", async () => {
+    setupPkiUseCase();
+    await seedActor();
+    // Pas de seedCAInSettings → CA absente.
+    await sql`DELETE FROM lic_settings WHERE key = 's2m_root_ca'`;
+
+    await expect(
+      useCasePki.execute({ codeClient: "NOCA", raisonSociale: "No CA Bank" }, ACTOR_ID, {
+        appMasterKey,
+      }),
+    ).rejects.toMatchObject({ code: "SPX-LIC-411" });
+
+    // Aucun client persisté (le pré-check CA est hors tx → pas d'INSERT).
+    const clients = await sql<{ count: string }[]>`
+      SELECT count(*)::text AS count FROM lic_clients WHERE code_client = 'NOCA'
+    `;
+    expect(clients[0]?.count).toBe("0");
+  });
+
+  it("PKI + contacts : atomicité préservée (cert + Siège + contacts dans une même tx)", async () => {
+    setupPkiUseCase();
+    await seedActor();
+    await seedTypesContact();
+    await seedCAInSettings();
+
+    const result = await useCasePki.execute(
+      {
+        codeClient: "PKIC",
+        raisonSociale: "PKI + Contacts",
+        contacts: [
+          { typeContactCode: "ACHAT", nom: "ALAMI", prenom: "Younès" },
+          { typeContactCode: "TECHNIQUE", nom: "EL FASSI", prenom: "Mohamed" },
+        ],
+      },
+      ACTOR_ID,
+      { appMasterKey },
+    );
+
+    // Cert généré
+    expect(result.clientCertificatePem).not.toBeNull();
+
+    // 2 contacts persistés sur l'entité Siège
+    const contacts = await sql<{ count: string }[]>`
+      SELECT count(*)::text AS count FROM lic_contacts_clients WHERE entite_id = ${result.siegeEntiteId}::uuid
+    `;
+    expect(contacts[0]?.count).toBe("2");
+
+    // Audit : CLIENT_CREATED + CERTIFICATE_ISSUED + 2 CONTACT_CREATED (4 total)
+    const audit = await sql<{ action: string }[]>`
+      SELECT action FROM lic_audit_log WHERE client_id = ${result.client.id}::uuid
+    `;
+    const actions = audit.map((a) => a.action);
+    expect(actions).toContain("CLIENT_CREATED");
+    expect(actions).toContain("CERTIFICATE_ISSUED");
+    expect(actions.filter((a) => a === "CONTACT_CREATED")).toHaveLength(2);
+  });
+});
