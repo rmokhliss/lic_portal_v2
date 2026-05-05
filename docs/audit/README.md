@@ -13,9 +13,10 @@ Les deux rapports sont archivés ici.
 
 ## Liste des audits
 
-| Phase               | Date     | Audit interne         | Audit externe         | Verdict                                           |
-| ------------------- | -------- | --------------------- | --------------------- | ------------------------------------------------- |
-| Phase 1 — Bootstrap | Mai 2026 | (à archiver si dispo) | (à archiver si dispo) | Go avec corrections mineures (intégrées Mai 2026) |
+| Phase                                 | Date     | Audit interne                  | Audit externe Master                    | Verdict                                                        |
+| ------------------------------------- | -------- | ------------------------------ | --------------------------------------- | -------------------------------------------------------------- |
+| Phase 1 — Bootstrap                   | Mai 2026 | (à archiver si dispo)          | (à archiver si dispo)                   | Go avec corrections mineures (intégrées Mai 2026)              |
+| Phase 14 — MVP global (toutes phases) | Mai 2026 | `audit-phase-15-alignement.md` | `AUDIT_MVP_GLOBAL_MAI_2026.md` (Master) | Go avec corrections critiques + importantes (livrées Phase 15) |
 
 ## Convention de nommage
 
