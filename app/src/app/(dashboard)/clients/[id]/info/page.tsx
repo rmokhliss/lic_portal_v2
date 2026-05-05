@@ -27,7 +27,10 @@ export default async function ClientInfoPage({ params }: PageProps) {
 
   let client;
   try {
-    client = await getClientUseCase.execute(id);
+    // Phase 16 — DETTE-LIC-022 : passe actor.id pour émettre audit CLIENT_READ
+    // best-effort (les autres callers — layouts, listings — restent sans
+    // actorId pour ne pas spammer l'audit log).
+    client = await getClientUseCase.execute(id, user.id);
   } catch (err) {
     if (isAppError(err) && err.code === "SPX-LIC-724") notFound();
     throw err;

@@ -1,6 +1,11 @@
 // ==============================================================================
-// LIC v2 — Server Actions /reports (Phase 11.B EC-09)
+// LIC v2 — Server Actions /reports (Phase 11.B EC-09 + Phase 16 audit lectures)
 // ADMIN/SADMIN only. Cap export 100k lignes (SPX-LIC-755).
+//
+// Phase 16 — DETTE-LIC-022 résolue : audit best-effort EXPORT_CSV_LICENCES /
+// EXPORT_CSV_RENOUVELLEMENTS posé après chaque export réussi (les exports
+// audit existants — exportAuditCsv — sont eux-mêmes un audit, on ne les
+// re-audite pas).
 // ==============================================================================
 
 "use server";
@@ -12,7 +17,40 @@ import {
   exportAuditCsvUseCase,
   exportLicencesCsvUseCase,
   exportRenouvellementsCsvUseCase,
+  recordAuditEntryUseCase,
 } from "@/server/composition-root";
+import { createChildLogger } from "@/server/infrastructure/logger";
+
+const log = createChildLogger("reports/actions");
+
+/** Phase 16 — audit best-effort pour les exports CSV (DETTE-LIC-022). */
+async function auditExport(
+  action: "EXPORT_CSV_LICENCES" | "EXPORT_CSV_RENOUVELLEMENTS",
+  actorId: string,
+  actorDisplay: string,
+  filters: Record<string, unknown>,
+): Promise<void> {
+  try {
+    await recordAuditEntryUseCase.execute({
+      entity: "report",
+      entityId: actorId, // pas d'entité métier unique — on lie à l'acteur.
+      action,
+      afterData: filters,
+      userId: actorId,
+      userDisplay: actorDisplay,
+      mode: "MANUEL",
+    });
+  } catch (err) {
+    log.warn(
+      {
+        event: "audit_export_failed",
+        action,
+        error: err instanceof Error ? err.message : String(err),
+      },
+      "Échec audit export CSV best-effort (CSV livré OK)",
+    );
+  }
+}
 
 const ExportLicencesSchema = z
   .object({
@@ -40,17 +78,19 @@ const ExportAuditSchema = z
   .strict();
 
 export async function exportLicencesCsvAction(input: unknown): Promise<{ csv: string }> {
-  await requireRole(["ADMIN", "SADMIN"]);
+  const actor = await requireRole(["ADMIN", "SADMIN"]);
   const parsed = ExportLicencesSchema.parse(input);
   const csv = await exportLicencesCsvUseCase.execute({
     ...(parsed.clientId !== undefined ? { clientId: parsed.clientId } : {}),
     ...(parsed.status !== undefined ? { status: parsed.status } : {}),
   });
+  // Phase 16 — audit best-effort EXPORT_CSV_LICENCES.
+  await auditExport("EXPORT_CSV_LICENCES", actor.id, actor.display, parsed);
   return { csv };
 }
 
 export async function exportRenouvellementsCsvAction(input: unknown): Promise<{ csv: string }> {
-  await requireRole(["ADMIN", "SADMIN"]);
+  const actor = await requireRole(["ADMIN", "SADMIN"]);
   const parsed = ExportRenouvellementsSchema.parse(input);
   const csv = await exportRenouvellementsCsvUseCase.execute({
     ...(parsed.status !== undefined ? { status: parsed.status } : {}),
@@ -62,6 +102,8 @@ export async function exportRenouvellementsCsvAction(input: unknown): Promise<{ 
       ? { toDate: new Date(parsed.toDate) }
       : {}),
   });
+  // Phase 16 — audit best-effort EXPORT_CSV_RENOUVELLEMENTS.
+  await auditExport("EXPORT_CSV_RENOUVELLEMENTS", actor.id, actor.display, parsed);
   return { csv };
 }
 

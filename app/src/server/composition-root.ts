@@ -196,7 +196,17 @@ export const changeClientStatusUseCase = new ChangeClientStatusUseCase(
   auditRepository,
 );
 
-export { getClientUseCase, listClientsUseCase } from "@/server/modules/client/client.module";
+// Phase 16 — DETTE-LIC-022 : getClientUseCase câblé cross-module avec
+// auditRepository + userRepository pour émission audit CLIENT_READ best-effort
+// (l'export depuis client.module reste disponible mais sans audit). On
+// override l'export par une instance enrichie ici.
+import { GetClientUseCase } from "@/server/modules/client/application/get-client.usecase";
+export const getClientUseCase = new GetClientUseCase(
+  clientRepository,
+  auditRepository,
+  userRepository,
+);
+export { listClientsUseCase } from "@/server/modules/client/client.module";
 
 // --- Phase 4 étape 4.C : modules entite + contact (audit obligatoire) ------
 
@@ -414,9 +424,19 @@ export {
 } from "@/server/modules/notification/notification.module";
 
 // --- Phase 10.B : fichier-log (append-only, pas d'audit DEC-019) -----------
+// Phase 16 — DETTE-LIC-022 : listFichiersByLicenceUseCase câblé cross-module
+// avec auditRepository + userRepository pour audit FICHIER_LOG_READ.
+
+import { ListFichiersByLicenceUseCase } from "@/server/modules/fichier-log/application/list-fichiers-by-licence.usecase";
+import { fichierLogRepository as fichierLogRepoPhase16 } from "@/server/modules/fichier-log/fichier-log.module";
+
+export const listFichiersByLicenceUseCase = new ListFichiersByLicenceUseCase(
+  fichierLogRepoPhase16,
+  auditRepository,
+  userRepository,
+);
 
 export {
-  listFichiersByLicenceUseCase,
   logFichierGenereUseCase,
   logHealthcheckImporteUseCase,
 } from "@/server/modules/fichier-log/fichier-log.module";
