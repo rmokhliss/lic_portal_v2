@@ -236,6 +236,7 @@ export const changeLicenceStatusUseCase = new ChangeLicenceStatusUseCase(
 
 export {
   getLicenceUseCase,
+  listAllLicencesUseCase,
   listLicencesByClientUseCase,
 } from "@/server/modules/licence/licence.module";
 

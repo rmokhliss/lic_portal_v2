@@ -5,6 +5,7 @@
 
 import { LicenceRepositoryPg } from "./adapters/postgres/licence.repository.pg";
 import { GetLicenceUseCase } from "./application/get-licence.usecase";
+import { ListAllLicencesUseCase } from "./application/list-all-licences.usecase";
 import { ListLicencesByClientUseCase } from "./application/list-licences-by-client.usecase";
 import type { LicenceRepository } from "./ports/licence.repository";
 
@@ -12,3 +13,4 @@ export const licenceRepository: LicenceRepository = new LicenceRepositoryPg();
 
 export const getLicenceUseCase = new GetLicenceUseCase(licenceRepository);
 export const listLicencesByClientUseCase = new ListLicencesByClientUseCase(licenceRepository);
+export const listAllLicencesUseCase = new ListAllLicencesUseCase(licenceRepository);
