@@ -58,9 +58,20 @@ import { userRepository } from "@/server/modules/user/user.module";
 
 // --- F-07/F-08 : auth + audit ----------------------------------------------
 
+// Phase 15 — port PasswordHasher (audit Master 5.1). Adapter prod = bcryptjs
+// avec cost configurable via env.BCRYPT_COST (default 10).
+import { BcryptPasswordHasher } from "@/server/modules/user/adapters/bcrypt/password-hasher.bcrypt";
+import { env } from "@/server/infrastructure/env";
+
+const passwordHasher = new BcryptPasswordHasher(env.BCRYPT_COST);
+
 // Use-case user qui orchestre user + audit dans une seule transaction (règle L3).
 // Reçoit auditRepository directement (option (b) Stop #1 F-08).
-export const changePasswordUseCase = new ChangePasswordUseCase(userRepository, auditRepository);
+export const changePasswordUseCase = new ChangePasswordUseCase(
+  userRepository,
+  auditRepository,
+  passwordHasher,
+);
 
 // --- Phase 2.B.bis EC-08 : 4 use-cases user mutateurs ----------------------
 // Tous orchestrent user + audit dans une seule transaction (règle L3).
@@ -69,12 +80,17 @@ export const changePasswordUseCase = new ChangePasswordUseCase(userRepository, a
 // Le ListUsersUseCase est read-only et reste câblé dans user.module.ts
 // (pas de dépendance audit). listUsersUseCase est ré-exporté plus bas.
 
-export const createUserUseCase = new CreateUserUseCase(userRepository, auditRepository);
+export const createUserUseCase = new CreateUserUseCase(
+  userRepository,
+  auditRepository,
+  passwordHasher,
+);
 export const updateUserUseCase = new UpdateUserUseCase(userRepository, auditRepository);
 export const toggleUserActiveUseCase = new ToggleUserActiveUseCase(userRepository, auditRepository);
 export const resetUserPasswordUseCase = new ResetUserPasswordUseCase(
   userRepository,
   auditRepository,
+  passwordHasher,
 );
 
 export { listUsersUseCase } from "@/server/modules/user/user.module";

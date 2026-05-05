@@ -16,15 +16,12 @@
 // uniquement, pas application → application cross-module).
 // ==============================================================================
 
-import bcryptjs from "bcryptjs";
-
 import { db } from "@/server/infrastructure/db/client";
 import { AuditEntry } from "@/server/modules/audit/domain/audit-entry.entity";
 import type { AuditRepository } from "@/server/modules/audit/ports/audit.repository";
 import { UnauthorizedError } from "@/server/modules/error";
+import type { PasswordHasher } from "@/server/modules/user/ports/password-hasher";
 import type { UserRepository } from "@/server/modules/user/ports/user.repository";
-
-const BCRYPT_COST = 10;
 
 export interface ChangePasswordUseCaseInput {
   readonly userId: string;
@@ -38,6 +35,9 @@ export class ChangePasswordUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly auditRepository: AuditRepository,
+    /** Phase 15 — port PasswordHasher (audit Master 5.1) — découple bcryptjs
+     *  de la couche application. Adapter prod : BcryptPasswordHasher. */
+    private readonly passwordHasher: PasswordHasher,
   ) {}
 
   async execute(input: ChangePasswordUseCaseInput): Promise<void> {
@@ -48,7 +48,7 @@ export class ChangePasswordUseCase {
         throw new UnauthorizedError({ code: "SPX-LIC-001" });
       }
 
-      const ok = await bcryptjs.compare(input.currentPassword, user.passwordHash);
+      const ok = await this.passwordHasher.verify(input.currentPassword, user.passwordHash);
       if (!ok) {
         throw new UnauthorizedError({
           code: "SPX-LIC-002",
@@ -56,7 +56,7 @@ export class ChangePasswordUseCase {
         });
       }
 
-      const newHash = await bcryptjs.hash(input.newPassword, BCRYPT_COST);
+      const newHash = await this.passwordHasher.hash(input.newPassword);
       await this.userRepository.updatePassword(input.userId, newHash, tx);
 
       // Audit dans la MÊME transaction (règle L3). Pas de password_hash dans

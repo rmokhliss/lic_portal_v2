@@ -5,7 +5,6 @@
 // 4 cas couverts : nominal, conflit matricule, conflit email, validation domaine.
 // ==============================================================================
 
-import bcryptjs from "bcryptjs";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
@@ -15,12 +14,16 @@ vi.mock("server-only", () => ({}));
 import "../../../../../scripts/load-env";
 
 import { AuditRepositoryPg } from "../../audit/adapters/postgres/audit.repository.pg";
+import { MockPasswordHasher } from "../adapters/mock/password-hasher.mock";
 import { UserRepositoryPg } from "../adapters/postgres/user.repository.pg";
 import { CreateUserUseCase } from "../application/create-user.usecase";
 
 import postgres from "postgres";
 
 const ACTOR_ID = "01928c8e-aaaa-bbbb-cccc-dddd00000001";
+
+// Phase 15 — MockPasswordHasher pour gain perf (vs bcrypt cost 10).
+const passwordHasher = new MockPasswordHasher();
 
 let sql: postgres.Sql;
 let useCase: CreateUserUseCase;
@@ -32,7 +35,7 @@ beforeAll(() => {
     throw new Error("DATABASE_URL absent");
   }
   sql = postgres(url, { max: 1 });
-  useCase = new CreateUserUseCase(new UserRepositoryPg(), new AuditRepositoryPg());
+  useCase = new CreateUserUseCase(new UserRepositoryPg(), new AuditRepositoryPg(), passwordHasher);
 });
 
 afterEach(async () => {
@@ -92,9 +95,9 @@ describe("CreateUserUseCase — cas nominal", () => {
     `;
     expect(rows).toHaveLength(1);
     expect(rows[0]?.must_change_password).toBe(true);
-    expect(await bcryptjs.compare(result.generatedPassword, rows[0]?.password_hash ?? "")).toBe(
-      true,
-    );
+    expect(
+      await passwordHasher.verify(result.generatedPassword, rows[0]?.password_hash ?? ""),
+    ).toBe(true);
 
     // Audit USER_CREATED dans même transaction
     const audit = await sql<{ action: string; user_display: string | null }[]>`

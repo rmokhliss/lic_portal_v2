@@ -6,7 +6,6 @@
 // USER_PASSWORD_RESET_BY_ADMIN, NotFound (SPX-LIC-720).
 // ==============================================================================
 
-import bcryptjs from "bcryptjs";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
@@ -16,6 +15,7 @@ vi.mock("server-only", () => ({}));
 import "../../../../../scripts/load-env";
 
 import { AuditRepositoryPg } from "../../audit/adapters/postgres/audit.repository.pg";
+import { MockPasswordHasher } from "../adapters/mock/password-hasher.mock";
 import { UserRepositoryPg } from "../adapters/postgres/user.repository.pg";
 import { ResetUserPasswordUseCase } from "../application/reset-user-password.usecase";
 
@@ -24,6 +24,9 @@ import postgres from "postgres";
 const ACTOR_ID = "01928c8e-aaaa-bbbb-cccc-dddd00000001";
 const TARGET_ID = "01928c8e-eeee-ffff-aaaa-bbbb00000002";
 const OLD_HASH = "$2a$10$8oE0NRs/IzymGH5KL/XuguewPgWQCv4PeFYP9HpxgnxisQvhFE/0C";
+
+// Phase 15 — MockPasswordHasher pour gain perf (vs bcrypt cost 10).
+const passwordHasher = new MockPasswordHasher();
 
 let sql: postgres.Sql;
 let useCase: ResetUserPasswordUseCase;
@@ -35,7 +38,11 @@ beforeAll(() => {
     throw new Error("DATABASE_URL absent");
   }
   sql = postgres(url, { max: 1 });
-  useCase = new ResetUserPasswordUseCase(new UserRepositoryPg(), new AuditRepositoryPg());
+  useCase = new ResetUserPasswordUseCase(
+    new UserRepositoryPg(),
+    new AuditRepositoryPg(),
+    passwordHasher,
+  );
 });
 
 afterEach(async () => {
@@ -81,7 +88,9 @@ describe("ResetUserPasswordUseCase — cas nominal", () => {
     expect(rows[0]?.must_change_password).toBe(true);
     expect(rows[0]?.token_version).toBe(6);
     expect(rows[0]?.password_hash).not.toBe(OLD_HASH);
-    expect(await bcryptjs.compare(result.newPassword, rows[0]?.password_hash ?? "")).toBe(true);
+    expect(await passwordHasher.verify(result.newPassword, rows[0]?.password_hash ?? "")).toBe(
+      true,
+    );
 
     const audit = await sql<{ action: string }[]>`
       SELECT action FROM lic_audit_log WHERE entity_id = ${TARGET_ID}

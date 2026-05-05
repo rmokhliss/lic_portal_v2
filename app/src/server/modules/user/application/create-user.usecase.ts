@@ -18,8 +18,6 @@
 // affichage UNIQUE dans PasswordRevealDialog.
 // ==============================================================================
 
-import bcryptjs from "bcryptjs";
-
 import { db } from "@/server/infrastructure/db/client";
 import { AuditEntry } from "@/server/modules/audit/domain/audit-entry.entity";
 import type { AuditRepository } from "@/server/modules/audit/ports/audit.repository";
@@ -29,9 +27,8 @@ import { toDTO, type UserDTO } from "../adapters/postgres/user.mapper";
 import { generatePassword } from "../domain/password";
 import { type CreateUserInput, User } from "../domain/user.entity";
 import { emailAlreadyExists, matriculeAlreadyExists } from "../domain/user.errors";
+import type { PasswordHasher } from "../ports/password-hasher";
 import type { UserRepository } from "../ports/user.repository";
-
-const BCRYPT_COST = 10;
 
 export type CreateUserUseCaseInput = CreateUserInput;
 
@@ -44,6 +41,8 @@ export class CreateUserUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly auditRepository: AuditRepository,
+    /** Phase 15 — port PasswordHasher (audit Master 5.1). */
+    private readonly passwordHasher: PasswordHasher,
   ) {}
 
   async execute(input: CreateUserUseCaseInput, actorId: string): Promise<CreateUserUseCaseOutput> {
@@ -51,7 +50,7 @@ export class CreateUserUseCase {
     const candidate = User.create(input);
 
     const generatedPassword = generatePassword();
-    const passwordHash = await bcryptjs.hash(generatedPassword, BCRYPT_COST);
+    const passwordHash = await this.passwordHasher.hash(generatedPassword);
 
     const persistedUser = await db.transaction(async (tx) => {
       // Unicité matricule (UNIQUE BD — vérif applicative pour erreur métier

@@ -18,8 +18,6 @@
 // UNIQUE dans PasswordRevealDialog.
 // ==============================================================================
 
-import bcryptjs from "bcryptjs";
-
 import { db } from "@/server/infrastructure/db/client";
 import { AuditEntry } from "@/server/modules/audit/domain/audit-entry.entity";
 import type { AuditRepository } from "@/server/modules/audit/ports/audit.repository";
@@ -28,9 +26,8 @@ import { InternalError } from "@/server/modules/error";
 import { toDTO, type UserDTO } from "../adapters/postgres/user.mapper";
 import { generatePassword } from "../domain/password";
 import { userNotFoundById } from "../domain/user.errors";
+import type { PasswordHasher } from "../ports/password-hasher";
 import type { UserRepository } from "../ports/user.repository";
-
-const BCRYPT_COST = 10;
 
 export interface ResetUserPasswordUseCaseInput {
   readonly userId: string;
@@ -45,6 +42,8 @@ export class ResetUserPasswordUseCase {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly auditRepository: AuditRepository,
+    /** Phase 15 — port PasswordHasher (audit Master 5.1). */
+    private readonly passwordHasher: PasswordHasher,
   ) {}
 
   async execute(
@@ -52,7 +51,7 @@ export class ResetUserPasswordUseCase {
     actorId: string,
   ): Promise<ResetUserPasswordUseCaseOutput> {
     const newPassword = generatePassword();
-    const passwordHash = await bcryptjs.hash(newPassword, BCRYPT_COST);
+    const passwordHash = await this.passwordHasher.hash(newPassword);
 
     const targetUser = await db.transaction(async (tx) => {
       const existing = await this.userRepository.findByIdEntity(input.userId, tx);

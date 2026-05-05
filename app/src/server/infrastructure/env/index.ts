@@ -40,6 +40,11 @@ const envSchema = z.object({
   // --- Crypto / PKI (clé maîtresse de chiffrement au repos en BD) ----------
   APP_MASTER_KEY: z.string().min(32),
 
+  // --- Bcrypt cost factor (Phase 15 — port PasswordHasher, audit Master 5.1) -
+  // Default 10 (aligné historique LIC v2 Phase 1). Augmenter en prod si le
+  // matériel le permet (12 = ~10× plus lent, plus résistant brute-force).
+  BCRYPT_COST: z.coerce.number().int().min(4).max(15).default(10),
+
   // --- SMTP (mode simulé si SMTP_HOST absent) -------------------------------
   SMTP_HOST: z.string().min(1).optional(),
   SMTP_PORT: z.coerce.number().int().positive().default(587),

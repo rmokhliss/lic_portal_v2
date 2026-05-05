@@ -19,7 +19,6 @@
 // un cleanup TRUNCATE manuel après chaque test.
 // ==============================================================================
 
-import bcryptjs from "bcryptjs";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
@@ -29,10 +28,15 @@ vi.mock("server-only", () => ({}));
 import "../../../../../scripts/load-env";
 
 import { AuditRepositoryPg } from "../../audit/adapters/postgres/audit.repository.pg";
+import { MockPasswordHasher } from "../adapters/mock/password-hasher.mock";
 import { UserRepositoryPg } from "../adapters/postgres/user.repository.pg";
 import { ChangePasswordUseCase } from "../application/change-password.usecase";
 
 import postgres from "postgres";
+
+// Phase 15 — MockPasswordHasher (déterministe `mock:<plaintext>`) au lieu de
+// bcrypt cost 10 → gain perf ~5-10× sur cette spec.
+const passwordHasher = new MockPasswordHasher();
 
 const TEST_USER_ID = "01928c8e-cccc-dddd-eeee-ffff00000001";
 const TEST_OLD_PASSWORD = "OldPassword-Test-12chars!";
@@ -51,7 +55,11 @@ beforeAll(() => {
   }
   sql = postgres(url, { max: 1 });
   // Use-case construit avec les repos par défaut (utilisent le db singleton).
-  useCase = new ChangePasswordUseCase(new UserRepositoryPg(), new AuditRepositoryPg());
+  useCase = new ChangePasswordUseCase(
+    new UserRepositoryPg(),
+    new AuditRepositoryPg(),
+    passwordHasher,
+  );
 });
 
 afterEach(async () => {
@@ -76,7 +84,7 @@ afterAll(async () => {
 });
 
 async function seedTestUser(): Promise<void> {
-  const hash = await bcryptjs.hash(TEST_OLD_PASSWORD, 10);
+  const hash = await passwordHasher.hash(TEST_OLD_PASSWORD);
   await sql`
     INSERT INTO lic_users (
       id, matricule, nom, prenom, email, password_hash,
@@ -112,8 +120,12 @@ describe("ChangePasswordUseCase — cas nominal", () => {
     expect(userRows).toHaveLength(1);
     expect(userRows[0]?.must_change_password).toBe(false);
     expect(userRows[0]?.token_version).toBe(1);
-    expect(await bcryptjs.compare(TEST_NEW_PASSWORD, userRows[0]?.password_hash ?? "")).toBe(true);
-    expect(await bcryptjs.compare(TEST_OLD_PASSWORD, userRows[0]?.password_hash ?? "")).toBe(false);
+    expect(await passwordHasher.verify(TEST_NEW_PASSWORD, userRows[0]?.password_hash ?? "")).toBe(
+      true,
+    );
+    expect(await passwordHasher.verify(TEST_OLD_PASSWORD, userRows[0]?.password_hash ?? "")).toBe(
+      false,
+    );
 
     // Audit log inséré dans la même transaction
     const auditRows = await sql<{ entity: string; action: string }[]>`
@@ -150,7 +162,9 @@ describe("ChangePasswordUseCase — currentPassword incorrect", () => {
     `;
     expect(userRows[0]?.token_version).toBe(0);
     expect(userRows[0]?.must_change_password).toBe(true);
-    expect(await bcryptjs.compare(TEST_OLD_PASSWORD, userRows[0]?.password_hash ?? "")).toBe(true);
+    expect(await passwordHasher.verify(TEST_OLD_PASSWORD, userRows[0]?.password_hash ?? "")).toBe(
+      true,
+    );
 
     const auditRows = await sql<{ count: string }[]>`
       SELECT count(*)::text as count FROM lic_audit_log WHERE entity_id = ${TEST_USER_ID}
