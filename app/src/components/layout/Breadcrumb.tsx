@@ -1,13 +1,15 @@
 // ==============================================================================
-// LIC v2 — Breadcrumb (Client Component, F-12 + Phase 11.C dynamique)
+// LIC v2 — Breadcrumb (Client Component, F-12 + Phase 11.C + Phase 16)
 //
-// Phase 11.C — DETTE-LIC-009 partiellement résolue : pattern matching pour les
-// routes détail `/clients/[id]/*` et `/licences/[id]/*` afin d'afficher
-// "Clients › Détail › Info" plutôt que le pathname brut avec UUID.
+// Phase 16 — DETTE-LIC-009 résolue : nom d'entité dynamique via
+// EntityNameContext. Les layouts /clients/[id] et /licences/[id] poussent
+// le nom (raisonSociale / reference) via EntityNameSetter ; ce composant le
+// consomme pour afficher "Clients › Bank Al-Maghrib › Info" au lieu de
+// "Clients › Détail › Info".
 //
-// Le rendu reste statique (pas de fetch entité — la résolution dynamique
-// "Clients › Bank Al-Maghrib › Info" demanderait un context Server → Client
-// non trivial à matérialiser via Next.js layouts. Conservée en dette résiduelle).
+// Fallback "Détail" conservé pour le bref instant entre le mount et le
+// useEffect du EntityNameSetter (pas de flash perceptible en pratique sur
+// les fetch < 100 ms).
 // ==============================================================================
 
 "use client";
@@ -15,6 +17,7 @@
 import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 
+import { useEntityName } from "./EntityNameContext";
 import { findRouteByPathname } from "./nav-routes";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -23,6 +26,7 @@ export function Breadcrumb() {
   const pathname = usePathname();
   const t = useTranslations("nav.items");
   const tBc = useTranslations("nav.breadcrumb");
+  const entityName = useEntityName();
 
   // Match exact d'abord (route principale).
   const route = findRouteByPathname(pathname);
@@ -35,11 +39,13 @@ export function Breadcrumb() {
   if (segments.length >= 2 && UUID_PATTERN.test(segments[1] ?? "")) {
     const root = segments[0];
     const sub = segments[2];
+    // Phase 16 : remplace "Détail" par le nom d'entité si disponible (Provider).
+    const middle = entityName ?? tBc("detail");
     if (root === "clients") {
       return (
         <Crumb>
           {t("clients")}
-          {sub === undefined ? "" : ` › ${tBc("detail")} › ${labelSub(sub, tBc)}`}
+          {sub === undefined ? "" : ` › ${middle} › ${labelSub(sub, tBc)}`}
         </Crumb>
       );
     }
@@ -47,7 +53,7 @@ export function Breadcrumb() {
       return (
         <Crumb>
           {t("licences")}
-          {sub === undefined ? "" : ` › ${tBc("detail")} › ${labelSub(sub, tBc)}`}
+          {sub === undefined ? "" : ` › ${middle} › ${labelSub(sub, tBc)}`}
         </Crumb>
       );
     }

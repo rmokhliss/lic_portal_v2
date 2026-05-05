@@ -21,6 +21,8 @@ import { getTranslations } from "next-intl/server";
 import { isAppError } from "@/server/modules/error";
 import { getClientUseCase, listLicencesByClientUseCase } from "@/server/composition-root";
 
+import { EntityNameSetter } from "@/components/layout/EntityNameContext";
+
 import { ClientStatusBadge } from "../_components/ClientStatusBadge";
 import { ClientDetailTabsNav } from "./_components/ClientDetailTabsNav";
 import {
@@ -57,6 +59,9 @@ export default async function ClientDetailLayout({ children, params }: ClientDet
 
   return (
     <div className="p-8">
+      {/* Phase 16 — DETTE-LIC-009 : pousse raisonSociale dans EntityNameContext
+           pour le breadcrumb dynamique "Clients › <raisonSociale> › Info". */}
+      <EntityNameSetter name={client.raisonSociale} />
       <header className="mb-6 flex items-start justify-between gap-4">
         <div className="space-y-2">
           <Link

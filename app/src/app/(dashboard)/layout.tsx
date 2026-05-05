@@ -11,18 +11,21 @@ import type { ReactNode } from "react";
 
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import { EntityNameProvider } from "@/components/layout/EntityNameContext";
 import { requireAuthPage } from "@/server/infrastructure/auth";
 
 export default async function DashboardLayout({ children }: { readonly children: ReactNode }) {
   const user = await requireAuthPage();
 
   return (
-    <div className="bg-background min-h-screen">
-      <AppSidebar userRole={user.role} />
-      <div className="ml-64 flex min-h-screen flex-col">
-        <AppHeader user={user} />
-        <main className="flex-1">{children}</main>
+    <EntityNameProvider>
+      <div className="bg-background min-h-screen">
+        <AppSidebar userRole={user.role} />
+        <div className="ml-64 flex min-h-screen flex-col">
+          <AppHeader user={user} />
+          <main className="flex-1">{children}</main>
+        </div>
       </div>
-    </div>
+    </EntityNameProvider>
   );
 }

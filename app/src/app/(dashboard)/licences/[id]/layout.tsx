@@ -13,6 +13,8 @@ import { getTranslations } from "next-intl/server";
 import { isAppError } from "@/server/modules/error";
 import { getClientUseCase, getLicenceUseCase } from "@/server/composition-root";
 
+import { EntityNameSetter } from "@/components/layout/EntityNameContext";
+
 import { LicenceDetailTabsNav } from "./_components/LicenceDetailTabsNav";
 import { LicenceStatusBadge } from "./_components/LicenceStatusBadge";
 
@@ -38,6 +40,9 @@ export default async function LicenceDetailLayout({ children, params }: PageProp
 
   return (
     <div className="p-8">
+      {/* Phase 16 — DETTE-LIC-009 : pousse reference dans EntityNameContext
+           pour le breadcrumb dynamique "Licences › LIC-2026-001 › Resume". */}
+      <EntityNameSetter name={licence.reference} />
       <header className="mb-6 space-y-2">
         <Link
           href={`/clients/${licence.clientId}/licences`}
