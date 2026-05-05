@@ -21,7 +21,7 @@ afterAll(async () => {
   await ctx.close();
 });
 
-setupTransactionalTests(ctx);
+setupTransactionalTests(ctx, { cleanTables: ["lic_pays_ref"] });
 
 describe("CreatePaysUseCase — cas nominaux", () => {
   it("INSERT et retourne le DTO", async () => {

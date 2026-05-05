@@ -23,7 +23,7 @@ afterAll(async () => {
   await ctx.close();
 });
 
-setupTransactionalTests(ctx);
+setupTransactionalTests(ctx, { cleanTables: ["lic_team_members"] });
 
 async function seedThree(): Promise<void> {
   await ctx.sql`

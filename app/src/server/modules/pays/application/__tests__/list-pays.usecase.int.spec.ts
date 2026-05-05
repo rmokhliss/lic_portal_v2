@@ -21,7 +21,7 @@ afterAll(async () => {
   await ctx.close();
 });
 
-setupTransactionalTests(ctx);
+setupTransactionalTests(ctx, { cleanTables: ["lic_pays_ref"] });
 
 describe("ListPaysUseCase", () => {
   it("retourne [] sur base sans pays seedés", async () => {

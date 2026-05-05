@@ -54,16 +54,13 @@ describe("/api/health/ready (Phase 15)", () => {
   });
 
   it("returns 503 + code SPX-LIC-900 quand BD down (pas de fuite cause)", async () => {
-    vi.doMock("@/server/infrastructure/db/client", () => ({
+    vi.doMock("@/server/infrastructure/db/client", () => {
       // eslint-disable-next-line no-restricted-syntax -- mock d'erreur runtime BD
-      sql: Object.assign(
-        async (..._args: unknown[]) =>
-          Promise.reject(
-            new Error("connect ECONNREFUSED 127.0.0.1:5432 — host: secret-db.s2m.local"),
-          ),
-        {},
-      ),
-    }));
+      const dbError = new Error("connect ECONNREFUSED 127.0.0.1:5432 — host: secret-db.s2m.local");
+      return {
+        sql: Object.assign(async (..._args: unknown[]) => Promise.reject(dbError), {}),
+      };
+    });
     const { GET } = await import("../ready/route");
     const res = await GET();
     expect(res.status).toBe(503);

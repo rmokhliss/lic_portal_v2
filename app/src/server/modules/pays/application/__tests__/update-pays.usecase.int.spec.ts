@@ -23,7 +23,7 @@ afterAll(async () => {
   await ctx.close();
 });
 
-setupTransactionalTests(ctx);
+setupTransactionalTests(ctx, { cleanTables: ["lic_pays_ref"] });
 
 beforeEach(async () => {
   await createUseCase.execute({

@@ -21,7 +21,7 @@ afterAll(async () => {
   await ctx.close();
 });
 
-setupTransactionalTests(ctx);
+setupTransactionalTests(ctx, { cleanTables: ["lic_pays_ref"] });
 
 describe("GetPaysUseCase", () => {
   it("retourne le pays par codePays", async () => {

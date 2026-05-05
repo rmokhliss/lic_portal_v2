@@ -21,7 +21,7 @@ afterAll(async () => {
   await ctx.close();
 });
 
-setupTransactionalTests(ctx);
+setupTransactionalTests(ctx, { cleanTables: ["lic_langues_ref"] });
 
 describe("CreateLangueUseCase", () => {
   it("INSERT et retourne le DTO", async () => {
@@ -37,6 +37,9 @@ describe("CreateLangueUseCase", () => {
   });
 
   it("throw ConflictError SPX-LIC-710 si codeLangue existe (seed bootstrap)", async () => {
+    // Phase 16 — DETTE-LIC-018 : cleanTables wipe la bootstrap migration 0003.
+    // On re-seede 'fr' explicitement pour vérifier le ConflictError.
+    await ctx.sql`INSERT INTO lic_langues_ref (code_langue, nom) VALUES ('fr', 'Français')`;
     await expect(useCase.execute({ codeLangue: "fr", nom: "Doublon" })).rejects.toMatchObject({
       code: "SPX-LIC-710",
     });

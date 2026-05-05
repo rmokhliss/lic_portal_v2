@@ -41,16 +41,42 @@ export function createTestDb(): TestDbContext {
   return { sql, db, close: () => sql.end() };
 }
 
+export interface TransactionalTestsOptions {
+  /** Phase 16 — DETTE-LIC-018 : tables à TRUNCATE au début de chaque test
+   *  (à l'intérieur de la transaction, donc rollback-safe). Permet d'isoler
+   *  les specs des données committées par `pnpm db:seed` qui survivent au
+   *  ROLLBACK racine.
+   *
+   *  Convention : utiliser TRUNCATE ... CASCADE pour gérer les FK. Les tables
+   *  bootstrap (lic_users SYSTEM seedé en migration 0000) ne doivent PAS
+   *  apparaître ici (seed minimal est nécessaire pour les FK cree_par/etc.).
+   *
+   *  Exemple : `setupTransactionalTests(ctx, { cleanTables: ["lic_pays_ref"] })` */
+  readonly cleanTables?: readonly string[];
+}
+
 /** Wrap chaque test dans BEGIN; ... ROLLBACK;.
  *
  *  Pré-requis : `ctx.sql` configuré max:1 (sinon des requêtes peuvent partir
  *  sur d'autres connexions et échapper à la transaction).
  *
  *  Drizzle `db.transaction()` au sein d'un test → SAVEPOINT (transaction
- *  imbriquée), également annulé par le ROLLBACK racine. */
-export function setupTransactionalTests(ctx: TestDbContext): void {
+ *  imbriquée), également annulé par le ROLLBACK racine.
+ *
+ *  Phase 16 — Option `cleanTables` : isole les tables référentielles polluées
+ *  par `pnpm db:seed` (DETTE-LIC-018 résolue). TRUNCATE exécuté APRÈS BEGIN
+ *  donc rolled back en fin de test — pas de pollution cross-tests. */
+export function setupTransactionalTests(
+  ctx: TestDbContext,
+  options: TransactionalTestsOptions = {},
+): void {
   beforeEach(async () => {
     await ctx.sql.unsafe("BEGIN");
+    if (options.cleanTables !== undefined && options.cleanTables.length > 0) {
+      // TRUNCATE all listed tables in a single statement (atomic, ordering-safe via CASCADE).
+      const sqlIdentList = options.cleanTables.map((t) => `"${t}"`).join(", ");
+      await ctx.sql.unsafe(`TRUNCATE TABLE ${sqlIdentList} CASCADE`);
+    }
   });
   afterEach(async () => {
     await ctx.sql.unsafe("ROLLBACK");
