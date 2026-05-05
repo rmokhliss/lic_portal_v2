@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 import { importHealthcheckClientAction } from "../_actions";
 
@@ -107,19 +108,15 @@ export function ImportHealthcheckClientButton(props: ImportHealthcheckClientButt
             <p className="text-muted-foreground text-xs">{t("pkiNote")}</p>
             <div className="space-y-1">
               <Label htmlFor="licenceId">{t("licenceLabel")}</Label>
-              <select
+              {/* Phase 16 — DETTE-LIC-013 : combobox recherche textuelle pour
+                   licences (volume potentiel >200 — ex: gros bancaire). */}
+              <SearchableSelect
                 id="licenceId"
                 name="licenceId"
                 required
-                className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm"
-              >
-                <option value="">{t("licencePlaceholder")}</option>
-                {activeLicences.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.reference}
-                  </option>
-                ))}
-              </select>
+                placeholder={t("licencePlaceholder")}
+                options={activeLicences.map((l) => ({ value: l.id, label: l.reference }))}
+              />
             </div>
             <div className="space-y-1">
               <Label htmlFor="file">{t("fileLabel")}</Label>

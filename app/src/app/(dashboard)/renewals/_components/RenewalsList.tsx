@@ -16,6 +16,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Table,
   TableBody,
@@ -122,21 +123,18 @@ export function RenewalsList(props: RenewalsListProps) {
           </div>
           <div className="space-y-1">
             <Label htmlFor="filter-client">{t("filter.client")}</Label>
-            <select
+            {/* Phase 16 — DETTE-LIC-014 : combobox recherche textuelle pour
+                 clients (volume cible 100-200 mono-tenant). */}
+            <SearchableSelect
               id="filter-client"
-              value={filterClient}
-              onChange={(e) => {
-                setFilterClient(e.target.value);
+              name="filter-client-name"
+              placeholder={t("filter.clientAll")}
+              defaultValue={filterClient}
+              options={props.clients.map((c) => ({ value: c.id, label: c.label }))}
+              onSelect={(value) => {
+                setFilterClient(value);
               }}
-              className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm"
-            >
-              <option value="">{t("filter.clientAll")}</option>
-              {props.clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+            />
           </div>
           <div className="space-y-1">
             <Label htmlFor="from-date">{t("filter.fromDate")}</Label>
