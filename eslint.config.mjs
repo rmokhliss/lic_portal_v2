@@ -128,7 +128,15 @@ export default tseslint.config(
             // domain : aucune dépendance hors TS, shared et erreurs typées
             { from: "domain", allow: ["domain", "shared", "module-error"] },
 
-            // application : peut utiliser domain + ports du même module + shared + erreurs typées
+            // application : peut utiliser domain + ports du même module + shared + erreurs typées.
+            //
+            // Note "infrastructure" : couple toléré en Variante B (Next.js full-stack —
+            // ADR 0009) UNIQUEMENT pour la primitive `db.transaction()` exposée par
+            // `infrastructure/db/client`. Cf. ADR 0010 pour le périmètre exact de la
+            // dérive (les requêtes hors tx doivent passer par un port repository).
+            // Code applicatif : 65 use-cases mutateurs ouvrent leur tx top-level via
+            // ce couplage. UnitOfWork port reste l'idéal Variante A — non implémenté
+            // en LIC v2 par décision Phase 15.
             {
               from: "application",
               allow: ["domain", "ports", "shared", "infrastructure", "module-error"],

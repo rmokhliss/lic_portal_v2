@@ -1,7 +1,7 @@
 # Feedback Référentiel S2M — Archive de remontées (capitalisation close)
 
 > **Statut** : Capitalisation close (Mai 2026).
-> 15 des 23 remontées ont été intégrées dans le Référentiel S2M v2.0 (livraison Mai 2026).
+> 15 des 23 remontées ont été intégrées dans le Référentiel S2M v2.0 (livraison Mai 2026), repris en v2.1 (audit Master Mai 2026 — voir R-39 et R-40 plus bas).
 > 8 sont hors scope du Référentiel ; certaines ont fait l'objet de capitalisations locales dans LIC v2 (voir tableau ci-dessous).
 > Conserver ce fichier en archive pour traçabilité.
 
@@ -843,3 +843,47 @@ _Fin de l'archive. Capitalisation close en Mai 2026._
   1. Préférer `db.select().from(table).where(...)` chaque fois que la requête est exprimable en query builder (parse auto, types stricts).
   2. `db.execute(sql\`...\`)`uniquement quand le query builder ne suffit pas (sous-requêtes complexes, RETURNING UPDATE, expressions non supportées). **Cast manuel à la sortie** pour :`TIMESTAMPTZ`→`Date`, `JSONB`→ typage explicite via`as`, `NUMERIC`→`number`ou`string` selon stratégie projet.
   3. Documenter comme règle critique car le bug ne se voit qu'à l'exécution (TypeScript ne peut pas vérifier les types de retour de `sql\`...\`` sans annotation manuelle).
+
+---
+
+### R-39 — Variante B : `db.transaction()` directement consommée en `application/` (audit Master Mai 2026 / FB-24)
+
+- **Type** : Précision §4.13 variantes architecturales A/B
+- **Phase LIC** : Toutes phases avec mutation transactionnelle (1 → 14)
+- **Contexte** : L'orthodoxie hexagonale stricte (Variante A) impose un port `UnitOfWork` + adapter `UnitOfWorkPg` pour exposer la primitive transactionnelle sans coupler `application/` à Drizzle. LIC v2 (Variante B Next.js full-stack — ADR-0009) a 65 use-cases mutateurs qui font `import { db } from "@/server/infrastructure/db/client"` et ouvrent une `db.transaction(async (tx) => { ... })` directement, en passant le `tx` en paramètre opaque (`DbTransaction = unknown`) aux ports repositories.
+
+  L'audit Master Référentiel v2.1 (Mai 2026) note ce pattern et propose 2 sorties : (1) refactor UnitOfWork (~10-15 j/dev), (2) ADR de dérive bornée. LIC v2 retient la **dérive bornée** documentée dans ADR-0010 ; refactor disproportionné vs bénéfice (Variante B accepte ce couplage par construction, le `tx` reste opaque côté ports).
+
+- **Décision LIC v2** : ADR-0010 acte la dérive avec 3 contraintes :
+  1. Usage **uniquement** pour `db.transaction()` — ni `db.select()`, ni `db.update()`, ni `db.execute()` en couche `application/`.
+  2. Le `tx` reste **opaque** côté port (`DbTransaction = unknown`).
+  3. Toute requête hors transaction passe par un port `<X>Repository`.
+
+- **Reco évolution Référentiel v2.2+** : ajouter en §4.13 un encart **« Variante B — transactions Drizzle »** :
+  - Variante A : port `UnitOfWork` obligatoire, adapter `UnitOfWorkPg` injecté.
+  - Variante B : `db.transaction()` consommée directement en `application/` autorisée, **uniquement** pour la primitive transactionnelle.
+  - Les requêtes de lecture/écriture hors tx **doivent** passer par un port repository (vérifié par revue de code, pas par ESLint en l'état).
+
+---
+
+### R-40 — Next.js 16 `proxy.ts` (et non `middleware.ts`) pour CSP nonces (audit Master Mai 2026 / FB-25)
+
+- **Type** : Précision §4.16 — headers HTTP de sécurité Next.js 16
+- **Phase LIC** : Phase 13.A (CSP Variante A+nonces — ADR-0018, commit `2b8fc3c`)
+- **Contexte** : Next.js 16 a renommé le fichier conventionnel `middleware.ts` en `proxy.ts` pour le runtime Edge. Le Référentiel v2.0 §4.16 référence l'ancien nom. LIC v2 utilise `app/src/proxy.ts` pour la génération de nonces CSP par requête (cf. ADR-0018), avec garde `NODE_ENV !== 'production'` désactivant le proxy en dev (HMR sans nonces).
+
+- **Décision LIC v2** : nom de fichier `proxy.ts` (Next.js 16). Pas de redirection vers `middleware.ts` (deprecated dans Next 16+).
+
+- **Reco évolution Référentiel v2.2+** : §4.16 doit préciser :
+  - Next.js ≤15 : `middleware.ts` (Edge runtime).
+  - Next.js 16+ : **`proxy.ts`** (renommage Edge runtime). Les implémentations existantes sont à migrer.
+  - Pattern CSP nonces avec garde `NODE_ENV` reste identique (proxy intercepte `/(?!_next).*` en prod uniquement).
+  - Référencer `crypto.randomBytes(16).toString("base64")` comme générateur nonce standard.
+
+---
+
+## Phase 15 — Audit Master Mai 2026 (alignement Référentiel v2.0 → v2.1)
+
+L'audit Master Référentiel reçu Mai 2026 a couvert 3 bloquants (redaction PII, ADR application→infrastructure, sync docs) + 4 importants (split /health probes, archive audits, port PasswordHasher, liste configs Stop validate) + 3 mineurs (brute-force lockout C1 traité, MFA TOTP différé DETTE-LIC-021, audit lectures sensibles différé DETTE-LIC-022).
+
+R-39 et R-40 ci-dessus formalisent les 2 remontées issues de cet audit pour le Référentiel v2.2.
