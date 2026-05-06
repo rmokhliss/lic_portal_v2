@@ -143,13 +143,27 @@
     appearance: textfield;
   }
 
-  /* Phase 18 R-14 — masquer les éventuelles flèches de scroll Radix
-   * (ScrollArea + Tabs scroll buttons si activés ultérieurement). Les tabs
-   * conservent overflow-x: auto via leur container — scroll horizontal
-   * souris/trackpad/clavier toujours fonctionnel. */
+  /* Phase 18 R-14 + Phase 20 R-24 — masquer scrollbars natives + flèches
+   * Radix sur les conteneurs tabs/scroll. Scroll horizontal toujours
+   * fonctionnel via souris/trackpad/clavier. Cible :
+   *   - Radix ScrollArea (jamais utilisé aujourd'hui mais défensif)
+   *   - Radix Tabs scroll buttons (jamais activés mais défensif)
+   *   - <TabsList data-slot="tabs-list"> de notre composant ui/tabs.tsx
+   *     qui a `overflow-x-auto` → Chrome/Edge Windows affichait des
+   *     scrollbars avec flèches ▲▼ aux extrémités, perçues comme "flèches
+   *     tabs" (R-24 — Phase 18 CSS insuffisant car ne ciblait pas les
+   *     scrollbars natives, seulement les composants Radix).
+   */
   [data-radix-scroll-area-scrollbar],
   [data-radix-tabs-scroll-button] {
     display: none !important;
+  }
+  [data-slot="tabs-list"] {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge legacy */
+  }
+  [data-slot="tabs-list"]::-webkit-scrollbar {
+    display: none; /* Chrome/Edge/Safari */
   }
 }
 
