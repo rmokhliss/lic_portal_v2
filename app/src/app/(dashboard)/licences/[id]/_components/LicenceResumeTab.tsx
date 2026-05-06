@@ -262,6 +262,21 @@ function StatusDialog({
   const [error, setError] = useState<string>("");
   const [newStatus, setNewStatus] = useState<LicenceStatusClient>(licence.status);
 
+  // Phase 20 R-28 — humanise les codes d'erreur métier les plus fréquents.
+  const humanizeStatusError = (err: unknown): string => {
+    const raw = err instanceof Error ? err.message : String(err);
+    if (raw.includes("SPX-LIC-733")) {
+      return "Transition de statut interdite. Vérifier le statut courant et le statut cible (ex: une licence EXPIRE ne peut plus revenir ACTIF).";
+    }
+    if (raw.includes("SPX-LIC-734")) {
+      return "Conflit de version : la licence a été modifiée entre temps. Recharger la page et réessayer.";
+    }
+    if (raw.includes("SPX-LIC-735")) {
+      return "Licence introuvable. Recharger la page.";
+    }
+    return raw.length > 0 ? raw : "Erreur";
+  };
+
   const onSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (newStatus === licence.status) {
@@ -279,7 +294,7 @@ function StatusDialog({
           setError("");
           onOpenChange(false);
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Erreur");
+          setError(humanizeStatusError(err));
         }
       })();
     });
@@ -344,6 +359,23 @@ function GenerateLicFileButton({ licenceId }: { readonly licenceId: string }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
 
+  // Phase 20 R-31 — transformation du raw error en message UX explicite avec
+  // remediation pour les codes les plus fréquents : CA absente / cert client
+  // manquant. Les autres erreurs propagent leur message.
+  const humanizeError = (err: unknown): string => {
+    const raw = err instanceof Error ? err.message : String(err);
+    if (raw.includes("SPX-LIC-411")) {
+      return "CA S2M non générée. Aller dans /settings/sécurité pour générer la CA avant de produire un fichier .lic.";
+    }
+    if (raw.includes("SPX-LIC-412") || raw.includes("client_certificate_pem")) {
+      return "Ce client n'a pas de certificat PKI. Lancer le backfill dans /settings/sécurité pour émettre un certificat client.";
+    }
+    if (raw.includes("SPX-LIC-413")) {
+      return "Clé privée client illisible (déchiffrement AES échoué). Vérifier APP_MASTER_KEY ou re-émettre le cert via le backfill.";
+    }
+    return raw.length > 0 ? raw : "Erreur génération .lic";
+  };
+
   const onGenerate = () => {
     setError("");
     startTransition(() => {
@@ -358,7 +390,7 @@ function GenerateLicFileButton({ licenceId }: { readonly licenceId: string }) {
           a.click();
           URL.revokeObjectURL(url);
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Erreur");
+          setError(humanizeError(err));
         }
       })();
     });
@@ -369,7 +401,7 @@ function GenerateLicFileButton({ licenceId }: { readonly licenceId: string }) {
       <Button type="button" variant="outline" onClick={onGenerate} disabled={pending}>
         {pending ? t("generating") : t("generate")}
       </Button>
-      {error !== "" && <span className="text-destructive ml-2 text-xs">{error}</span>}
+      {error !== "" && <p className="text-destructive mt-1 whitespace-normal text-xs">{error}</p>}
     </>
   );
 }

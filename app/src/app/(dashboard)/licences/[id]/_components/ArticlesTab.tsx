@@ -65,7 +65,14 @@ type Dialog =
   | { kind: "none" }
   | { kind: "addProduit" }
   | { kind: "addArticle"; produitId: number; produitNom: string }
-  | { kind: "editVolume"; liaisonId: string; current: number; articleNom: string };
+  | {
+      kind: "editVolume";
+      liaisonId: string;
+      currentAutorise: number;
+      currentConsomme: number;
+      articleNom: string;
+      controleVolume: boolean;
+    };
 
 export function ArticlesTab(props: ArticlesTabProps) {
   const t = useTranslations("licences.detail.articles");
@@ -133,8 +140,13 @@ export function ArticlesTab(props: ArticlesTabProps) {
                   setDialog({
                     kind: "editVolume",
                     liaisonId: la.liaison.id,
-                    current: la.liaison.volumeAutorise,
+                    currentAutorise: la.liaison.volumeAutorise,
+                    currentConsomme: la.liaison.volumeConsomme,
                     articleNom: la.article?.nom ?? "",
+                    // Phase 20 R-32 — si l'article est en illimité, on
+                    // n'affiche pas le champ vol autorisé dans le dialog
+                    // (cf. EditVolumeDialog ci-dessous).
+                    controleVolume: la.article?.controleVolume ?? true,
                   });
                 }}
               />
@@ -593,16 +605,33 @@ function EditVolumeDialog({
 
   if (state.kind !== "editVolume") return null;
 
+  // Phase 20 R-32 — capture state.* maintenant pour éviter le narrow
+  // TypeScript dans le onSubmit (fermé sur la valeur courante).
+  const stateLiaisonId = state.liaisonId;
+  const stateControleVolume = state.controleVolume;
+
   const onSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const volumeStr = fd.get("volumeAutorise");
-    if (typeof volumeStr !== "string") return;
-    const volumeAutorise = Number(volumeStr);
+    // Phase 20 R-32 — payload partiel : on n'envoie que les champs édités
+    // (le use-case UpdateArticleVolumeUseCase accepte les 2 optionnels).
+    const payload: { id: string; volumeAutorise?: number; volumeConsomme?: number } = {
+      id: stateLiaisonId,
+    };
+    if (stateControleVolume) {
+      const volAutoStr = fd.get("volumeAutorise");
+      if (typeof volAutoStr === "string" && volAutoStr.length > 0) {
+        payload.volumeAutorise = Number(volAutoStr);
+      }
+    }
+    const volConsoStr = fd.get("volumeConsomme");
+    if (typeof volConsoStr === "string" && volConsoStr.length > 0) {
+      payload.volumeConsomme = Number(volConsoStr);
+    }
     startTransition(() => {
       void (async () => {
         try {
-          await updateArticleVolumeAction({ id: state.liaisonId, volumeAutorise }, { licenceId });
+          await updateArticleVolumeAction(payload, { licenceId });
           setError("");
           onClose();
         } catch (err) {
@@ -624,17 +653,42 @@ function EditVolumeDialog({
           <DialogTitle>{t("title", { article: state.articleNom })}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-3">
+          {/* Phase 20 R-32 — édition séparée vol autorisé + vol consommé.
+              Le champ vol autorisé est masqué pour les articles
+              fonctionnalité (controleVolume=false) — illimité. Le champ
+              vol consommé reste éditable (cas de correction manuelle
+              admin avant le prochain snapshot Phase 8 batch). */}
+          {state.controleVolume ? (
+            <div className="space-y-1">
+              <Label htmlFor="volumeAutorise">{t("volumeLabel")}</Label>
+              <Input
+                id="volumeAutorise"
+                name="volumeAutorise"
+                type="number"
+                min={0}
+                step={1}
+                defaultValue={state.currentAutorise}
+              />
+            </div>
+          ) : (
+            <p className="text-muted-foreground rounded border border-amber-500/30 bg-amber-500/10 p-2 text-xs">
+              Article « fonctionnalité » — volume autorisé non applicable (illimité).
+            </p>
+          )}
           <div className="space-y-1">
-            <Label htmlFor="volumeAutorise">{t("volumeLabel")}</Label>
+            <Label htmlFor="volumeConsomme">Volume consommé (correction manuelle)</Label>
             <Input
-              id="volumeAutorise"
-              name="volumeAutorise"
+              id="volumeConsomme"
+              name="volumeConsomme"
               type="number"
               min={0}
               step={1}
-              defaultValue={state.current}
-              required
+              defaultValue={state.currentConsomme}
             />
+            <p className="text-muted-foreground text-xs">
+              Valeur normalement recalculée par le job batch snapshot. Édition manuelle utile pour
+              corriger un import healthcheck erroné.
+            </p>
           </div>
           {error && <p className="text-destructive text-sm">{error}</p>}
           <DialogFooter>
