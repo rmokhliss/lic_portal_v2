@@ -1,9 +1,13 @@
 // ==============================================================================
-// LIC v2 — SettingsGeneralForm (Phase 2.B étape 7/7)
+// LIC v2 — SettingsGeneralForm (Phase 2.B étape 7/7 + Phase 18 R-18)
 //
-// Client Component : form contrôlé pour les 9 clés data-model.md §lic_settings.
-// Soumission via Server Action passée en prop (action). useTransition pour
-// désactiver le bouton pendant la requête + feedback succès/erreur basique.
+// Client Component : form contrôlé pour les seuils + tolérances métier.
+// Phase 18 R-18 — sections « Crypto » (clés AES = secrets internes) +
+// « Application » (smtp_configured = redondant avec /settings/smtp,
+// app_name = inutile UX) retirées de l'UI. Les settings sous-jacents
+// restent en BD et leurs valeurs ne sont pas perturbées par la simplification
+// du form (le payload soumis ne contient plus ces clés → l'API les laisse
+// inchangées si Zod schema parse strict avec champs optionnels).
 // ==============================================================================
 
 "use client";
@@ -21,10 +25,6 @@ export interface SettingsGeneralFormProps {
     tolerance_date_jours?: number;
     warning_volume_pct?: number;
     warning_date_jours?: number;
-    licence_file_aes_key?: string;
-    healthcheck_aes_key?: string;
-    smtp_configured?: boolean;
-    app_name?: string;
   };
   readonly action: (input: unknown) => Promise<void>;
 }
@@ -43,10 +43,6 @@ export function SettingsGeneralForm({ initial, action }: SettingsGeneralFormProp
       tolerance_date_jours: numOrUndef(fd.get("tolerance_date_jours")),
       warning_volume_pct: numOrUndef(fd.get("warning_volume_pct")),
       warning_date_jours: numOrUndef(fd.get("warning_date_jours")),
-      licence_file_aes_key: strOrUndef(fd.get("licence_file_aes_key")),
-      healthcheck_aes_key: strOrUndef(fd.get("healthcheck_aes_key")),
-      smtp_configured: fd.get("smtp_configured") === "on",
-      app_name: strOrUndef(fd.get("app_name")),
     };
     // Construit un payload sans les undefined (Zod .strict() refuse les
     // propriétés explicitement undefined). On filtre via Object.entries.
@@ -90,7 +86,7 @@ export function SettingsGeneralForm({ initial, action }: SettingsGeneralFormProp
 
       <fieldset className="space-y-4">
         <legend className="text-foreground font-display mb-2 text-base">
-          Tolérances healthcheck (règle L15)
+          Tolérances healthcheck
         </legend>
         <NumField
           name="tolerance_volume_pct"
@@ -104,38 +100,10 @@ export function SettingsGeneralForm({ initial, action }: SettingsGeneralFormProp
         />
       </fieldset>
 
-      <fieldset className="space-y-4">
-        <legend className="text-foreground font-display mb-2 text-base">Crypto (Phase 3)</legend>
-        <TextField
-          name="licence_file_aes_key"
-          label="Clé AES fichiers .lic"
-          defaultValue={initial.licence_file_aes_key ?? ""}
-        />
-        <TextField
-          name="healthcheck_aes_key"
-          label="Clé AES healthcheck"
-          defaultValue={initial.healthcheck_aes_key ?? ""}
-        />
-      </fieldset>
-
-      <fieldset className="space-y-4">
-        <legend className="text-foreground font-display mb-2 text-base">Application</legend>
-        <TextField
-          name="app_name"
-          label="Nom de l'application"
-          defaultValue={initial.app_name ?? ""}
-        />
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="smtp_configured"
-            name="smtp_configured"
-            defaultChecked={initial.smtp_configured ?? false}
-            className="size-4"
-          />
-          <Label htmlFor="smtp_configured">SMTP configuré</Label>
-        </div>
-      </fieldset>
+      {/* Phase 18 R-18 — sections « Crypto (Phase 3) » et « Application »
+          retirées : les clés AES sont des secrets internes (jamais exposés
+          en UI), la checkbox SMTP est redondante avec l'onglet SMTP, et le
+          nom d'application est inutile pour l'utilisateur final. */}
 
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={pending}>
@@ -154,11 +122,6 @@ function numOrUndef(v: FormDataEntryValue | null): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-function strOrUndef(v: FormDataEntryValue | null): string | undefined {
-  if (typeof v !== "string") return undefined;
-  return v.length === 0 ? undefined : v;
-}
-
 function NumField({
   name,
   label,
@@ -172,23 +135,6 @@ function NumField({
     <div className="space-y-1">
       <Label htmlFor={name}>{label}</Label>
       <Input id={name} name={name} type="number" defaultValue={defaultValue ?? ""} />
-    </div>
-  );
-}
-
-function TextField({
-  name,
-  label,
-  defaultValue,
-}: {
-  readonly name: string;
-  readonly label: string;
-  readonly defaultValue: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} type="text" defaultValue={defaultValue} />
     </div>
   );
 }

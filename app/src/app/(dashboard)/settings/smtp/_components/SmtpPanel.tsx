@@ -1,5 +1,13 @@
 // ==============================================================================
-// LIC v2 — /settings/smtp — Panel client (Phase 14)
+// LIC v2 — /settings/smtp — Panel client (Phase 14 + Phase 18 R-19)
+//
+// Phase 18 R-19 — palette migrée sur les vars DS (`bg-card` / `bg-surface-1` /
+// `text-foreground` / `text-muted-foreground`) au lieu de `bg-white text-spx-ink`.
+// Sur le mode dark global LIC v2, l'ancien rendu donnait du texte sombre sur
+// fond clair (lisible) MAIS les valeurs <dd> par défaut héritaient de la
+// couleur CSS body (`var(--foreground)` = blanc) → blanc sur blanc = invisible.
+// Force désormais `text-foreground` partout pour rester lisible quel que soit
+// le thème actif.
 // ==============================================================================
 
 "use client";
@@ -50,50 +58,52 @@ export function SmtpPanel({
 
   return (
     <div className="space-y-4">
-      <section className="border-spx-ink/10 rounded-lg border bg-white p-4">
-        <h2 className="text-spx-ink text-sm font-semibold">État de la configuration</h2>
+      <section className="border-border bg-surface-1 text-foreground rounded-lg border p-4">
+        <h2 className="text-foreground text-sm font-semibold">État de la configuration</h2>
         <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
-          <dt className="text-spx-ink/60">Mode</dt>
+          <dt className="text-muted-foreground">Mode</dt>
           <dd>
             {isSimulated ? (
-              <span className="rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-900">
+              <span className="rounded bg-amber-500/15 px-2 py-0.5 text-xs text-amber-300">
                 Simulé (console)
               </span>
             ) : (
-              <span className="rounded bg-green-100 px-2 py-0.5 text-xs text-green-900">SMTP</span>
+              <span className="rounded bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-300">
+                SMTP
+              </span>
             )}
           </dd>
-          <dt className="text-spx-ink/60">Hôte</dt>
+          <dt className="text-muted-foreground">Hôte</dt>
           <SmtpField value={status.host} placeholder="(non défini)" />
-          <dt className="text-spx-ink/60">Port</dt>
+          <dt className="text-muted-foreground">Port</dt>
           <SmtpField value={status.port} placeholder="587" />
-          <dt className="text-spx-ink/60">Sécurisé (TLS)</dt>
+          <dt className="text-muted-foreground">Sécurisé (TLS)</dt>
           <SmtpField value={null} placeholder="false" />
-          <dt className="text-spx-ink/60">From</dt>
+          <dt className="text-muted-foreground">From</dt>
           <SmtpField value={status.from} placeholder="Licence Manager <noreply@s2m.ma>" />
         </dl>
         {isSimulated && (
-          <p className="text-spx-ink/70 mt-3 text-xs">
+          <p className="text-muted-foreground mt-3 text-xs">
             Aucun email réel n&apos;est envoyé. Définir{" "}
-            <code className="bg-muted rounded px-1">SMTP_HOST</code> dans{" "}
-            <code className="bg-muted rounded px-1">.env</code> pour activer le mode SMTP.
+            <code className="bg-muted text-foreground rounded px-1">SMTP_HOST</code> dans{" "}
+            <code className="bg-muted text-foreground rounded px-1">.env</code> pour activer le mode
+            SMTP.
           </p>
         )}
       </section>
 
-      {/* Sub-component local — affiche valeur réelle ou défaut .env.example
-          grisé en italique. Centralise le pattern <dd> avec fallback. */}
-
       {canTest && (
-        <section className="border-spx-ink/10 rounded-lg border bg-white p-4">
-          <h2 className="text-spx-ink text-sm font-semibold">Tester l&apos;envoi</h2>
-          <p className="text-spx-ink/70 mt-1 text-xs">
+        <section className="border-border bg-surface-1 text-foreground rounded-lg border p-4">
+          <h2 className="text-foreground text-sm font-semibold">Tester l&apos;envoi</h2>
+          <p className="text-muted-foreground mt-1 text-xs">
             Envoie un email de test au destinataire saisi (template{" "}
-            <code className="bg-muted rounded px-1">password-changed</code>).
+            <code className="bg-muted text-foreground rounded px-1">password-changed</code>).
           </p>
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <div className="min-w-[280px] flex-1 space-y-1">
-              <Label htmlFor="to">Destinataire</Label>
+              <Label htmlFor="to" className="text-foreground">
+                Destinataire
+              </Label>
               <Input
                 id="to"
                 name="to"
@@ -110,7 +120,7 @@ export function SmtpPanel({
             </Button>
           </div>
           {result !== null && (
-            <p className="mt-3 text-sm text-green-700">
+            <p className="mt-3 text-sm text-emerald-300">
               Email {result.delivered ? "envoyé" : "non envoyé"} en mode {result.mode}.
             </p>
           )}
@@ -131,7 +141,7 @@ function SmtpField({
   readonly placeholder: string;
 }): React.JSX.Element {
   if (value !== null && value !== "") {
-    return <dd className="font-mono">{value}</dd>;
+    return <dd className="text-foreground font-mono">{value}</dd>;
   }
-  return <dd className="text-spx-ink/40 font-mono italic">{placeholder}</dd>;
+  return <dd className="text-muted-foreground font-mono italic">{placeholder}</dd>;
 }

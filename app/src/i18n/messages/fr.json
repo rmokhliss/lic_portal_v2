@@ -179,7 +179,7 @@
         "generate": "Générer la CA",
         "generating": "Génération…",
         "download": "Télécharger s2m-ca.pem",
-        "regenWarning": "⚠ Régénérer la CA invaliderait tous les certificats clients existants. Opération non supportée Phase 3 — contacter l'équipe Référentiel S2M."
+        "regenWarning": "⚠ Régénérer la CA invaliderait tous les certificats clients existants. Opération non supportée — contacter l'équipe Référentiel S2M."
       },
       "expose": {
         "title": "Endpoint public CA",
@@ -305,7 +305,7 @@
     "detail": {
       "back": "← Liste des clients",
       "importHealthcheck": "Importer healthcheck",
-      "importHealthcheckTooltip": "Disponible en Phase 3 (PKI)",
+      "importHealthcheckTooltip": "Importer un fichier .hc signé par le client",
       "tabs": {
         "info": "Informations",
         "entites": "Entités",
@@ -431,7 +431,7 @@
         "importHealthcheck": "Importer healthcheck",
         "noActiveLicence": "Aucune licence active sur ce client",
         "dialogTitle": "Importer un fichier healthcheck",
-        "pkiNote": "⚠️ Stub Phase 10 — la vérification de signature certificat client est différée Phase 3 (DETTE-LIC-008). Le parsing CSV/JSON fonctionne.",
+        "pkiNote": "ℹ️ La vérification PKI de signature certificat client n'est pas encore active. Le parsing CSV/JSON fonctionne et alimente l'historique volumes.",
         "licenceLabel": "Licence cible",
         "licencePlaceholder": "— Choisir une licence —",
         "fileLabel": "Fichier .csv ou .json",

@@ -1,10 +1,9 @@
 // ==============================================================================
-// LIC v2 — /settings/general (Phase 2.B étape 7/7)
+// LIC v2 — /settings/general (Phase 2.B étape 7/7 + Phase 18 R-18)
 //
-// Lit les 9 clés lic_settings via ListSettingsUseCase puis les passe au form
-// client. La Server Action updateGeneralSettingsAction (importée depuis
-// _actions.ts) est passée en prop pour que le form la déclenche après
-// soumission.
+// Lit les seuils + tolérances métier via ListSettingsUseCase puis les passe au
+// form client. Phase 18 R-18 — clés AES + smtp_configured + app_name retirés
+// du form (cf. SettingsGeneralForm).
 // ==============================================================================
 
 import { listSettingsUseCase } from "@/server/composition-root";
@@ -24,10 +23,6 @@ export default async function SettingsGeneralPage() {
         tolerance_date_jours: numOrUndef(map.tolerance_date_jours),
         warning_volume_pct: numOrUndef(map.warning_volume_pct),
         warning_date_jours: numOrUndef(map.warning_date_jours),
-        licence_file_aes_key: strOrUndef(map.licence_file_aes_key),
-        healthcheck_aes_key: strOrUndef(map.healthcheck_aes_key),
-        smtp_configured: typeof map.smtp_configured === "boolean" ? map.smtp_configured : false,
-        app_name: strOrUndef(map.app_name),
       }}
     />
   );
@@ -35,8 +30,4 @@ export default async function SettingsGeneralPage() {
 
 function numOrUndef(v: unknown): number | undefined {
   return typeof v === "number" ? v : undefined;
-}
-
-function strOrUndef(v: unknown): string | undefined {
-  return typeof v === "string" ? v : undefined;
 }

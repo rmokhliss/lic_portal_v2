@@ -179,7 +179,7 @@
         "generate": "Generate the CA",
         "generating": "Generating…",
         "download": "Download s2m-ca.pem",
-        "regenWarning": "⚠ Regenerating the CA would invalidate all existing client certificates. Operation not supported in Phase 3 — contact the S2M Reference team."
+        "regenWarning": "⚠ Regenerating the CA would invalidate all existing client certificates. Operation not supported — contact the S2M Reference team."
       },
       "expose": {
         "title": "Public CA endpoint",
@@ -305,7 +305,7 @@
     "detail": {
       "back": "← Clients list",
       "importHealthcheck": "Import healthcheck",
-      "importHealthcheckTooltip": "Available in Phase 3 (PKI)",
+      "importHealthcheckTooltip": "Import a signed .hc file from the client",
       "tabs": {
         "info": "Info",
         "entites": "Entities",
@@ -431,7 +431,7 @@
         "importHealthcheck": "Import healthcheck",
         "noActiveLicence": "No active licence on this client",
         "dialogTitle": "Import a healthcheck file",
-        "pkiNote": "⚠️ Phase 10 stub — client certificate signature verification deferred to Phase 3 (DETTE-LIC-008). CSV/JSON parsing works.",
+        "pkiNote": "ℹ️ PKI client certificate signature verification is not yet active. CSV/JSON parsing works and feeds the volume history.",
         "licenceLabel": "Target licence",
         "licencePlaceholder": "— Pick a licence —",
         "fileLabel": ".csv or .json file",
