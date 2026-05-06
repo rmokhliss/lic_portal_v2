@@ -48,6 +48,15 @@ export class AlertConfigRepositoryPg extends AlertConfigRepository {
     return rows.map(toEntity);
   }
 
+  async findAll(tx?: DbTransaction): Promise<readonly PersistedAlertConfig[]> {
+    const target = (tx as PgDatabase<never> | undefined) ?? this.db;
+    const rows = await target
+      .select()
+      .from(alertConfigs)
+      .orderBy(asc(alertConfigs.clientId), asc(alertConfigs.libelle));
+    return rows.map(toEntity);
+  }
+
   async save(
     config: AlertConfig,
     actorId: string,

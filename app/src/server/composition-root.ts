@@ -411,7 +411,10 @@ export const deleteAlertConfigUseCase = new DeleteAlertConfigUseCase(
   auditRepository,
 );
 
-export { listAlertConfigsByClientUseCase } from "@/server/modules/alert-config/alert-config.module";
+export {
+  listAlertConfigsByClientUseCase,
+  listAllAlertConfigsUseCase,
+} from "@/server/modules/alert-config/alert-config.module";
 
 // --- Phase 8 étape 8.B : notifications (pas d'audit) ----------------------
 

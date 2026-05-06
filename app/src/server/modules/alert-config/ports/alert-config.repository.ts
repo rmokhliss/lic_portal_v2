@@ -14,6 +14,8 @@ export abstract class AlertConfigRepository {
   ): Promise<readonly PersistedAlertConfig[]>;
   /** Toutes les configs actives — utilisé par le job check-alerts. */
   abstract findAllActive(tx?: DbTransaction): Promise<readonly PersistedAlertConfig[]>;
+  /** Phase 17 S4 — vue cross-clients pour l'écran /alerts (actives + inactives). */
+  abstract findAll(tx?: DbTransaction): Promise<readonly PersistedAlertConfig[]>;
   abstract save(
     config: AlertConfig,
     actorId: string,
