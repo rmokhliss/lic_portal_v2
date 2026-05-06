@@ -437,6 +437,7 @@ export const listFichiersByLicenceUseCase = new ListFichiersByLicenceUseCase(
 );
 
 export {
+  listAllFichiersUseCase,
   logFichierGenereUseCase,
   logHealthcheckImporteUseCase,
 } from "@/server/modules/fichier-log/fichier-log.module";

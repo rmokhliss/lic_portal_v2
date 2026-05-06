@@ -6,6 +6,7 @@
 // ==============================================================================
 
 import { FichierLogRepositoryPg } from "./adapters/postgres/fichier-log.repository.pg";
+import { ListAllFichiersUseCase } from "./application/list-all-fichiers.usecase";
 import { ListFichiersByLicenceUseCase } from "./application/list-fichiers-by-licence.usecase";
 import { LogFichierGenereUseCase } from "./application/log-fichier-genere.usecase";
 import { LogHealthcheckImporteUseCase } from "./application/log-healthcheck-importe.usecase";
@@ -14,5 +15,6 @@ import type { FichierLogRepository } from "./ports/fichier-log.repository";
 export const fichierLogRepository: FichierLogRepository = new FichierLogRepositoryPg();
 
 export const listFichiersByLicenceUseCase = new ListFichiersByLicenceUseCase(fichierLogRepository);
+export const listAllFichiersUseCase = new ListAllFichiersUseCase(fichierLogRepository);
 export const logFichierGenereUseCase = new LogFichierGenereUseCase(fichierLogRepository);
 export const logHealthcheckImporteUseCase = new LogHealthcheckImporteUseCase(fichierLogRepository);

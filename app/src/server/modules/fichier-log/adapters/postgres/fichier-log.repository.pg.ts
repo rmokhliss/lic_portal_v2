@@ -2,7 +2,7 @@
 // LIC v2 — Adapter Postgres FichierLogRepository (Phase 10.B)
 // ==============================================================================
 
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte, lte, type SQL } from "drizzle-orm";
 import type { drizzle } from "drizzle-orm/postgres-js";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 
@@ -11,7 +11,11 @@ import type * as schema from "@/server/infrastructure/db/schema";
 import { InternalError } from "@/server/modules/error";
 
 import type { FichierLog, PersistedFichierLog } from "../../domain/fichier-log.entity";
-import { type DbTransaction, FichierLogRepository } from "../../ports/fichier-log.repository";
+import {
+  type DbTransaction,
+  type FindAllFichiersFilters,
+  FichierLogRepository,
+} from "../../ports/fichier-log.repository";
 
 import { toEntity } from "./fichier-log.mapper";
 import { fichiersLog } from "./schema";
@@ -57,6 +61,28 @@ export class FichierLogRepositoryPg extends FichierLogRepository {
       .from(fichiersLog)
       .where(eq(fichiersLog.licenceId, licenceId))
       .orderBy(desc(fichiersLog.createdAt));
+    return rows.map(toEntity);
+  }
+
+  async findAllRecent(
+    filters: FindAllFichiersFilters = {},
+    tx?: DbTransaction,
+  ): Promise<readonly PersistedFichierLog[]> {
+    const target = (tx as PgDatabase<never> | undefined) ?? this.db;
+    const conditions: SQL[] = [];
+    if (filters.type !== undefined) conditions.push(eq(fichiersLog.type, filters.type));
+    if (filters.statut !== undefined) conditions.push(eq(fichiersLog.statut, filters.statut));
+    if (filters.since !== undefined) conditions.push(gte(fichiersLog.createdAt, filters.since));
+    if (filters.until !== undefined) conditions.push(lte(fichiersLog.createdAt, filters.until));
+
+    const limit = filters.limit ?? 200;
+    const query = target.select().from(fichiersLog);
+    const rows = await (conditions.length > 0
+      ? query
+          .where(and(...conditions))
+          .orderBy(desc(fichiersLog.createdAt))
+          .limit(limit)
+      : query.orderBy(desc(fichiersLog.createdAt)).limit(limit));
     return rows.map(toEntity);
   }
 }
