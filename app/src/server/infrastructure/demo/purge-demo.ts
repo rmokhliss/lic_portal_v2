@@ -22,7 +22,7 @@ const log = createChildLogger("infrastructure/demo/purge-demo");
 /** Liste des tables métier purgées. Ordre indicatif ; CASCADE gère les FK. */
 const PURGE_TABLES: readonly string[] = [
   "lic_audit_log",
-  "lic_volume_history",
+  "lic_article_volume_history",
   "lic_licence_articles",
   "lic_licence_produits",
   "lic_renouvellements",

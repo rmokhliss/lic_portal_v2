@@ -43,7 +43,9 @@ import postgres from "postgres";
 import { seedPhase4Clients } from "./seed/phase4-clients.seed";
 import { seedPhase5Licences } from "./seed/phase5-licences.seed";
 import { seedPhase6Catalogue } from "./seed/phase6-catalogue.seed";
+import { seedPhase8Alerts } from "./seed/phase8-alerts.seed";
 import { seedPhase8Notifications } from "./seed/phase8-notifications.seed";
+import { seedPhase10Fichiers } from "./seed/phase10-fichiers.seed";
 
 import { SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
 
@@ -58,20 +60,24 @@ const DEFAULT_PASSWORD = "ChangeMe-2026!";
 const BCRYPT_COST = 10;
 
 async function seedRegions(sql: postgres.Sql): Promise<void> {
-  log.info("Seeding lic_regions_ref (Phase 17 D2 — 7 régions v1 réelles)");
-  // 7 régions extraites Excel v1 colonne REGIONS — NORD_AFRIQUE conservé
-  // (déjà présent migration 0003), 6 autres ajoutées. La paire
-  // FRANCOPHONE/ANGLOPHONE remplace l'ancienne géographique OUEST/CENTRALE/EST.
+  log.info("Seeding lic_regions_ref (Phase 17 D2 + Phase 18 R-20 — DM corrects + PASS)");
+  // 7 régions Excel v1 + PASS (Phase 18 R-20). DM responsable indicatif
+  // (relation DM ↔ région non-FK contraignante — la valeur réelle est posée
+  // librement à la création client). NORD_AFRIQUE intentionnellement NULL
+  // (multi-DM en pratique).
   await sql`
     INSERT INTO lic_regions_ref (region_code, nom, dm_responsable) VALUES
-      ('NORD_AFRIQUE',         'Afrique du Nord',     'Karim ZAOUI'),
-      ('AFRIQUE_FRANCOPHONE',  'Afrique Francophone', 'Aminata DIALLO'),
+      ('NORD_AFRIQUE',         'Afrique du Nord',     NULL),
+      ('AFRIQUE_FRANCOPHONE',  'Afrique Francophone', 'Mounir BOUDERBA'),
       ('AFRIQUE_ANGLOPHONE',   'Afrique Anglophone',  'David MUTUA'),
       ('ASIE',                 'Asie',                'Hary RANDRIA'),
       ('EUROPE',               'Europe',              NULL),
-      ('MOYEN_ORIENT',         'Moyen-Orient',        'Omar AL-FARSI'),
-      ('AUSTRALIE',            'Australie / Océanie', NULL)
-    ON CONFLICT (region_code) DO NOTHING
+      ('MOYEN_ORIENT',         'Moyen-Orient',        'Hakim HASSNI'),
+      ('AUSTRALIE',            'Australie / Océanie', NULL),
+      ('PASS',                 'Clients hébergés S2M','Omar HANDIR')
+    ON CONFLICT (region_code) DO UPDATE
+      SET nom = EXCLUDED.nom,
+          dm_responsable = EXCLUDED.dm_responsable
   `;
 
   // Cleanup régions legacy hors v1 — FK-safe (skip si pays ou team_member
@@ -81,7 +87,7 @@ async function seedRegions(sql: postgres.Sql): Promise<void> {
     DELETE FROM lic_regions_ref
     WHERE region_code NOT IN (
       'NORD_AFRIQUE', 'AFRIQUE_FRANCOPHONE', 'AFRIQUE_ANGLOPHONE',
-      'ASIE', 'EUROPE', 'MOYEN_ORIENT', 'AUSTRALIE'
+      'ASIE', 'EUROPE', 'MOYEN_ORIENT', 'AUSTRALIE', 'PASS'
     )
     AND NOT EXISTS (
       SELECT 1 FROM lic_pays_ref p WHERE p.region_code = lic_regions_ref.region_code
@@ -441,6 +447,14 @@ async function runSeed(): Promise<void> {
     // Phase 17 D5 — 10 notifications démo (5 lues + 5 non-lues).
     // Idempotent : early return si tag DEMO_SEED déjà présent.
     await seedPhase8Notifications(seedClient);
+
+    // Phase 18 R-03 — 3 alertes démo (CDM volume 80%, BIAT date 30j, CMI 90%+15j).
+    // Idempotent par WHERE NOT EXISTS sur (client_id, libelle).
+    await seedPhase8Alerts(seedClient);
+
+    // Phase 18 R-22 — 2 fichiers démo (CDM .lic, BIAT .hc).
+    // Idempotent par tag DEMO_SEED en metadata.
+    await seedPhase10Fichiers(seedClient);
 
     log.info("Seed completed successfully");
   } finally {

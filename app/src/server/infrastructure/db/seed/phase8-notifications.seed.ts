@@ -130,7 +130,7 @@ async function loadSadminUserId(sql: postgres.Sql): Promise<string | null> {
   const rows = await sql<{ id: string }[]>`
     SELECT id FROM lic_users
     WHERE role = 'SADMIN' AND actif = true
-    ORDER BY date_creation ASC
+    ORDER BY created_at ASC
     LIMIT 1
   `;
   return rows[0]?.id ?? null;

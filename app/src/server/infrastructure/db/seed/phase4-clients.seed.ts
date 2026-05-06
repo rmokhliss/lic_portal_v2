@@ -820,7 +820,10 @@ export async function seedPhase4Clients(sql: postgres.Sql): Promise<void> {
   log.info("Phase 4.D — seed démo clients/entités/contacts");
 
   if (await alreadySeeded(sql)) {
-    log.info("lic_clients déjà peuplée — seed Phase 4 skip (idempotent)");
+    log.info("lic_clients déjà peuplée — seed Phase 4 INSERT skip (idempotent)");
+    // Phase 18 R-20 — l'override DM doit s'appliquer même si les clients
+    // sont déjà seedés (alignement Excel S2M sur une BD démo existante).
+    await applyDmOverrides(sql);
     return;
   }
 
@@ -850,5 +853,28 @@ export async function seedPhase4Clients(sql: postgres.Sql): Promise<void> {
   // 3. Contacts par défaut
   await seedContacts(repos, codeToId, sql);
 
+  // 4. Phase 18 R-20 — overrides DM (account_manager) par pays. Mapping
+  //    explicite issu de la spec utilisateur (DM ↔ pays). UPDATE idempotent.
+  await applyDmOverrides(sql);
+
   log.info({ clientsCount: codeToId.size }, "Phase 4.D seed completed");
+}
+
+/** Phase 18 R-20 — aligne account_manager (DM responsable) sur le mapping
+ *  pays → DM fourni par S2M. Les valeurs originales du seed (issues de
+ *  demo-data-v1) sont écrasées. Idempotent. */
+async function applyDmOverrides(sql: postgres.Sql): Promise<void> {
+  log.info("Phase 18 R-20 — overrides DM par pays");
+  await sql`
+    UPDATE lic_clients SET account_manager = 'Houssam ELISMAILI'
+    WHERE code_pays IN ('LY', 'DZ', 'TG', 'YE', 'ET')
+  `;
+  await sql`
+    UPDATE lic_clients SET account_manager = 'Ghassan FAHMI'
+    WHERE code_pays = 'JO'
+  `;
+  await sql`
+    UPDATE lic_clients SET account_manager = 'Jamal MOUJAHID'
+    WHERE code_pays IN ('MA', 'MR')
+  `;
 }
