@@ -40,25 +40,11 @@ import { Entite } from "@/server/modules/entite/domain/entite.entity";
 
 const log = createChildLogger("db/seed/phase4-clients");
 
-// Mapping demo-data-v1 region_code (legacy) → région v2 LIC seedée.
-function mapRegion(v1Region: string): string {
-  switch (v1Region) {
-    case "NORD_AFRIQUE":
-      return "NORD_AFRIQUE";
-    case "AFRIQUE_FR":
-      // Fallback large : majoritairement Afrique de l'Ouest (UEMOA).
-      return "AFRIQUE_OUEST";
-    case "AFRIQUE_EN":
-      return "AFRIQUE_EST";
-    case "ASIE":
-    case "MOYEN_ORIENT":
-    case "EUROPE":
-    case "AUSTRALIE":
-      return "DIASPORA";
-    default:
-      return "DIASPORA";
-  }
-}
+// Phase 17 D2 — `mapRegion` retiré : la région d'un client est dérivée de
+// `lic_pays_ref.region_code` qui est désormais aligné v1 (7 régions) via
+// `seedPays()` dans `seed.ts`. Le champ `v1Region` ci-dessous est conservé
+// uniquement pour traçabilité origine demo-data-v1 — il n'a aucun effet
+// runtime (jamais lu).
 
 interface ClientSeed {
   readonly codeClient: string;
@@ -625,25 +611,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
   },
 ];
 
-/** Compléments pays (codes ISO non couverts par seed.ts Phase 2.B). */
-async function ensurePaysExtensions(sql: postgres.Sql): Promise<void> {
-  await sql`
-    INSERT INTO lic_pays_ref (code_pays, nom, region_code) VALUES
-      ('LY', 'Libye',          'NORD_AFRIQUE'),
-      ('SD', 'Soudan',         'NORD_AFRIQUE'),
-      ('MR', 'Mauritanie',     'AFRIQUE_OUEST'),
-      ('GQ', 'Guinée équatoriale', 'AFRIQUE_CENTRALE'),
-      ('BI', 'Burundi',        'AFRIQUE_EST'),
-      ('NP', 'Népal',          'DIASPORA'),
-      ('JO', 'Jordanie',       'DIASPORA'),
-      ('IQ', 'Iraq',           'DIASPORA'),
-      ('YE', 'Yémen',          'DIASPORA'),
-      ('AE', 'Émirats arabes unis', 'DIASPORA'),
-      ('FR', 'France',         'DIASPORA'),
-      ('AU', 'Australie',      'DIASPORA')
-    ON CONFLICT (code_pays) DO NOTHING
-  `;
-}
+// Phase 17 D1 — `ensurePaysExtensions` retiré : les 22 pays v1 sont désormais
+// insérés par `seedPays()` dans `seed.ts` (avec UPSERT region_code aligné v1).
+// La fonction faisait double-emploi et insérait des region_codes obsolètes.
 
 /** Compléments devises (codes ISO non couverts par seed.ts Phase 2.B). */
 async function ensureDevisesExtensions(sql: postgres.Sql): Promise<void> {
@@ -758,10 +728,6 @@ async function seedClients(repos: Repos): Promise<Map<string, string>> {
         accountManager: seed.accountManager,
         statutClient: "ACTIF",
       });
-      // mapRegion : la région du client est dérivée de pays_ref.region_code,
-      // pas posée directement sur lic_clients. Helper retenu pour usage futur
-      // (validation cohérence demo-v1 / régions LIC v2).
-      void mapRegion(seed.v1Region);
 
       const { client, siegeEntiteId } = await repos.clientRepo.saveWithSiegeEntite(
         candidate,
@@ -779,6 +745,9 @@ async function seedClients(repos: Repos): Promise<Map<string, string>> {
         { ...client.toAuditSnapshot(), siegeEntiteId },
         `${client.codeClient} — ${client.raisonSociale}`,
       );
+      // Phase 17 D2 — v1Region conservé pour traçabilité demo-data-v1
+      // mais non utilisé. La région est déterminée via lic_pays_ref.region_code.
+      void seed.v1Region;
     });
   }
   return codeToId;
@@ -867,8 +836,9 @@ export async function seedPhase4Clients(sql: postgres.Sql): Promise<void> {
     contactRepo: new ContactRepositoryPg(seedDb),
   };
 
-  // Pré-requis : pays + devises additionnels. Idempotent.
-  await ensurePaysExtensions(sql);
+  // Phase 17 D1 — pays insérés par seedPays() (seed.ts) en amont. Devises
+  // complémentaires (LYD, SDG, MRU, NPR, JOD, IQD, YER, AED, AUD) restent
+  // ici tant que seed.ts seedDevises ne les couvre pas.
   await ensureDevisesExtensions(sql);
 
   // 1. Clients + Sièges via repository (atomicité par client)

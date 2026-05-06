@@ -4,11 +4,12 @@
 // ⚠️  DEV / DÉMO UNIQUEMENT — NE PAS LANCER SUR LA BD UTILISÉE PAR LES TESTS
 // ⚠️  NE PAS LANCER EN CI (R-29).
 //
-// Lancé après seedPhase5Licences. Crée :
-//   - 5 produits SELECT-PX (catalogue commercial)
-//   - 15 articles (3 par produit en moyenne)
-//   - Liaisons : ~20 licences attachées avec 1 produit + 2-3 articles chacune
-//   - 60 snapshots volume_history (~3 mois × 20 licences)
+// Phase 17 D3/D4 — refonte catalogue v1 réelle. Crée :
+//   - 10 produits S2M (catalogue commercial v1 Excel feuille Catalogue)
+//   - 31 articles (1 à 9 par produit selon couverture fonctionnelle)
+//   - Liaisons : 100% des licences (au lieu de 20) reçoivent 1 produit + 3
+//     articles avec volumes autorisés/consommés réalistes
+//   - 1 snapshot volume_history mensuel × 3 mois × 1 article/licence
 //
 // Pattern hexagonal — passe par REPOSITORIES + audit mode='SEED' pour les
 // liaisons (entité métier). Les produits/articles sont insérés sans audit
@@ -60,53 +61,110 @@ interface ProduitSeed {
 const PRODUIT_SEEDS: readonly ProduitSeed[] = [
   {
     code: "SPX-CORE",
-    nom: "SELECT-PX Core",
-    description: "Module central de la suite SELECT-PX (autorisation transactions)",
+    nom: "SelectPX Core",
+    description: "Module central — Kernel, autorisation, HSM, API Gateway",
     articles: [
-      { code: "USERS", nom: "Utilisateurs simultanés", uniteVolume: "utilisateurs" },
-      { code: "TX-MOIS", nom: "Transactions par mois", uniteVolume: "transactions" },
-      { code: "API-CALLS", nom: "Appels API par jour", uniteVolume: "appels" },
+      { code: "KERNEL", nom: "Kernel Switch & Authorization", uniteVolume: "transactions/jour" },
+      { code: "HSM", nom: "HSM Interface", uniteVolume: "ops/jour" },
+      { code: "OPEN-API", nom: "Open API", uniteVolume: "appels/mois" },
+      { code: "FRAUD", nom: "Online Fraud Module", uniteVolume: "alertes/mois" },
+      { code: "REPORTING", nom: "Reporting & Dashboarding", uniteVolume: "rapports/mois" },
+      { code: "SMS-GW", nom: "SMS Gateway", uniteVolume: "SMS/mois" },
+      { code: "SMTP-GW", nom: "SMTP Gateway", uniteVolume: "emails/mois" },
+      { code: "ALERTS", nom: "Alert System", uniteVolume: "alertes/jour" },
+      { code: "ARCHIVING", nom: "Archiving", uniteVolume: "Go/mois" },
     ],
   },
   {
-    code: "SPX-REPORTING",
-    nom: "SELECT-PX Reporting",
-    description: "Génération de rapports et exports comptables",
+    code: "SPX-SWITCH",
+    nom: "SelectPX Switching Suite",
+    description: "Suite de switch inter-institutions",
     articles: [
-      { code: "EXPORTS", nom: "Exports par mois", uniteVolume: "exports" },
-      { code: "STORAGE", nom: "Stockage rapports", uniteVolume: "Mo" },
-      { code: "DASHBOARDS", nom: "Tableaux de bord publiés", uniteVolume: "dashboards" },
+      {
+        code: "SWITCH-INST",
+        nom: "Institution Management (Switching)",
+        uniteVolume: "institutions",
+      },
+      {
+        code: "SWITCH-ISO",
+        nom: "Switch to Switch Interface (ISO/API)",
+        uniteVolume: "connexions",
+      },
     ],
   },
   {
-    code: "SPX-API",
-    nom: "SELECT-PX API Gateway",
-    description: "Passerelle API pour intégration tierce",
+    code: "SPX-ACQ",
+    nom: "SelectPX Acquiring Suite",
+    description: "Suite acquiring — ATM, POS, eCommerce",
     articles: [
-      { code: "ENDPOINTS", nom: "Endpoints exposés", uniteVolume: "endpoints" },
-      { code: "RATE-LIMIT", nom: "Plafond requêtes/seconde", uniteVolume: "req/s" },
-      { code: "WEBHOOKS", nom: "Webhooks actifs", uniteVolume: "webhooks" },
+      { code: "ATM-STD", nom: "ATM Management (standard)", uniteVolume: "ATM" },
+      { code: "ATM-ADV", nom: "ATM Management (valeur ajoutée)", uniteVolume: "fonctionnalités" },
+      { code: "POS-STD", nom: "POS Server (standard)", uniteVolume: "terminaux" },
+      { code: "POS-ADV", nom: "POS Server (valeur ajoutée)", uniteVolume: "fonctionnalités" },
+      { code: "ECOM", nom: "E-commerce Gateway", uniteVolume: "transactions/mois" },
     ],
   },
   {
-    code: "SPX-MOBILE",
-    nom: "SELECT-PX Mobile",
-    description: "SDK et back-office mobile",
+    code: "SPX-ISS",
+    nom: "SelectPX Issuing Suite",
+    description: "Suite issuing — cartes débit/crédit/prépayé",
     articles: [
-      { code: "DEVICES", nom: "Devices enregistrés", uniteVolume: "devices" },
-      { code: "PUSH", nom: "Push notifications/mois", uniteVolume: "push" },
-      { code: "SDK-KEYS", nom: "Clés SDK actives", uniteVolume: "clés" },
+      { code: "ISS-DEBIT", nom: "Debit Card Management", uniteVolume: "cartes actives" },
+      { code: "ISS-CREDIT", nom: "Credit Card Management", uniteVolume: "cartes actives" },
+      { code: "ISS-PREPAID", nom: "Prepaid Card Management", uniteVolume: "cartes actives" },
+      { code: "ISS-ISLAMIC", nom: "Islamic Card Management", uniteVolume: "cartes actives" },
     ],
   },
   {
-    code: "SPX-FRAUD",
-    nom: "SELECT-PX FraudShield",
-    description: "Détection de fraude et scoring temps réel",
+    code: "SSV6-CORE",
+    nom: "SelectSystem V6 Core",
+    description: "Core SelectSystem V6",
     articles: [
-      { code: "RULES", nom: "Règles de scoring actives", uniteVolume: "règles" },
-      { code: "SCORINGS", nom: "Scorings par jour", uniteVolume: "scorings" },
-      { code: "ALERTS", nom: "Alertes générées", uniteVolume: "alertes" },
+      { code: "SSV6-KERNEL", nom: "SSV6 Kernel", uniteVolume: "transactions/jour" },
+      { code: "SSV6-FRAUD", nom: "SSV6 Fraud Module", uniteVolume: "alertes/mois" },
     ],
+  },
+  {
+    code: "SSV6-ACQ",
+    nom: "SelectSystem V6 Acquiring Suite",
+    description: "Acquiring SSV6",
+    articles: [
+      { code: "SSV6-ATM", nom: "ATM Acquiring SSV6", uniteVolume: "ATM" },
+      { code: "SSV6-POS", nom: "POS Acquiring SSV6", uniteVolume: "terminaux" },
+      { code: "SSV6-VISA", nom: "Visa POS/ATM/Ecom acquiring", uniteVolume: "transactions/mois" },
+      {
+        code: "SSV6-MC",
+        nom: "Mastercard POS/ATM/Ecom acquiring",
+        uniteVolume: "transactions/mois",
+      },
+    ],
+  },
+  {
+    code: "SSV6-ISS",
+    nom: "SelectSystem V6 Issuing Suite",
+    description: "Issuing SSV6",
+    articles: [
+      { code: "SSV6-DEBIT", nom: "Debit Card SSV6", uniteVolume: "cartes actives" },
+      { code: "SSV6-CREDIT", nom: "Credit Card SSV6", uniteVolume: "cartes actives" },
+    ],
+  },
+  {
+    code: "SOFTPOS",
+    nom: "SoftPOS",
+    description: "Application POS sur mobile",
+    articles: [{ code: "SOFTPOS-APP", nom: "SoftPOS Application", uniteVolume: "appareils" }],
+  },
+  {
+    code: "WALLET",
+    nom: "Wallet Management System",
+    description: "Gestion wallets mobiles",
+    articles: [{ code: "WALLET-CORE", nom: "Wallet Core", uniteVolume: "comptes actifs" }],
+  },
+  {
+    code: "TOKENISATION",
+    nom: "Tokenisation",
+    description: "Tokenisation cartes (HCE, NFC)",
+    articles: [{ code: "TOKEN-CORE", nom: "Token Engine", uniteVolume: "tokens actifs" }],
   },
 ];
 
@@ -142,9 +200,9 @@ async function seedProduitsAndArticles(
   return out;
 }
 
-async function loadFirstNLicenceIds(sql: postgres.Sql, n: number): Promise<readonly string[]> {
+async function loadAllLicenceIds(sql: postgres.Sql): Promise<readonly string[]> {
   const rows = await sql<{ id: string }[]>`
-    SELECT id FROM lic_licences ORDER BY reference ASC LIMIT ${n}
+    SELECT id FROM lic_licences ORDER BY reference ASC
   `;
   return rows.map((r) => r.id);
 }
@@ -174,24 +232,34 @@ async function seedLicenceLiaisons(
   catalogue: readonly { produitId: number; articleIds: readonly number[] }[],
   licenceIds: readonly string[],
 ): Promise<readonly { licenceId: string; articleId: number; volumeAutorise: number }[]> {
-  log.info({ licences: licenceIds.length }, "Seeding licence-produits + licence-articles");
+  // Distribution Phase 17 D3 : 100% des licences reçoivent 1 produit + 2 à 3
+  // articles (cap min(3, |articles|)). Filtre richCatalogue = produits avec
+  // ≥2 articles pour garantir le minimum demandé. Les produits 1-article
+  // (SOFTPOS, WALLET, TOKENISATION) restent dans le catalogue mais ne sont
+  // pas distribués automatiquement — disponibles pour ajout manuel UI.
+  const richCatalogue = catalogue.filter((c) => c.articleIds.length >= 2);
+  log.info(
+    { licences: licenceIds.length, richProduits: richCatalogue.length },
+    "Seeding licence-produits + licence-articles (100% des licences)",
+  );
 
-  // Distribution : tour-à-tour les 5 produits sur les 20 licences (4 par produit).
-  // Chaque licence reçoit 1 produit + ses 3 articles avec un volume autorisé varié.
   const articleAttachments: { licenceId: string; articleId: number; volumeAutorise: number }[] = [];
 
   for (let i = 0; i < licenceIds.length; i++) {
     const licenceId = licenceIds[i];
     if (licenceId === undefined) continue;
-    const cat = catalogue[i % catalogue.length];
+    const cat = richCatalogue[i % richCatalogue.length];
     if (cat === undefined) continue;
+
+    // Au moins 2-3 articles par licence (cap par taille du produit choisi).
+    const nArticles = Math.min(3, cat.articleIds.length);
 
     await repos.db.transaction(async (tx) => {
       const liaison = LicenceProduit.create({ licenceId, produitId: cat.produitId });
       const savedLP = await repos.licProduitRepo.save(liaison, SYSTEM_USER_ID, tx);
       await auditAdd(repos, tx, "licence-produit", savedLP.id, savedLP.toAuditSnapshot());
 
-      for (let aIdx = 0; aIdx < cat.articleIds.length; aIdx++) {
+      for (let aIdx = 0; aIdx < nArticles; aIdx++) {
         const articleId = cat.articleIds[aIdx];
         if (articleId === undefined) continue;
         // Volumes variés : 1000/5000/10000 selon position de l'article.
@@ -272,7 +340,7 @@ export async function seedPhase6Catalogue(sql: postgres.Sql): Promise<void> {
   };
 
   const catalogue = await seedProduitsAndArticles(repos);
-  const licenceIds = await loadFirstNLicenceIds(sql, 20);
+  const licenceIds = await loadAllLicenceIds(sql);
   if (licenceIds.length === 0) {
     log.warn("Aucune licence seedée Phase 5 — Phase 6 liaisons skip");
     return;

@@ -43,6 +43,7 @@ import postgres from "postgres";
 import { seedPhase4Clients } from "./seed/phase4-clients.seed";
 import { seedPhase5Licences } from "./seed/phase5-licences.seed";
 import { seedPhase6Catalogue } from "./seed/phase6-catalogue.seed";
+import { seedPhase8Notifications } from "./seed/phase8-notifications.seed";
 
 import { SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
 
@@ -57,64 +58,93 @@ const DEFAULT_PASSWORD = "ChangeMe-2026!";
 const BCRYPT_COST = 10;
 
 async function seedRegions(sql: postgres.Sql): Promise<void> {
-  log.info("Seeding lic_regions_ref");
+  log.info("Seeding lic_regions_ref (Phase 17 D2 — 7 régions v1 réelles)");
+  // 7 régions extraites Excel v1 colonne REGIONS — NORD_AFRIQUE conservé
+  // (déjà présent migration 0003), 6 autres ajoutées. La paire
+  // FRANCOPHONE/ANGLOPHONE remplace l'ancienne géographique OUEST/CENTRALE/EST.
   await sql`
     INSERT INTO lic_regions_ref (region_code, nom, dm_responsable) VALUES
-      ('NORD_AFRIQUE',     'Afrique du Nord',          'Karim ZAOUI'),
-      ('AFRIQUE_OUEST',    'Afrique de l''Ouest',      'Aminata DIALLO'),
-      ('AFRIQUE_CENTRALE', 'Afrique Centrale',         'Jean-Paul OBONO'),
-      ('AFRIQUE_EST',      'Afrique de l''Est',        'David MUTUA'),
-      ('AFRIQUE_AUSTRALE', 'Afrique Australe',         'Thabo NDLOVU'),
-      ('OCEAN_INDIEN',     'Océan Indien',             'Hary RANDRIA'),
-      ('DIASPORA',         'Diaspora (clients hors Afrique)', NULL),
-      ('INTERNE',          'Interne S2M (tests / démos)',     NULL)
+      ('NORD_AFRIQUE',         'Afrique du Nord',     'Karim ZAOUI'),
+      ('AFRIQUE_FRANCOPHONE',  'Afrique Francophone', 'Aminata DIALLO'),
+      ('AFRIQUE_ANGLOPHONE',   'Afrique Anglophone',  'David MUTUA'),
+      ('ASIE',                 'Asie',                'Hary RANDRIA'),
+      ('EUROPE',               'Europe',              NULL),
+      ('MOYEN_ORIENT',         'Moyen-Orient',        'Omar AL-FARSI'),
+      ('AUSTRALIE',            'Australie / Océanie', NULL)
     ON CONFLICT (region_code) DO NOTHING
+  `;
+
+  // Cleanup régions legacy hors v1 — FK-safe (skip si pays ou team_member
+  // référence encore la région). Premier passage post-migration : peut échouer
+  // si données démo n'ont pas été purgées via /settings/demo Phase 17 F2.
+  await sql`
+    DELETE FROM lic_regions_ref
+    WHERE region_code NOT IN (
+      'NORD_AFRIQUE', 'AFRIQUE_FRANCOPHONE', 'AFRIQUE_ANGLOPHONE',
+      'ASIE', 'EUROPE', 'MOYEN_ORIENT', 'AUSTRALIE'
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM lic_pays_ref p WHERE p.region_code = lic_regions_ref.region_code
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM lic_team_members t WHERE t.region_code = lic_regions_ref.region_code
+    )
   `;
 }
 
 async function seedPays(sql: postgres.Sql): Promise<void> {
-  log.info("Seeding lic_pays_ref");
-  // Mapping ISO 3166-1 alpha-2 → région commerciale S2M.
+  log.info("Seeding lic_pays_ref (Phase 17 D1 — 22 pays v1 Excel)");
+  // 22 pays extraits Excel v1 colonne PAYS, mappés sur les 7 régions D2.
+  // UPSERT (UPDATE region_code/nom) car les pays peuvent déjà exister depuis
+  // un seed antérieur avec un region_code obsolète (ex: SN était AFRIQUE_OUEST,
+  // bascule AFRIQUE_FRANCOPHONE).
   await sql`
     INSERT INTO lic_pays_ref (code_pays, nom, region_code) VALUES
-      -- Afrique du Nord (5)
-      ('MA', 'Maroc',          'NORD_AFRIQUE'),
-      ('DZ', 'Algérie',        'NORD_AFRIQUE'),
-      ('TN', 'Tunisie',        'NORD_AFRIQUE'),
-      ('EG', 'Égypte',         'NORD_AFRIQUE'),
-      ('LY', 'Libye',          'NORD_AFRIQUE'),
-      -- Afrique de l'Ouest (9)
-      ('SN', 'Sénégal',        'AFRIQUE_OUEST'),
-      ('CI', 'Côte d''Ivoire', 'AFRIQUE_OUEST'),
-      ('ML', 'Mali',           'AFRIQUE_OUEST'),
-      ('BF', 'Burkina Faso',   'AFRIQUE_OUEST'),
-      ('NE', 'Niger',          'AFRIQUE_OUEST'),
-      ('BJ', 'Bénin',          'AFRIQUE_OUEST'),
-      ('TG', 'Togo',           'AFRIQUE_OUEST'),
-      ('GH', 'Ghana',          'AFRIQUE_OUEST'),
-      ('NG', 'Nigéria',        'AFRIQUE_OUEST'),
-      -- Afrique Centrale (4)
-      ('CM', 'Cameroun',       'AFRIQUE_CENTRALE'),
-      ('GA', 'Gabon',          'AFRIQUE_CENTRALE'),
-      ('CG', 'Congo',          'AFRIQUE_CENTRALE'),
-      ('CD', 'République démocratique du Congo', 'AFRIQUE_CENTRALE'),
-      -- Afrique de l'Est (6)
-      ('KE', 'Kenya',          'AFRIQUE_EST'),
-      ('TZ', 'Tanzanie',       'AFRIQUE_EST'),
-      ('UG', 'Ouganda',        'AFRIQUE_EST'),
-      ('RW', 'Rwanda',         'AFRIQUE_EST'),
-      ('ET', 'Éthiopie',       'AFRIQUE_EST'),
-      ('SS', 'Soudan du Sud',  'AFRIQUE_EST'),
-      -- Afrique Australe (5)
-      ('ZA', 'Afrique du Sud', 'AFRIQUE_AUSTRALE'),
-      ('ZW', 'Zimbabwe',       'AFRIQUE_AUSTRALE'),
-      ('MZ', 'Mozambique',     'AFRIQUE_AUSTRALE'),
-      ('AO', 'Angola',         'AFRIQUE_AUSTRALE'),
-      ('BW', 'Botswana',       'AFRIQUE_AUSTRALE'),
-      -- Océan Indien (2)
-      ('MG', 'Madagascar',     'OCEAN_INDIEN'),
-      ('MU', 'Maurice',        'OCEAN_INDIEN')
-    ON CONFLICT (code_pays) DO NOTHING
+      -- NORD_AFRIQUE (5)
+      ('MA', 'Maroc',                        'NORD_AFRIQUE'),
+      ('DZ', 'Algérie',                      'NORD_AFRIQUE'),
+      ('TN', 'Tunisie',                      'NORD_AFRIQUE'),
+      ('LY', 'Libye',                        'NORD_AFRIQUE'),
+      ('SD', 'Soudan',                       'NORD_AFRIQUE'),
+      -- AFRIQUE_FRANCOPHONE (9)
+      ('SN', 'Sénégal',                      'AFRIQUE_FRANCOPHONE'),
+      ('CI', 'Côte d''Ivoire',               'AFRIQUE_FRANCOPHONE'),
+      ('MR', 'Mauritanie',                   'AFRIQUE_FRANCOPHONE'),
+      ('CM', 'Cameroun',                     'AFRIQUE_FRANCOPHONE'),
+      ('CG', 'Congo',                        'AFRIQUE_FRANCOPHONE'),
+      ('GQ', 'Guinée Équatoriale',           'AFRIQUE_FRANCOPHONE'),
+      ('NE', 'Niger',                        'AFRIQUE_FRANCOPHONE'),
+      ('TG', 'Togo',                         'AFRIQUE_FRANCOPHONE'),
+      ('BI', 'Burundi',                      'AFRIQUE_FRANCOPHONE'),
+      -- AFRIQUE_ANGLOPHONE (1)
+      ('ET', 'Éthiopie',                     'AFRIQUE_ANGLOPHONE'),
+      -- ASIE (1)
+      ('NP', 'Népal',                        'ASIE'),
+      -- MOYEN_ORIENT (4)
+      ('JO', 'Jordanie',                     'MOYEN_ORIENT'),
+      ('IQ', 'Iraq',                         'MOYEN_ORIENT'),
+      ('YE', 'Yémen',                        'MOYEN_ORIENT'),
+      ('AE', 'Dubaï (Émirats arabes unis)',  'MOYEN_ORIENT'),
+      -- EUROPE (1)
+      ('FR', 'France',                       'EUROPE'),
+      -- AUSTRALIE (1)
+      ('AU', 'Australie',                    'AUSTRALIE')
+    ON CONFLICT (code_pays) DO UPDATE
+    SET region_code = EXCLUDED.region_code,
+        nom = EXCLUDED.nom
+  `;
+
+  // Cleanup pays legacy hors v1 — FK-safe (skip si client/entité référence
+  // encore le pays). Premier passage post-migration : peut échouer si données
+  // démo n'ont pas été purgées via /settings/demo Phase 17 F2.
+  await sql`
+    DELETE FROM lic_pays_ref
+    WHERE code_pays NOT IN (
+      'MA','DZ','TN','LY','SD','SN','CI','MR','CM','CG','GQ','NE','TG','BI',
+      'ET','NP','JO','IQ','YE','AE','FR','AU'
+    )
+    AND NOT EXISTS (SELECT 1 FROM lic_clients c WHERE c.code_pays = lic_pays_ref.code_pays)
+    AND NOT EXISTS (SELECT 1 FROM lic_entites e WHERE e.code_pays = lic_pays_ref.code_pays)
   `;
 }
 
@@ -162,9 +192,11 @@ async function seedTypesContact(sql: postgres.Sql): Promise<void> {
 }
 
 async function seedTeamMembers(sql: postgres.Sql): Promise<void> {
-  log.info("Seeding lic_team_members");
-  // Pas de UNIQUE constraint en BD → idempotence par WHERE NOT EXISTS sur email.
-  // 2 SALES + 2 AM (sans regionCode) + 2 DM (avec regionCode — convention métier).
+  log.info("Seeding lic_team_members (Phase 17 D2 — 10 membres réalistes)");
+  // 10 membres alignés équipe S2M v1 — 4 SALES + 3 AM + 3 DM (1 par région
+  // commerciale prioritaire). Pas de UNIQUE constraint en BD → idempotence
+  // par WHERE NOT EXISTS sur email. Les region_code des DM sont les nouvelles
+  // 7 régions D2 (Phase 17).
   const seeds: readonly {
     nom: string;
     prenom: string;
@@ -172,34 +204,58 @@ async function seedTeamMembers(sql: postgres.Sql): Promise<void> {
     roleTeam: "SALES" | "AM" | "DM";
     regionCode: string | null;
   }[] = [
+    // SALES (4) — pas de région attribuée
     {
-      nom: "DUPONT",
-      prenom: "Alice",
-      email: "alice.dupont@s2m.ma",
+      nom: "BERRADA",
+      prenom: "Youssef",
+      email: "youssef.berrada@s2m.ma",
       roleTeam: "SALES",
       regionCode: null,
     },
     {
-      nom: "MARTIN",
-      prenom: "Bob",
-      email: "bob.martin@s2m.ma",
+      nom: "BOUSNIN",
+      prenom: "Mounir",
+      email: "mounir.bousnin@s2m.ma",
       roleTeam: "SALES",
       regionCode: null,
     },
     {
-      nom: "LEROY",
-      prenom: "Carole",
-      email: "carole.leroy@s2m.ma",
+      nom: "CHAYBI",
+      prenom: "Issam",
+      email: "issam.chaybi@s2m.ma",
+      roleTeam: "SALES",
+      regionCode: null,
+    },
+    {
+      nom: "KHALIL",
+      prenom: "Ahmed",
+      email: "ahmed.khalil@s2m.ma",
+      roleTeam: "SALES",
+      regionCode: null,
+    },
+    // AM Account Managers (3)
+    {
+      nom: "HOUSSNI",
+      prenom: "Hakim",
+      email: "hakim.houssni@s2m.ma",
       roleTeam: "AM",
       regionCode: null,
     },
     {
-      nom: "BENALI",
-      prenom: "David",
-      email: "david.benali@s2m.ma",
+      nom: "ELISMAILI",
+      prenom: "Houssam",
+      email: "houssam.elismaili@s2m.ma",
       roleTeam: "AM",
       regionCode: null,
     },
+    {
+      nom: "MOUJAHID",
+      prenom: "Jamal",
+      email: "jamal.moujahid@s2m.ma",
+      roleTeam: "AM",
+      regionCode: null,
+    },
+    // DM Direction Managers (3) — un par région commerciale prioritaire
     {
       nom: "ZAOUI",
       prenom: "Karim",
@@ -212,7 +268,14 @@ async function seedTeamMembers(sql: postgres.Sql): Promise<void> {
       prenom: "Aminata",
       email: "aminata.diallo@s2m.ma",
       roleTeam: "DM",
-      regionCode: "AFRIQUE_OUEST",
+      regionCode: "AFRIQUE_FRANCOPHONE",
+    },
+    {
+      nom: "AL-FARSI",
+      prenom: "Omar",
+      email: "omar.alfarsi@s2m.ma",
+      roleTeam: "DM",
+      regionCode: "MOYEN_ORIENT",
     },
   ];
 
@@ -374,6 +437,10 @@ async function runSeed(): Promise<void> {
 
     // Phase 8.A — catalogue jobs batch (idempotent).
     await seedBatchJobsCatalog(seedClient);
+
+    // Phase 17 D5 — 10 notifications démo (5 lues + 5 non-lues).
+    // Idempotent : early return si tag DEMO_SEED déjà présent.
+    await seedPhase8Notifications(seedClient);
 
     log.info("Seed completed successfully");
   } finally {
