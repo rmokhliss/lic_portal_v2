@@ -43,7 +43,26 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.1. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phases 1 → 18 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée + module email + audit Master + Phase 17 (refonte seed v1 + 4 stubs débloqués + theme toggle + demo tab) + Phase 18 (corrections post-tests utilisateur R-01→R-23). **MVP livré, prêt pour push origin/main**.
+**Phase actuelle** : **Phases 1 → 19 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée + module email + audit Master + Phase 17 (refonte seed v1 + 4 stubs débloqués + theme toggle + demo tab) + Phase 18 (corrections post-tests utilisateur R-01→R-23, R-13 différé) + Phase 19 (R-13 controleVolume sur articles + Chromium Docker pour puppeteer). **MVP livré, prêt pour push origin/main**.
+
+**Phase 19 close (Mai 2026) — controle_volume articles + Chromium Docker** :
+
+- **R-13 — `controle_volume` sur lic_articles_ref (cascade migration + 5 layers + UI + tests)** :
+  - Migration 0014 : `ALTER TABLE lic_articles_ref ADD COLUMN controle_volume boolean DEFAULT true NOT NULL`. Idempotent via Drizzle Kit `_journal.json` (idx 14).
+  - Domain `Article.entity.ts` : champ `controleVolume`, factory `create()` défaute à true, `rehydrate()` propage la valeur BD, `withControleVolume(b)` setter, `toAuditSnapshot()` étendu (7 champs).
+  - Mapper + adapter Drizzle : `articlesRef.controleVolume` schema, `toEntity/toDTO/toPersistence` propagent ; `update()` repo écrit le champ.
+  - Use-cases `CreateArticleUseCase` + `UpdateArticleUseCase` : input.controleVolume? optional (patch partiel pour update).
+  - Schémas Zod `CreateArticleSchema` + `UpdateArticleSchema` : `controleVolume: z.boolean().optional()`.
+  - UI `/settings/catalogues` (CataloguesPanel.tsx) : checkbox 'Contrôle de volume activé' (défaut coché) dans ArticleDialog ; badge 'Illimité' (amber 15%) à droite de uniteVolume dans ArticleRow si controleVolume=false.
+  - UI `/licences/[id]/articles` (ArticlesTab.tsx) : pour articles fonctionnalité, vol consommé/autorisé affichés en `—` / `Illimité` italique, ratio en `—` (text-muted). AddArticleDialog : champ vol autorisé masqué si l'article sélectionné est non contrôlé (panneau info amber à la place).
+  - Seed `phase6-catalogue.seed.ts` : 3 articles fonctionnalités marqués `controleVolume: false` (ATM-ADV, POS-ADV, SSV6-FRAUD). `applyControleVolumeOverrides(sql)` UPDATE idempotent post-INSERT pour aligner BD démo existante (pattern aligné Phase 18 R-20).
+  - Tests : `article-crud.usecase.int.spec.ts` étendu (create avec controleVolume=false, update toggle true→false→true) ; `article.entity.spec.ts` toAuditSnapshot mis à 7 champs. **22/22 tests article verts**.
+
+- **Chromium Docker pour puppeteer PDF export** :
+  - Dockerfile base stage : `ENV PUPPETEER_SKIP_DOWNLOAD=true` — `pnpm install` ne télécharge plus le Chromium bundlé (~200MB).
+  - Dockerfile runner-app stage : `apk add chromium nss freetype harfbuzz ca-certificates ttf-freefont` + `ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium`. Puppeteer 23 lit cette env nativement à `launch()` — aucune modif TS reports/\_actions.ts.
+  - Note : la spec utilisateur référençait `apt-get install` (Debian) ; adaptation à node:24-alpine via `apk` avec le même résultat fonctionnel.
+  - `.env.example` : section Puppeteer documentée (commentée par défaut — non applicable en dev local).
 
 **Phase 18 close (Mai 2026) — corrections post-tests utilisateur** : 23 retours catalogués (R-01 → R-23) traités en 8 commits.
 
@@ -51,7 +70,7 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.1. Conséq
 - **Seed & data** : R-03 (`phase8-alerts.seed.ts` NEW — 3 alertes CDM/BIAT/CMI), R-22 (`phase10-fichiers.seed.ts` NEW — 2 fichiers démo .lic + .hc avec hash SHA-256), R-20 (régions DM corrects via UPSERT + nouvelle région PASS + override `account_manager` par pays via UPDATE post-INSERT). Bug latent Phase 17 corrigé : `phase8-notifications.seed.ts` `ORDER BY date_creation` → `created_at` (bloquait `pnpm db:seed` 1er run).
 - **UX & affichage** : R-02 (toggle dark/light fonctionnel via `router.refresh()` après `setThemeAction`), R-04+R-18 (mentions « Phase X » et « règle LX » retirées des libellés UI + section « Crypto (Phase 3) » + champs « Clé AES » / « Nom application » / « SMTP configuré » retirés de `/settings/general`), R-06 (pays nom complet via `paysByCode` lookup côté ClientsTable), R-07 (bouton Eye lecture seule par row clients, Dialog avec infos DTO), R-08 (filtre statut « Tous » vérifié déjà conforme), R-09/R-10 (`listTypesContactUseCase.execute({}).catch(() => [])` — fallback gracieux), R-11 (palette `/licences` migrée DS dark, badges statut colorés), R-12 (bouton « + Nouvelle licence » + wizard Dialog 1 écran avec combobox client/entité, dates, commentaire — `createLicenceAction` + `listEntitesForClientAction`), R-14 (règle CSS défensive `[data-radix-scroll-area-scrollbar]` + `[data-radix-tabs-scroll-button]` masqués), R-15 (4 `loading.tsx` skeletons : clients/licences/renewals/notifications), R-16 (filtre priorité local + bouton « Archiver > 30j » via `archiveOldNotificationsAction` ADMIN), R-17 (`/audit` + `/batches` wrapped `<div className="p-6">`).
 - **Features** : R-21 (exports XLSX via exceljs + PDF via puppeteer pour licences/renouvellements — lazy-importés, `serverExternalPackages: ["mjml","exceljs","puppeteer"]`, base64 sérialisation Server Action → blob download client), R-23 (section « Templates fichiers » dans `/settings/sandbox` avec 2 boutons download .lic + .hc — JSON structuré aligné `docs/integration/F2_FORMATS.md`).
-- **R-13 (controleVolume article)** : **DIFFÉRÉ** Phase 19 — cascade migration 0014 + entité domain + repository + mapper + use-cases create/update + UI Catalogues + UI ArticlesTab + seed catalogue update trop large pour rester dans un commit unique stable. Tous les articles existants gardent volume contrôlé (default).
+- **R-13 (controleVolume article)** : initialement différé Phase 18, **résolu Phase 19** (cf. bloc Phase 19 ci-dessus) — migration 0014 + 5 layers + UI Catalogues + UI ArticlesTab + seed update + tests.
 
 **Phase 17 close (Mai 2026) — refonte seed v1 + déblocage stubs + theme + demo tab** :
 
