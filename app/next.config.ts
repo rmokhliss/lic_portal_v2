@@ -60,13 +60,13 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // MJML embarque `mjml-core/helpers/mjmlconfig.js` qui exécute des `require()`
-  // dynamiques + lectures FS au module-init. Bundlé, ces side effects
-  // s'exécutent quand n'importe quelle route serveur est instanciée par le
-  // collecteur de page data Next.js → EBADF sur Windows (Turbopack & webpack).
-  // L'externaliser sort le package du bundle ; il est résolu via Node CommonJS
-  // depuis `node_modules` au runtime, comme un require classique côté serveur.
-  serverExternalPackages: ["mjml"],
+  // Phase 17 — mjml : `mjml-core/helpers/mjmlconfig.js` exécute des `require()`
+  // dynamiques + lectures FS au module-init → EBADF Windows quand Next.js
+  // collecte les page data.
+  // Phase 18 R-21 — exceljs + puppeteer : libs lourdes (puppeteer embarque
+  // Chromium ~200MB) à ne pas inclure dans le bundle Next. Résolus via Node
+  // CommonJS au runtime quand les Server Actions /reports les importent.
+  serverExternalPackages: ["mjml", "exceljs", "puppeteer"],
   async headers() {
     return [
       {
