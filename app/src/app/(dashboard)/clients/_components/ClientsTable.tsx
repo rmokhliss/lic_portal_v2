@@ -55,6 +55,12 @@ export interface ClientsTableProps {
   readonly currentCursor: string | null;
   readonly currentQuery: string;
   readonly currentStatut: ClientStatutClient | null;
+  /** Phase 20 R-29 — filtres enrichis. Strings non-vides, "" = pas de filtre. */
+  readonly currentPays: string;
+  readonly currentAm: string;
+  readonly currentSales: string;
+  /** Phase 20 R-29 — total clients matchant les filtres (hors pagination). */
+  readonly total: number;
   readonly canCreate: boolean;
   /** T-01 : référentiels SADMIN propagés au ClientDialog. */
   readonly paysList: readonly RefItem[];
@@ -98,6 +104,10 @@ export function ClientsTable(props: ClientsTableProps) {
     if (cursor !== null) sp.set("cursor", cursor);
     if (props.currentQuery !== "") sp.set("q", props.currentQuery);
     if (props.currentStatut !== null) sp.set("statut", props.currentStatut);
+    // Phase 20 R-29 — préserver les filtres enrichis lors de la pagination.
+    if (props.currentPays !== "") sp.set("pays", props.currentPays);
+    if (props.currentAm !== "") sp.set("am", props.currentAm);
+    if (props.currentSales !== "") sp.set("sales", props.currentSales);
     const qs = sp.toString();
     return qs.length === 0 ? "/clients" : `/clients?${qs}`;
   };
@@ -115,7 +125,13 @@ export function ClientsTable(props: ClientsTableProps) {
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-foreground text-2xl">{t("title")}</h1>
-          <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {t("subtitle")}
+            {/* Phase 20 R-29 — total au-dessus du tableau. */}
+            <span className="text-foreground ml-2 font-mono">
+              · {props.total} client(s) au total
+            </span>
+          </p>
         </div>
         {props.canCreate && (
           <Button
@@ -163,6 +179,61 @@ export function ClientsTable(props: ClientsTableProps) {
             {STATUTS.map((s) => (
               <option key={s} value={s}>
                 {t(`statut.${s}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+        {/* Phase 20 R-29 — filtres enrichis pays / AM / Sales. */}
+        <div className="flex flex-col gap-1">
+          <label htmlFor="pays" className="text-muted-foreground text-xs uppercase tracking-wider">
+            Pays
+          </label>
+          <select
+            id="pays"
+            name="pays"
+            defaultValue={props.currentPays}
+            className="border-input bg-background text-foreground h-9 rounded-md border px-3 text-sm"
+          >
+            <option value="">Tous</option>
+            {props.paysList.map((p) => (
+              <option key={p.code} value={p.code}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="am" className="text-muted-foreground text-xs uppercase tracking-wider">
+            Account Manager
+          </label>
+          <select
+            id="am"
+            name="am"
+            defaultValue={props.currentAm}
+            className="border-input bg-background text-foreground h-9 rounded-md border px-3 text-sm"
+          >
+            <option value="">Tous</option>
+            {props.amList.map((m) => (
+              <option key={m.code} value={m.code}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="sales" className="text-muted-foreground text-xs uppercase tracking-wider">
+            Sales
+          </label>
+          <select
+            id="sales"
+            name="sales"
+            defaultValue={props.currentSales}
+            className="border-input bg-background text-foreground h-9 rounded-md border px-3 text-sm"
+          >
+            <option value="">Tous</option>
+            {props.salesList.map((m) => (
+              <option key={m.code} value={m.code}>
+                {m.label}
               </option>
             ))}
           </select>

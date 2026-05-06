@@ -14,6 +14,10 @@ export interface ListClientsUseCaseInput {
   readonly actif?: boolean;
   readonly statutClient?: ClientStatut | readonly ClientStatut[];
   readonly q?: string;
+  /** Phase 20 R-29 — filtres enrichis. */
+  readonly codePays?: string;
+  readonly accountManager?: string;
+  readonly salesResponsable?: string;
   readonly cursor?: string;
   readonly limit?: number;
 }
@@ -22,6 +26,8 @@ export interface ListClientsUseCaseOutput {
   readonly items: readonly ClientDTO[];
   readonly nextCursor: string | null;
   readonly effectiveLimit: number;
+  /** Phase 20 R-29 — total clients matchant les filtres (hors pagination). */
+  readonly total: number;
 }
 
 export class ListClientsUseCase {
@@ -32,6 +38,9 @@ export class ListClientsUseCase {
       ...(input.actif !== undefined ? { actif: input.actif } : {}),
       ...(input.statutClient !== undefined ? { statutClient: input.statutClient } : {}),
       ...(input.q !== undefined ? { q: input.q } : {}),
+      ...(input.codePays !== undefined ? { codePays: input.codePays } : {}),
+      ...(input.accountManager !== undefined ? { accountManager: input.accountManager } : {}),
+      ...(input.salesResponsable !== undefined ? { salesResponsable: input.salesResponsable } : {}),
       ...(input.cursor !== undefined ? { cursor: input.cursor } : {}),
       ...(input.limit !== undefined ? { limit: input.limit } : {}),
     };
@@ -41,6 +50,7 @@ export class ListClientsUseCase {
       items: result.items.map(toDTO),
       nextCursor: result.nextCursor,
       effectiveLimit: result.effectiveLimit,
+      total: result.total,
     };
   }
 }

@@ -38,6 +38,12 @@ export interface FindClientsPaginatedInput {
     | readonly ("PROSPECT" | "ACTIF" | "SUSPENDU" | "RESILIE")[];
   /** FTS texte libre — si non vide, applique `search_vector @@ plainto_tsquery`. */
   readonly q?: string;
+  /** Phase 20 R-29 — filtre exact pays (code ISO 2 lettres ex 'MA'). */
+  readonly codePays?: string;
+  /** Phase 20 R-29 — filtre exact account_manager (display "Prénom NOM"). */
+  readonly accountManager?: string;
+  /** Phase 20 R-29 — filtre exact sales_responsable. */
+  readonly salesResponsable?: string;
   /** Cursor base64url(`<ISO>|<UUID>`). undefined = première page. */
   readonly cursor?: string;
   /** 1..200, default 50 (volume client gérable, plus que les 200 référentiels). */
@@ -48,6 +54,8 @@ export interface FindClientsPaginatedOutput {
   readonly items: readonly PersistedClient[];
   readonly nextCursor: string | null;
   readonly effectiveLimit: number;
+  /** Phase 20 R-29 — total clients matchant les filtres (hors pagination). */
+  readonly total: number;
 }
 
 /** Données minimales pour créer l'entité « Siège » dans la même tx que le

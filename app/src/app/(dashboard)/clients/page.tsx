@@ -37,6 +37,10 @@ interface ClientsPageProps {
     readonly cursor?: string;
     readonly q?: string;
     readonly statut?: string;
+    /** Phase 20 R-29 — filtres enrichis. */
+    readonly pays?: string;
+    readonly am?: string;
+    readonly sales?: string;
   }>;
 }
 
@@ -48,6 +52,13 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     params.statut !== undefined && VALID_STATUTS.has(params.statut as ClientStatutClient)
       ? (params.statut as ClientStatutClient)
       : undefined;
+  // Phase 20 R-29 — propage les filtres pays/AM/sales (string non-vide).
+  const paysFilter =
+    params.pays !== undefined && params.pays.trim().length > 0 ? params.pays.trim() : undefined;
+  const amFilter =
+    params.am !== undefined && params.am.trim().length > 0 ? params.am.trim() : undefined;
+  const salesFilter =
+    params.sales !== undefined && params.sales.trim().length > 0 ? params.sales.trim() : undefined;
 
   // Phase 18 R-09/R-10 — fallback gracieux sur listTypesContactUseCase :
   // si l'appel échoue (BD démo non seedée, types contact vides), le tableau
@@ -59,6 +70,9 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
         ...(params.q !== undefined && params.q.trim().length > 0 ? { q: params.q.trim() } : {}),
         ...(statutFilter !== undefined ? { statutClient: statutFilter } : {}),
+        ...(paysFilter !== undefined ? { codePays: paysFilter } : {}),
+        ...(amFilter !== undefined ? { accountManager: amFilter } : {}),
+        ...(salesFilter !== undefined ? { salesResponsable: salesFilter } : {}),
         limit: 25,
       }),
       getCAStatusUseCase.execute(),
@@ -126,6 +140,11 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         currentCursor={params.cursor ?? null}
         currentQuery={params.q ?? ""}
         currentStatut={statutFilter ?? null}
+        // Phase 20 R-29 — filtres enrichis + total.
+        currentPays={paysFilter ?? ""}
+        currentAm={amFilter ?? ""}
+        currentSales={salesFilter ?? ""}
+        total={result.total}
         canCreate={canCreateBase && !caMissing}
         paysList={paysList}
         devisesList={devisesList}

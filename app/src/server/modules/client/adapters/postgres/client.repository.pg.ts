@@ -77,35 +77,58 @@ export class ClientRepositoryPg extends ClientRepository {
     const target = (tx as PgDatabase<never> | undefined) ?? this.db;
     const limit = Math.min(input.limit ?? DEFAULT_LIMIT, MAX_LIMIT);
 
-    const conditions = [];
+    // Phase 20 R-29 — filtres "métier" (sans le cursor, qui est strictement
+    // un mécanisme de pagination). Réutilisés pour le COUNT total.
+    const businessConditions = [];
     if (input.actif !== undefined) {
-      conditions.push(eq(clients.actif, input.actif));
+      businessConditions.push(eq(clients.actif, input.actif));
     }
     if (input.statutClient !== undefined) {
       const s = input.statutClient;
       if (typeof s === "string") {
-        conditions.push(eq(clients.statutClient, s));
+        businessConditions.push(eq(clients.statutClient, s));
       } else {
-        conditions.push(inArray(clients.statutClient, [...s]));
+        businessConditions.push(inArray(clients.statutClient, [...s]));
       }
     }
     if (input.q !== undefined && input.q.trim().length > 0) {
       // FTS via search_vector GENERATED (cf. migration 0004 manuelle).
       // plainto_tsquery convertit la query texte libre en lexèmes français
       // (gestion des accents + stop words natifs).
-      conditions.push(sql`${clients.searchVector} @@ plainto_tsquery('french', ${input.q.trim()})`);
+      businessConditions.push(
+        sql`${clients.searchVector} @@ plainto_tsquery('french', ${input.q.trim()})`,
+      );
     }
-    if (input.cursor !== undefined) {
-      const { id } = decodeCursor(input.cursor);
-      conditions.push(lt(clients.id, id));
+    if (input.codePays !== undefined && input.codePays.length > 0) {
+      businessConditions.push(eq(clients.codePays, input.codePays));
+    }
+    if (input.accountManager !== undefined && input.accountManager.length > 0) {
+      businessConditions.push(eq(clients.accountManager, input.accountManager));
+    }
+    if (input.salesResponsable !== undefined && input.salesResponsable.length > 0) {
+      businessConditions.push(eq(clients.salesResponsable, input.salesResponsable));
     }
 
-    const rows = await target
-      .select()
-      .from(clients)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(clients.id))
-      .limit(limit + 1);
+    const pageConditions = [...businessConditions];
+    if (input.cursor !== undefined) {
+      const { id } = decodeCursor(input.cursor);
+      pageConditions.push(lt(clients.id, id));
+    }
+
+    // Phase 20 R-29 — total clients (hors pagination). Évalué en parallèle
+    // avec la query items pour réduire le RTT (Promise.all).
+    const [rows, totalRows] = await Promise.all([
+      target
+        .select()
+        .from(clients)
+        .where(pageConditions.length > 0 ? and(...pageConditions) : undefined)
+        .orderBy(desc(clients.id))
+        .limit(limit + 1),
+      target
+        .select({ total: sql<string>`COUNT(*)::text` })
+        .from(clients)
+        .where(businessConditions.length > 0 ? and(...businessConditions) : undefined),
+    ]);
 
     const hasMore = rows.length > limit;
     const pageRows = hasMore ? rows.slice(0, limit) : rows;
@@ -119,7 +142,9 @@ export class ClientRepositoryPg extends ClientRepository {
       }
     }
 
-    return { items, nextCursor, effectiveLimit: limit };
+    const total = Number(totalRows[0]?.total ?? "0");
+
+    return { items, nextCursor, effectiveLimit: limit, total };
   }
 
   async saveWithSiegeEntite(
