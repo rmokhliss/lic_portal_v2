@@ -60,6 +60,13 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // MJML embarque `mjml-core/helpers/mjmlconfig.js` qui exécute des `require()`
+  // dynamiques + lectures FS au module-init. Bundlé, ces side effects
+  // s'exécutent quand n'importe quelle route serveur est instanciée par le
+  // collecteur de page data Next.js → EBADF sur Windows (Turbopack & webpack).
+  // L'externaliser sort le package du bundle ; il est résolu via Node CommonJS
+  // depuis `node_modules` au runtime, comme un require classique côté serveur.
+  serverExternalPackages: ["mjml"],
   async headers() {
     return [
       {
