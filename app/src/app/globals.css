@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* ============================================================================
+ * Phase 19+ — Class-based dark mode (Tailwind v4)
+ *
+ * Sans cette directive, Tailwind v4 utilise par défaut `prefers-color-scheme`
+ * (media query) — la classe `<html class="dark|light">` posée par layout.tsx
+ * (cf. cookie spx-lic.theme) n'aurait AUCUN effet sur les utilities `dark:`.
+ * Cette définition active le matcher class-based : `dark:foo` s'applique
+ * quand .dark est sur l'élément ou un ancêtre.
+ * ============================================================================ */
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* Brand */
   --color-spx-cyan-100: #74ECFF;
@@ -37,10 +48,15 @@
 }
 
 /* ============================================================================
- * shadcn/ui CSS variables → tokens DS SELECT-PX (F-09)
- * Mode dark uniquement (LIC v2). Pas de .dark { } séparé : :root EST dark.
- * Sources de vérité = tokens DS dans @theme ci-dessus. Les vars shadcn ne sont
- * que des alias mappés via var(...) — aucune valeur littérale dupliquée.
+ * shadcn/ui CSS variables → tokens DS SELECT-PX (F-09 + Phase 19+ light mode)
+ *
+ * `:root` = palette dark par défaut (statu quo F-09 → 19). C'est l'apparence
+ * historique de LIC v2 ; appliquée quand `<html>` n'a pas de classe ou a la
+ * classe `.dark`.
+ *
+ * `:root.light` = overrides quand le user bascule en light via le toggle
+ * (cookie spx-lic.theme=light). Surfaces inversées + texte sombre. Les
+ * accents (cyan/blue) restent identiques dans les deux modes.
  * ============================================================================ */
 @layer base {
   :root {
@@ -78,6 +94,30 @@
 
     /* Radius standard shadcn = radius-md DS LIC (8px) */
     --radius: var(--radius-md);
+  }
+
+  /* Phase 19+ — Light mode overrides. Bascule via le toggle ThemeToggle.tsx
+   * → cookie spx-lic.theme=light → layout.tsx pose `<html class="light">`.
+   * On override 4 tokens DS (surface-0/1/2 + border-subtle + spx-ink) qui
+   * cascadent vers tous les utilities `bg-surface-*` ET les vars shadcn
+   * dérivées (--background, --card, etc.) qui pointent dessus via var().
+   * Les accents (cyan/blue) restent inchangés — bonne lisibilité dans les
+   * deux modes. */
+  :root.light {
+    /* Surfaces inversées : du sombre opaque → tons clairs/quasi-blancs. */
+    --color-surface-0: #f7f8fa;                  /* page background light */
+    --color-surface-1: #ffffff;                  /* cartes blanches */
+    --color-surface-2: #eef1f5;                  /* surface secondaire */
+    --color-border-subtle: #d8dde3;              /* borders en gris clair */
+    --color-spx-ink: #1a1d24;                    /* texte sombre sur fond clair */
+
+    /* shadcn vars — overrides explicites pour les texte/foreground qui
+     * étaient hard-codés à `white` dans le bloc :root au-dessus. */
+    --foreground: var(--color-spx-ink);
+    --card-foreground: var(--color-spx-ink);
+    --popover-foreground: var(--color-spx-ink);
+    --secondary-foreground: var(--color-spx-ink);
+    --muted-foreground: oklch(0 0 0 / 0.6);      /* noir 60% pour texte secondaire light */
   }
 
   /* Couleurs par défaut du body : sans cette règle, le texte brut (pas de
