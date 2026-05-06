@@ -270,24 +270,143 @@ function renderPdfHtml(bundle: RowsBundle): string {
     .map((r) => `<tr>${r.map((c) => `<td>${escapeHtml(String(c))}</td>`).join("")}</tr>`)
     .join("");
   const generatedAt = new Date().toLocaleString("fr-FR");
+  // Phase 20 R-33 — header pro avec mention S2M, footer numérotation pages,
+  // mention confidentielle, palette DS SELECT-PX (cyan + blue + ink).
+  // Logo : dégradé CSS inline reproduisant la signature visuelle (pas de
+  // PNG embarqué pour rester sans asset externe). Police Helvetica
+  // (compatible Chromium headless sans télécharger Google Fonts).
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>${escapeHtml(bundle.title)}</title>
+  <title>${escapeHtml(bundle.title)} — S2M Licence Manager</title>
   <style>
-    body { font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #333; }
-    h1 { color: #0066D6; font-size: 18px; margin: 0 0 8px; }
-    .meta { color: #666; font-size: 9px; margin-bottom: 16px; }
-    table { width: 100%; border-collapse: collapse; }
-    th { background: #0066D6; color: white; padding: 6px 8px; text-align: left; font-size: 9px; }
-    td { padding: 4px 8px; border-bottom: 1px solid #eee; font-size: 9px; }
-    tr:nth-child(even) td { background: #fafafa; }
+    @page {
+      size: A4;
+      margin: 25mm 15mm 22mm 15mm;
+      @top-left {
+        content: element(pageHeader);
+      }
+      @bottom-center {
+        content: "Page " counter(page) " / " counter(pages) " · S2M SELECT-PX · Confidentiel";
+        font-family: Helvetica, Arial, sans-serif;
+        font-size: 8px;
+        color: #888;
+      }
+    }
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 10px;
+      color: #1a1d24;
+      margin: 0;
+    }
+    .pageHeader {
+      position: running(pageHeader);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #0066D6;
+      padding-bottom: 6px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-tile {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, #74ECFF 0%, #00CAFF 50%, #0006A5 100%);
+    }
+    .brand-text {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-weight: 800;
+      font-size: 13px;
+      color: #1a1d24;
+      letter-spacing: 0.02em;
+    }
+    .brand-text small {
+      display: block;
+      font-weight: 400;
+      font-size: 8px;
+      color: #888;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .doc-title {
+      text-align: right;
+    }
+    .doc-title h1 {
+      color: #0066D6;
+      font-size: 14px;
+      margin: 0;
+      font-weight: 600;
+    }
+    .doc-title .meta {
+      color: #666;
+      font-size: 8px;
+      margin-top: 2px;
+    }
+    .summary {
+      margin: 12px 0 16px;
+      padding: 8px 12px;
+      background: #f7f8fa;
+      border-left: 3px solid #00CAFF;
+      font-size: 9px;
+      color: #555;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      page-break-inside: auto;
+    }
+    thead {
+      display: table-header-group; /* répète sur chaque page */
+    }
+    tr {
+      page-break-inside: avoid;
+      page-break-after: auto;
+    }
+    th {
+      background: #0066D6;
+      color: white;
+      padding: 6px 8px;
+      text-align: left;
+      font-size: 9px;
+      font-weight: 600;
+    }
+    td {
+      padding: 4px 8px;
+      border-bottom: 1px solid #e1e5ea;
+      font-size: 9px;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td {
+      background: #fafbfc;
+    }
   </style>
 </head>
 <body>
-  <h1>${escapeHtml(bundle.title)}</h1>
-  <p class="meta">Généré le ${escapeHtml(generatedAt)} — ${String(bundle.rows.length)} ligne(s)</p>
+  <div class="pageHeader">
+    <div class="brand">
+      <div class="brand-tile"></div>
+      <div class="brand-text">
+        <small>S2M</small>
+        SELECT-PX
+      </div>
+    </div>
+    <div class="doc-title">
+      <h1>${escapeHtml(bundle.title)}</h1>
+      <p class="meta">Généré le ${escapeHtml(generatedAt)}</p>
+    </div>
+  </div>
+
+  <div class="summary">
+    Rapport <strong>${escapeHtml(bundle.title)}</strong> — ${String(bundle.rows.length)} ligne(s).
+    Document confidentiel destiné à un usage interne S2M / banque cliente.
+  </div>
+
   <table>
     <thead><tr>${headerCells}</tr></thead>
     <tbody>${bodyRows}</tbody>
