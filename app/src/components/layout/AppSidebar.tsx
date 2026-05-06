@@ -1,9 +1,15 @@
 // ==============================================================================
-// LIC v2 — AppSidebar (Server Component, F-12)
+// LIC v2 — AppSidebar (Server Component, F-12 + Phase 20 R-26 thème adaptatif)
 //
-// Sidebar fixe gauche, mode dark uniquement (LIC v2). 4 groupes principaux +
-// Paramétrage isolé en bas. Filtrage par rôle utilisateur (canSeeRoute).
-// Libellés via getTranslations('nav') (next-intl Server Component).
+// Sidebar fixe gauche. 4 groupes principaux + Paramétrage isolé en bas.
+// Filtrage par rôle utilisateur (canSeeRoute). Libellés via
+// getTranslations('nav') (next-intl Server Component).
+//
+// Phase 20 R-26 — `<BrandLockup>` sans prop `tone` → utilise les vars DS
+// dynamiques (`text-foreground` / `text-muted-foreground` / `text-border`)
+// qui flip via `:root.light` (cookie spx-lic.theme). Le logo reste lisible
+// quel que soit le thème. Le fond sidebar `bg-surface-0` flip aussi via
+// `:root.light --color-surface-0` (cf. globals.css Phase 19+).
 // ==============================================================================
 
 import { getTranslations } from "next-intl/server";
@@ -41,7 +47,7 @@ export async function AppSidebar({ userRole }: AppSidebarProps) {
     <aside className="bg-surface-0 border-border fixed inset-y-0 left-0 flex w-64 flex-col border-r">
       {/* Brand en haut */}
       <div className="border-border flex h-14 items-center border-b px-6">
-        <BrandLockup size={32} tone="dark" />
+        <BrandLockup size={32} />
       </div>
 
       {/* Groupes principaux */}

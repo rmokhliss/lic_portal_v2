@@ -47,7 +47,10 @@ export function ImportHealthcheckClientButton(props: ImportHealthcheckClientButt
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
   const [info, setInfo] = useState<string>("");
-  const activeLicences = props.licences.filter((l) => l.status === "ACTIF");
+  // Phase 20 R-25 — accepter toutes les licences (pas seulement ACTIF). Un
+  // client peut envoyer un .hc sur une licence SUSPENDU/EXPIRE pour suivi
+  // historique de volumes. Le bouton n'est désactivé QUE si zéro licence.
+  const importableLicences = props.licences;
 
   const onSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -82,8 +85,8 @@ export function ImportHealthcheckClientButton(props: ImportHealthcheckClientButt
       <Button
         type="button"
         variant="outline"
-        disabled={activeLicences.length === 0}
-        title={activeLicences.length === 0 ? t("noActiveLicence") : undefined}
+        disabled={importableLicences.length === 0}
+        title={importableLicences.length === 0 ? t("noActiveLicence") : undefined}
         onClick={() => {
           setOpen(true);
         }}
@@ -115,7 +118,12 @@ export function ImportHealthcheckClientButton(props: ImportHealthcheckClientButt
                 name="licenceId"
                 required
                 placeholder={t("licencePlaceholder")}
-                options={activeLicences.map((l) => ({ value: l.id, label: l.reference }))}
+                options={importableLicences.map((l) => ({
+                  value: l.id,
+                  // Phase 20 R-25 — affiche le statut entre parenthèses pour
+                  // que l'utilisateur sache s'il importe sur ACTIF/SUSPENDU/EXPIRE.
+                  label: `${l.reference} (${l.status})`,
+                }))}
               />
             </div>
             <div className="space-y-1">

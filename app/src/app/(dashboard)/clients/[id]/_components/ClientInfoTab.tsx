@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 
 import { useTranslations } from "next-intl";
 
@@ -56,6 +56,37 @@ export function ClientInfoTab({
   const t = useTranslations("clients.detail.info");
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
 
+  // Phase 20 R-27 — résolution code → libellé via les référentiels passés en
+  // props par le Server Component parent (déjà fetchés pour ClientDialog).
+  // Affichage 'Maroc' au lieu de 'MA', 'Dollar australien (AUD)' au lieu de
+  // 'AUD'. Fallback sur le code brut si lookup raté (résilience aux données
+  // legacy non-cleanup).
+  const paysByCode = useMemo(() => new Map(paysList.map((p) => [p.code, p.label])), [paysList]);
+  const deviseByCode = useMemo(
+    () => new Map(devisesList.map((d) => [d.code, d.label])),
+    [devisesList],
+  );
+  const langueByCode = useMemo(
+    () => new Map(languesList.map((l) => [l.code, l.label])),
+    [languesList],
+  );
+
+  const renderPays = (code: string | null): string => {
+    if (code === null) return "—";
+    const label = paysByCode.get(code);
+    return label !== undefined ? `${label} (${code})` : code;
+  };
+  const renderDevise = (code: string | null): string => {
+    if (code === null) return "—";
+    const label = deviseByCode.get(code);
+    return label !== undefined ? `${label} (${code})` : code;
+  };
+  const renderLangue = (code: string | null): string => {
+    if (code === null) return "—";
+    const label = langueByCode.get(code);
+    return label !== undefined ? `${label} (${code})` : code;
+  };
+
   return (
     <>
       <div className="flex items-start justify-between gap-4">
@@ -94,9 +125,9 @@ export function ClientInfoTab({
           value={<ClientStatusBadge statut={client.statutClient} />}
         />
         <Row label={t("fields.actif")} value={client.actif ? "✓" : "—"} />
-        <Row label={t("fields.codePays")} value={client.codePays ?? "—"} />
-        <Row label={t("fields.codeDevise")} value={client.codeDevise ?? "—"} />
-        <Row label={t("fields.codeLangue")} value={client.codeLangue ?? "—"} />
+        <Row label={t("fields.codePays")} value={renderPays(client.codePays)} />
+        <Row label={t("fields.codeDevise")} value={renderDevise(client.codeDevise)} />
+        <Row label={t("fields.codeLangue")} value={renderLangue(client.codeLangue)} />
         <Row label={t("fields.salesResponsable")} value={client.salesResponsable ?? "—"} />
         <Row label={t("fields.accountManager")} value={client.accountManager ?? "—"} />
         <Row label={t("fields.nomContact")} value={client.nomContact ?? "—"} />
