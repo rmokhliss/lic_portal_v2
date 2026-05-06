@@ -49,6 +49,10 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       ? (params.statut as ClientStatutClient)
       : undefined;
 
+  // Phase 18 R-09/R-10 — fallback gracieux sur listTypesContactUseCase :
+  // si l'appel échoue (BD démo non seedée, types contact vides), le tableau
+  // des clients reste utilisable et le formulaire de création affiche un
+  // message guidant l'utilisateur vers /settings/team plutôt que de crasher.
   const [result, caStatus, paysAll, devisesAll, languesAll, salesAll, amAll, typesContactAll] =
     await Promise.all([
       listClientsUseCase.execute({
@@ -66,7 +70,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       listTeamMembersUseCase.execute({ actif: true, roleTeam: "SALES" }),
       listTeamMembersUseCase.execute({ actif: true, roleTeam: "AM" }),
       // Phase 14 — DETTE-LIC-017 : types contact pour la section contacts à création.
-      listTypesContactUseCase.execute({}),
+      listTypesContactUseCase.execute({}).catch(() => [] as const),
     ]);
 
   const paysList = paysAll.filter((p) => p.actif).map((p) => ({ code: p.codePays, label: p.nom }));

@@ -18,13 +18,21 @@
 
 "use client";
 
+import { Eye } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -66,6 +74,24 @@ export function ClientsTable(props: ClientsTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
+  // Phase 18 R-07 — Dialog lecture seule (icône Eye) séparé du Dialog
+  // édition. Permet une consultation rapide sans naviguer vers /clients/[id].
+  const [viewClient, setViewClient] = useState<ClientDTO | null>(null);
+
+  // Phase 18 R-06 — Map code → nom pays pour afficher 'Maroc' au lieu de 'MA'.
+  // Les autres référentiels (devise/langue) suivent le même pattern.
+  const paysByCode = useMemo(
+    () => new Map(props.paysList.map((p) => [p.code, p.label])),
+    [props.paysList],
+  );
+  const deviseByCode = useMemo(
+    () => new Map(props.devisesList.map((d) => [d.code, d.label])),
+    [props.devisesList],
+  );
+  const langueByCode = useMemo(
+    () => new Map(props.languesList.map((l) => [l.code, l.label])),
+    [props.languesList],
+  );
 
   const buildHref = (cursor: string | null): string => {
     const sp = new URLSearchParams();
@@ -172,7 +198,9 @@ export function ClientsTable(props: ClientsTableProps) {
               <TableRow key={c.id}>
                 <TableCell className="font-mono text-xs">{c.codeClient}</TableCell>
                 <TableCell className="font-medium">{c.raisonSociale}</TableCell>
-                <TableCell className="font-mono text-xs">{c.codePays ?? "—"}</TableCell>
+                <TableCell className="text-sm">
+                  {c.codePays === null ? "—" : (paysByCode.get(c.codePays) ?? c.codePays)}
+                </TableCell>
                 <TableCell>
                   <ClientStatusBadge statut={c.statutClient} />
                 </TableCell>
@@ -180,18 +208,32 @@ export function ClientsTable(props: ClientsTableProps) {
                   {c.dateCreation.slice(0, 10)}
                 </TableCell>
                 <TableCell className="text-right">
-                  {props.canCreate && (
+                  <div className="flex justify-end gap-1">
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
+                      aria-label="Voir détail rapide"
+                      title="Voir détail rapide"
                       onClick={() => {
-                        setDialog({ kind: "edit", client: c });
+                        setViewClient(c);
                       }}
                     >
-                      {t("actions.edit")}
+                      <Eye className="size-4" aria-hidden="true" />
                     </Button>
-                  )}
+                    {props.canCreate && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setDialog({ kind: "edit", client: c });
+                        }}
+                      >
+                        {t("actions.edit")}
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))
@@ -240,6 +282,78 @@ export function ClientsTable(props: ClientsTableProps) {
         amList={props.amList}
         typesContactList={props.typesContactList}
       />
+
+      {/* Phase 18 R-07 — Dialog lecture seule (Eye) — affiche les infos
+          déjà présentes dans le DTO. Pour le détail complet (entités,
+          licences, contacts), un lien renvoie vers /clients/[id]/info. */}
+      <Dialog
+        open={viewClient !== null}
+        onOpenChange={(open) => {
+          if (!open) setViewClient(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {viewClient === null
+                ? "Détail client"
+                : `${viewClient.codeClient} · ${viewClient.raisonSociale}`}
+            </DialogTitle>
+          </DialogHeader>
+          {viewClient !== null && (
+            <dl className="grid grid-cols-3 gap-3 text-sm">
+              <dt className="text-muted-foreground">Code</dt>
+              <dd className="col-span-2 font-mono">{viewClient.codeClient}</dd>
+              <dt className="text-muted-foreground">Raison sociale</dt>
+              <dd className="col-span-2">{viewClient.raisonSociale}</dd>
+              <dt className="text-muted-foreground">Pays</dt>
+              <dd className="col-span-2">
+                {viewClient.codePays === null
+                  ? "—"
+                  : (paysByCode.get(viewClient.codePays) ?? viewClient.codePays)}
+              </dd>
+              <dt className="text-muted-foreground">Devise</dt>
+              <dd className="col-span-2">
+                {viewClient.codeDevise === null
+                  ? "—"
+                  : (deviseByCode.get(viewClient.codeDevise) ?? viewClient.codeDevise)}
+              </dd>
+              <dt className="text-muted-foreground">Langue</dt>
+              <dd className="col-span-2">
+                {viewClient.codeLangue === null
+                  ? "—"
+                  : (langueByCode.get(viewClient.codeLangue) ?? viewClient.codeLangue)}
+              </dd>
+              <dt className="text-muted-foreground">Statut</dt>
+              <dd className="col-span-2">
+                <ClientStatusBadge statut={viewClient.statutClient} />
+              </dd>
+              <dt className="text-muted-foreground">Sales</dt>
+              <dd className="col-span-2">{viewClient.salesResponsable ?? "—"}</dd>
+              <dt className="text-muted-foreground">Account Manager</dt>
+              <dd className="col-span-2">{viewClient.accountManager ?? "—"}</dd>
+              <dt className="text-muted-foreground">Date création</dt>
+              <dd className="col-span-2 text-xs">{viewClient.dateCreation.slice(0, 10)}</dd>
+            </dl>
+          )}
+          <DialogFooter>
+            {viewClient !== null && (
+              <Button asChild variant="outline">
+                <Link href={`/clients/${viewClient.id}/info`}>Voir détail complet →</Link>
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setViewClient(null);
+              }}
+            >
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Indicateur silencieux pour réutiliser searchParams (évite warning lint) */}
       <span hidden>{searchParams.toString()}</span>
