@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Montserrat, Poppins, JetBrains_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
@@ -40,10 +41,17 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const locale = await getLocale();
   const messages = await getMessages();
 
+  // Phase 17 F1 — thème depuis cookie `spx-lic.theme`. Défaut = dark si absent
+  // ou valeur invalide. Tailwind `darkMode: 'class'` consomme la classe sur
+  // <html>. Le toggle est rendu dans AppHeader, lit le même cookie.
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get("spx-lic.theme")?.value;
+  const theme = themeCookie === "light" ? "light" : "dark";
+
   return (
     <html
       lang={locale}
-      className={`dark ${montserrat.variable} ${poppins.variable} ${jetbrainsMono.variable}`}
+      className={`${theme} ${montserrat.variable} ${poppins.variable} ${jetbrainsMono.variable}`}
     >
       <body className="font-sans antialiased">
         <OtelProvider>

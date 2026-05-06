@@ -1,15 +1,9 @@
-// LIC v2 — /history (stub PhaseStub stylé DS).
+// LIC v2 — /history (Phase 17 S1) — redirect permanent vers /audit.
+// L'item de nav unifié pointe désormais directement vers /audit. Le path
+// /history est conservé temporairement pour les anciens bookmarks.
 
-import { PhaseStub } from "@/components/shared/PhaseStub";
+import { redirect } from "next/navigation";
 
-export default function HistoryPage() {
-  return (
-    <div className="p-8">
-      <PhaseStub
-        phase={null}
-        label="Journal"
-        description="Journal global des modifications (toutes entités)."
-      />
-    </div>
-  );
+export default function HistoryPage(): never {
+  redirect("/audit");
 }

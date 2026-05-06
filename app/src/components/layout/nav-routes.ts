@@ -16,7 +16,6 @@ import {
   Bell,
   BellRing,
   Building2,
-  Clock,
   FileText,
   History,
   LayoutDashboard,
@@ -54,8 +53,11 @@ export const NAV_ROUTES: readonly NavRoute[] = [
   { href: "/reports", labelKey: "reportsList", icon: BarChart3, group: "reports" },
   { href: "/files", labelKey: "files", icon: FileText, group: "reports", minRole: "ADMIN" },
   // Système
+  // Phase 17 S1 — /history fusionné avec /audit (redirect serveur). On garde
+  // une seule entrée nav pointant vers /audit, l'icône Clock est conservée
+  // pour la sémantique "journal" plutôt que History (utilisé par /audit dans
+  // une variante précédente).
   { href: "/audit", labelKey: "auditLog", icon: History, group: "system", minRole: "ADMIN" },
-  { href: "/history", labelKey: "history", icon: Clock, group: "system" },
   { href: "/batches", labelKey: "batches", icon: Workflow, group: "system", minRole: "ADMIN" },
   // Paramétrage isolé en bas (SADMIN uniquement)
   { href: "/settings", labelKey: "settings", icon: Settings, group: "settings", minRole: "SADMIN" },

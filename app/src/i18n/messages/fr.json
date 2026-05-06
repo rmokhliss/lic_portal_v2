@@ -50,6 +50,12 @@
       "renouvellements": "Renouvellements"
     }
   },
+  "header": {
+    "theme": {
+      "dark": "Activer le thème sombre",
+      "light": "Activer le thème clair"
+    }
+  },
   "auth": {
     "login": {
       "title": "Connexion",

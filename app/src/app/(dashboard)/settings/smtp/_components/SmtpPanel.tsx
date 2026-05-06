@@ -64,11 +64,13 @@ export function SmtpPanel({
             )}
           </dd>
           <dt className="text-spx-ink/60">Hôte</dt>
-          <dd className="font-mono">{status.host ?? "—"}</dd>
+          <SmtpField value={status.host} placeholder="(non défini)" />
           <dt className="text-spx-ink/60">Port</dt>
-          <dd className="font-mono">{status.port ?? "—"}</dd>
+          <SmtpField value={status.port} placeholder="587" />
+          <dt className="text-spx-ink/60">Sécurisé (TLS)</dt>
+          <SmtpField value={null} placeholder="false" />
           <dt className="text-spx-ink/60">From</dt>
-          <dd className="font-mono">{status.from ?? "—"}</dd>
+          <SmtpField value={status.from} placeholder="Licence Manager <noreply@s2m.ma>" />
         </dl>
         {isSimulated && (
           <p className="text-spx-ink/70 mt-3 text-xs">
@@ -78,6 +80,9 @@ export function SmtpPanel({
           </p>
         )}
       </section>
+
+      {/* Sub-component local — affiche valeur réelle ou défaut .env.example
+          grisé en italique. Centralise le pattern <dd> avec fallback. */}
 
       {canTest && (
         <section className="border-spx-ink/10 rounded-lg border bg-white p-4">
@@ -114,4 +119,19 @@ export function SmtpPanel({
       )}
     </div>
   );
+}
+
+/** Phase 17 U4 — affiche la valeur SMTP réelle, ou la valeur par défaut
+ *  documentée dans `.env.example` grisée en italique si non définie. */
+function SmtpField({
+  value,
+  placeholder,
+}: {
+  readonly value: string | number | null;
+  readonly placeholder: string;
+}): React.JSX.Element {
+  if (value !== null && value !== "") {
+    return <dd className="font-mono">{value}</dd>;
+  }
+  return <dd className="text-spx-ink/40 font-mono italic">{placeholder}</dd>;
 }

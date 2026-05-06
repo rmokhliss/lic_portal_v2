@@ -16,10 +16,12 @@ export default async function NotificationsPage() {
   });
 
   return (
-    <NotificationsList
-      initialItems={page.items}
-      initialCursor={page.nextCursor}
-      initialUnread={page.unreadCount}
-    />
+    <div className="p-6">
+      <NotificationsList
+        initialItems={page.items}
+        initialCursor={page.nextCursor}
+        initialUnread={page.unreadCount}
+      />
+    </div>
   );
 }

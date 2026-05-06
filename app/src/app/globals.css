@@ -88,6 +88,20 @@
     color: var(--foreground);
     background-color: var(--background);
   }
+
+  /* Phase 17 U3 — masquer les flèches ▲▼ par défaut sur <input type="number">
+   * (Webkit + Firefox). Les valeurs numériques sont toujours saisissables au
+   * clavier ; les spinners créent du bruit visuel à droite des champs sur
+   * /settings/general (perçus comme "flèches de scroll des tabs"). */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
 }
 
 @theme inline {

@@ -50,6 +50,12 @@
       "renouvellements": "Renewals"
     }
   },
+  "header": {
+    "theme": {
+      "dark": "Switch to dark theme",
+      "light": "Switch to light theme"
+    }
+  },
   "auth": {
     "login": {
       "title": "Sign in",
