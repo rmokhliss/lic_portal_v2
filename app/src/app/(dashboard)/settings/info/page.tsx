@@ -1,9 +1,9 @@
 // ==============================================================================
-// LIC v2 — /settings/info (Phase 2.B étape 7/7)
+// LIC v2 — /settings/info (Phase 2.B étape 7/7 + Phase 20 R-34 simplifié)
 //
-// Server Component lecture seule : version app, runtime Node, dernier commit
-// Git (env BUILD_SHA injectée par CI — fallback "dev" en local), uptime
-// process. Pas de mutation, pas de form.
+// Server Component lecture seule : version app + Build SHA + uptime process.
+// Phase 20 R-34 — retiré Runtime Node / Plateforme / Stack (3 lignes peu
+// utiles à l'utilisateur final qui veut savoir "quelle version tourne").
 // ==============================================================================
 
 import appPackage from "../../../../../package.json" with { type: "json" };
@@ -16,9 +16,6 @@ export default function SettingsInfoPage() {
   const rows: readonly { label: string; value: string }[] = [
     { label: "Application", value: appPackage.name },
     { label: "Version", value: appPackage.version },
-    { label: "Runtime Node", value: process.version },
-    { label: "Plateforme", value: `${process.platform}/${process.arch}` },
-    { label: "Stack", value: "Next.js 16 + Drizzle 0.45 + Auth.js v5 + Tailwind 4" },
     { label: "Build SHA", value: buildSha },
     { label: "Démarré le", value: bootedAt.toISOString() },
     { label: "Uptime", value: formatUptime(uptimeSec) },
