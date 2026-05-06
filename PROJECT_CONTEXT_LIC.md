@@ -43,7 +43,54 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.1. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phases 1 → 19 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée + module email + audit Master + Phase 17 (refonte seed v1 + 4 stubs débloqués + theme toggle + demo tab) + Phase 18 (corrections post-tests utilisateur R-01→R-23, R-13 différé) + Phase 19 (R-13 controleVolume sur articles + Chromium Docker pour puppeteer). **MVP livré, prêt pour push origin/main**.
+**Phase actuelle** : **Phases 1 → 20 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée + module email + audit Master + Phase 17 (refonte seed v1 + 4 stubs débloqués + theme toggle + demo tab) + Phase 18 (corrections post-tests utilisateur R-01→R-23, R-13 différé) + Phase 19 (R-13 controleVolume + Chromium Docker) + Phase 20 (R-24→R-35, R-30 wizard 3 étapes différé Phase 21 + 4 fixes critiques bloquants prod : typeName minif, dark mode, logout, code regex). **MVP livré, prêt pour push origin/main**.
+
+**Phase 20 close (Mai 2026) — corrections post-tests R-24 → R-35** : 11 retours catalogués traités en 8 commits + 4 pré-commits fixes critiques.
+
+Pré-commits (fixes critiques bloquants prod, identifiés en cours de Phase 20)
+
+- `fix(error)` : `static typeName` sur AppError + 7 sous-classes — bug critique où Turbopack/Webpack minifiait `Class.name` en token court ('c'), faisant systématiquement échouer le check classe ↔ code en build prod ('Code SPX-LIC-XXX déclaré pour ConflictError, levé depuis [token court]'). 59/59 tests errors verts.
+- `fix(ui)` toggle dark/light : `@variant dark (&:where(.dark, .dark *))` + bloc `:root.light` dans globals.css. Phase 18 R-02 incomplet — Tailwind v4 utilise media query par défaut, classe HTML sans effet. Logout via `onSelect` direct sur DropdownMenuItem (le pattern Radix `<form action>` imbriqué bloquait le submit).
+- `fix(catalog)` : pattern HTML5 + auto-uppercase + helper text sur les inputs code Produit/Article (alignement avec ProduitCodeSchema Zod côté serveur — évite les ZodError opaques).
+- `fix(infrastructure)` : purge-demo noms de tables réels — `lic_contacts` → `lic_contacts_clients`, retrait `lic_articles`/`lic_produits` (référentiels SADMIN à préserver, table réelle = `*_ref`).
+
+R-24 — Flèches tabs masquées définitivement (CSS scrollbars natives)
+
+- `[data-slot="tabs-list"]` : `scrollbar-width: none` + `::-webkit-scrollbar { display: none }`. Les flèches ▲▼ persistantes étaient en fait des scrollbars natives Chrome/Edge Windows sur les TabsList Radix avec `overflow-x-auto`. Phase 18 ne ciblait que les composants Radix (jamais activés). Scroll horizontal souris/trackpad/clavier conservé.
+
+R-25/26/27 — Fiche client polish
+
+- R-25 : bouton « Importer healthcheck » débloqué pour TOUTES les licences (pas seulement ACTIF). Cas réaliste : suivi historique sur licence SUSPENDU/EXPIRE. Le select interne affiche le statut entre parenthèses.
+- R-26 : `<BrandLockup>` adaptatif au thème — prop `tone` désormais optionnelle, par défaut utilise les vars DS dynamiques (`text-foreground` / `text-muted-foreground` / `text-border`) qui flip via `:root.light`. Mode `tone='dark|light'` reste disponible pour les surfaces qui ne suivent pas le thème global.
+- R-27 : ClientInfoTab résolution code → libellé via `paysByCode` / `deviseByCode` / `langueByCode` (Maps depuis listes propagées en props par le Server Component). Affichage 'Maroc (MA)' / 'Dollar australien (AUD)' / 'English (en)'.
+
+R-28/31/32 — Fiche licence robustesse + édition volume
+
+- R-28 : StatusDialog licence — helper `humanizeStatusError(err)` qui transforme les codes SPX-LIC-733/734/735 en messages français avec remediation.
+- R-31 : GenerateLicFileButton — helper `humanizeError(err)` qui transforme les codes PKI SPX-LIC-411/412/413 en messages avec lien `/settings/sécurité`. Affichage `<p>` whitespace-normal au lieu de `<span>` pour ne pas tronquer.
+- R-32 : EditVolumeDialog étendu pour éditer `volumeConsomme` (correction manuelle admin avant le prochain snapshot batch). Le champ `volumeAutorise` est masqué pour les articles `controleVolume=false`. Use-case backend déjà capable des 2 optionnels (Phase 6.C) — pas de modif port.
+
+R-29 — Filtres clients enrichis + total count (partiel — Région/SansLicence différés Phase 21)
+
+- Port `ClientRepository.findPaginated` étendu (additif) : 3 filtres `codePays`/`accountManager`/`salesResponsable` + `total: number` dans output. Adapter sépare `businessConditions` (pour COUNT) de `pageConditions` (avec cursor).
+- UI clients/page.tsx + ClientsTable : 3 nouveaux selects + 'N client(s) au total' dans subtitle. Préservation filtres dans buildHref pour pagination.
+
+R-30 — Wizard création licence 3 étapes — **DIFFÉRÉ Phase 21**
+
+- Scope massif : multi-step state + sélection catalogue (produits/articles avec checkbox + volume conditional sur controleVolume) + check doublon backend + 3 nouveaux Server Actions wizard step. Mérite Phase 21 dédiée. Le NewLicenceDialog actuel (Phase 18 R-12, 1 écran) reste fonctionnel.
+
+R-33 — PDF logo + header pro
+
+- `renderPdfHtml` refondu : `@page :running()` pour header répété + `@bottom-center` pour footer 'Page N/M · S2M SELECT-PX · Confidentiel'. Logo dégradé CSS inline (cyan-100 → cyan-500 → blue-900). Bandeau résumé `border-l cyan-500`. `thead { display: table-header-group }` + `tr { page-break-inside: avoid }` pour pagination tableau propre. Helvetica/Arial stack système.
+
+R-34 — /settings/info simplifié
+
+- Retiré 3 lignes 'Runtime Node', 'Plateforme', 'Stack'. Conservé Application/Version/Build SHA/Démarré/Uptime.
+
+R-35 — Reload démo robuste après purge
+
+- Wrapper `step(name, fn)` autour de chaque seed avec try/catch propageant `InternalError` SPX-LIC-900 + message contextualisé `Échec rechargement démo à l'étape "<name>" : <cause>`.
+- 2 seeds Phase 18 ajoutés au pipeline reload (manquaient depuis Phase 17) : `phase8-alerts` + `phase10-fichiers`. Ordre strict respecté (FK).
 
 **Phase 19 close (Mai 2026) — controle_volume articles + Chromium Docker** :
 
