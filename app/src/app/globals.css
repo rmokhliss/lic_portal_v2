@@ -102,6 +102,15 @@
     -moz-appearance: textfield;
     appearance: textfield;
   }
+
+  /* Phase 18 R-14 — masquer les éventuelles flèches de scroll Radix
+   * (ScrollArea + Tabs scroll buttons si activés ultérieurement). Les tabs
+   * conservent overflow-x: auto via leur container — scroll horizontal
+   * souris/trackpad/clavier toujours fonctionnel. */
+  [data-radix-scroll-area-scrollbar],
+  [data-radix-tabs-scroll-button] {
+    display: none !important;
+  }
 }
 
 @theme inline {

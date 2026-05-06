@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 import {
+  archiveOldNotificationsAction,
   fetchMyNotificationsAction,
   markAllNotificationsReadAction,
   markNotificationReadAction,
@@ -49,7 +50,15 @@ export function NotificationsList(props: NotificationsListProps) {
   const [cursor, setCursor] = useState<string | null>(props.initialCursor);
   const [unreadCount, setUnreadCount] = useState<number>(props.initialUnread);
   const [onlyUnread, setOnlyUnread] = useState<boolean>(false);
+  // Phase 18 R-16 — filtre priorité côté client (les items sont déjà chargés
+  // côté serveur, pas besoin de re-fetch). Pour étendre à la pagination, le
+  // filtre devra basculer côté Server Action.
+  const [priorityFilter, setPriorityFilter] = useState<"" | NotificationItemDTO["priority"]>("");
+  const [archiveResult, setArchiveResult] = useState<string>("");
   const [pending, startTransition] = useTransition();
+
+  const filteredItems =
+    priorityFilter === "" ? items : items.filter((i) => i.priority === priorityFilter);
 
   const refresh = (resetCursor: boolean) => {
     startTransition(() => {
@@ -101,6 +110,28 @@ export function NotificationsList(props: NotificationsListProps) {
     });
   };
 
+  // Phase 18 R-16 — bouton archiver. Supprime les notifications LUES de plus
+  // de 30 jours. Action ADMIN/SADMIN — la Server Action enforce le rôle, le
+  // bouton reste visible pour tous mais l'utilisateur USER recevra un 403.
+  const onArchiveOld = () => {
+    setArchiveResult("");
+    startTransition(() => {
+      void (async () => {
+        try {
+          const r = await archiveOldNotificationsAction({ daysOld: 30 });
+          setArchiveResult(`${String(r.deleted)} notification(s) archivée(s).`);
+          // Re-fetch pour rafraîchir la liste après suppression.
+          const page = await fetchMyNotificationsAction({ onlyUnread });
+          setItems(page.items);
+          setCursor(page.nextCursor);
+          setUnreadCount(page.unreadCount);
+        } catch (err) {
+          setArchiveResult(err instanceof Error ? err.message : "Erreur archivage");
+        }
+      })();
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
@@ -110,21 +141,44 @@ export function NotificationsList(props: NotificationsListProps) {
             {t("unreadCount", { count: unreadCount })}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={priorityFilter}
+            onChange={(e) => {
+              setPriorityFilter(e.target.value as "" | NotificationItemDTO["priority"]);
+            }}
+            className="border-input bg-background text-foreground h-9 rounded-md border px-3 text-sm"
+            aria-label="Filtrer par priorité"
+          >
+            <option value="">Toutes priorités</option>
+            <option value="INFO">INFO</option>
+            <option value="WARNING">WARNING</option>
+            <option value="CRITICAL">CRITICAL</option>
+          </select>
           <Button type="button" variant="outline" onClick={onToggleUnread} disabled={pending}>
             {onlyUnread ? t("showAll") : t("showOnlyUnread")}
           </Button>
           <Button type="button" disabled={pending || unreadCount === 0} onClick={onMarkAllRead}>
             {t("markAllRead")}
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={onArchiveOld}
+            title="Supprime les notifications lues de plus de 30 jours"
+          >
+            Archiver &gt; 30j
+          </Button>
         </div>
       </div>
+      {archiveResult.length > 0 && <p className="text-muted-foreground text-xs">{archiveResult}</p>}
 
-      {items.length === 0 ? (
+      {filteredItems.length === 0 ? (
         <p className="text-muted-foreground text-sm">{t("empty")}</p>
       ) : (
         <ul className="space-y-2">
-          {items.map((notif) => (
+          {filteredItems.map((notif) => (
             <li
               key={notif.id}
               className={`rounded-md border p-3 ${PRIORITY_STYLES[notif.priority]} ${notif.read ? "opacity-60" : ""}`}

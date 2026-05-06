@@ -47,11 +47,13 @@ export default async function AuditPage() {
   };
 
   return (
-    <AuditPageClient
-      initialPage={initialPage}
-      fetchPage={fetchPage}
-      actionsCatalog={AUDIT_ACTIONS_CATALOG}
-      entitiesCatalog={ENTITIES_CATALOG}
-    />
+    <div className="p-6">
+      <AuditPageClient
+        initialPage={initialPage}
+        fetchPage={fetchPage}
+        actionsCatalog={AUDIT_ACTIONS_CATALOG}
+        entitiesCatalog={ENTITIES_CATALOG}
+      />
+    </div>
   );
 }

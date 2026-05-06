@@ -1,5 +1,5 @@
 // ==============================================================================
-// LIC v2 — Server Actions /notifications (Phase 8.D)
+// LIC v2 — Server Actions /notifications (Phase 8.D + Phase 18 R-16)
 // ==============================================================================
 
 "use server";
@@ -7,8 +7,9 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requireAuthPage } from "@/server/infrastructure/auth";
+import { requireAuthPage, requireRole } from "@/server/infrastructure/auth";
 import {
+  deleteOldNotificationsUseCase,
   listNotificationsUseCase,
   markAllNotificationsReadUseCase,
   markNotificationReadUseCase,
@@ -44,6 +45,22 @@ export async function markNotificationReadAction(input: unknown) {
 export async function markAllNotificationsReadAction() {
   const user = await requireAuthPage();
   const result = await markAllNotificationsReadUseCase.execute(user.id);
+  revalidatePath("/notifications");
+  return result;
+}
+
+/** Phase 18 R-16 — supprime les notifications LUES de plus de N jours.
+ *  Réservé ADMIN/SADMIN (action de maintenance) — pas un bouton USER. */
+const ArchiveSchema = z.object({ daysOld: z.int().positive().max(365).optional() }).strict();
+
+export async function archiveOldNotificationsAction(
+  input: unknown = {},
+): Promise<{ deleted: number }> {
+  await requireRole(["ADMIN", "SADMIN"]);
+  const parsed = ArchiveSchema.parse(input);
+  const result = await deleteOldNotificationsUseCase.execute({
+    daysOld: parsed.daysOld ?? 30,
+  });
   revalidatePath("/notifications");
   return result;
 }

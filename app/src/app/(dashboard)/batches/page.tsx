@@ -81,11 +81,13 @@ export default async function BatchesPage() {
   }));
 
   return (
-    <BatchesPanel
-      jobs={items}
-      executionsByJob={executionsByJob}
-      logsByExecution={logsByExecution}
-      canRun
-    />
+    <div className="p-6">
+      <BatchesPanel
+        jobs={items}
+        executionsByJob={executionsByJob}
+        logsByExecution={logsByExecution}
+        canRun
+      />
+    </div>
   );
 }
