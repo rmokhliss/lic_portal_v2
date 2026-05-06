@@ -1,23 +1,33 @@
 // ==============================================================================
-// LIC v2 — /licences (T-03 — page liste globale cross-clients)
+// LIC v2 — /licences (T-03 + Phase 18 R-11/R-12)
 //
 // Server Component. Filtres GET (statut + q recherche reference) + cursor
 // pagination. Le client (raisonSociale) est résolu en post-fetch via N appels
-// getClientUseCase parallèles (max 50 par page) — pas de JOIN ajouté côté repo
-// pour limiter le scope T-03 (extension `q` uniquement).
+// getClientUseCase parallèles (max 50 par page).
+//
+// Phase 18 R-11 — palette migrée sur les vars DS (`bg-card` / `bg-surface-2` /
+// `text-foreground` / `border-border`) au lieu de `bg-white text-spx-ink`.
+// L'ancienne palette legacy donnait du blanc sur blanc en mode dark.
+//
+// Phase 18 R-12 — bouton « + Nouvelle licence » (ADMIN/SADMIN). La création
+// est gardée côté Server Action createLicenceAction (cf. _actions.ts).
 // ==============================================================================
 
 import Link from "next/link";
 
 import { requireAuthPage } from "@/server/infrastructure/auth";
-import { getClientUseCase, listAllLicencesUseCase } from "@/server/composition-root";
+import {
+  getClientUseCase,
+  listAllLicencesUseCase,
+  listClientsUseCase,
+} from "@/server/composition-root";
+
+import { NewLicenceDialog } from "./_components/NewLicenceDialog";
 
 interface LicencesPageProps {
   readonly searchParams: Promise<{
     readonly cursor?: string;
-    /** `statut=ACTIF | INACTIF | SUSPENDU | EXPIRE` (cohérent /clients). */
     readonly statut?: string;
-    /** Recherche sous-chaîne sur reference (ILIKE). */
     readonly q?: string;
   }>;
 }
@@ -29,6 +39,13 @@ const STATUS_LABEL: Record<string, string> = {
   EXPIRE: "Expirée",
 };
 
+const STATUS_BADGE: Record<string, string> = {
+  ACTIF: "bg-emerald-500/15 text-emerald-300",
+  INACTIF: "bg-zinc-500/15 text-zinc-400",
+  SUSPENDU: "bg-amber-500/15 text-amber-300",
+  EXPIRE: "bg-rose-500/15 text-rose-300",
+};
+
 const VALID_STATUSES = new Set(["ACTIF", "INACTIF", "SUSPENDU", "EXPIRE"]);
 
 type LicenceStatusFilter = "ACTIF" | "INACTIF" | "SUSPENDU" | "EXPIRE";
@@ -36,7 +53,7 @@ type LicenceStatusFilter = "ACTIF" | "INACTIF" | "SUSPENDU" | "EXPIRE";
 export default async function LicencesPage({
   searchParams,
 }: LicencesPageProps): Promise<React.JSX.Element> {
-  await requireAuthPage();
+  const user = await requireAuthPage();
   const params = await searchParams;
 
   const statusFilter: LicenceStatusFilter | undefined =
@@ -45,14 +62,17 @@ export default async function LicencesPage({
       : undefined;
   const qFilter = params.q !== undefined && params.q.trim().length > 0 ? params.q.trim() : "";
 
-  const result = await listAllLicencesUseCase.execute({
-    ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
-    ...(statusFilter !== undefined ? { status: statusFilter } : {}),
-    ...(qFilter.length > 0 ? { q: qFilter } : {}),
-    limit: 25,
-  });
+  const [result, clientsList] = await Promise.all([
+    listAllLicencesUseCase.execute({
+      ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
+      ...(statusFilter !== undefined ? { status: statusFilter } : {}),
+      ...(qFilter.length > 0 ? { q: qFilter } : {}),
+      limit: 25,
+    }),
+    listClientsUseCase.execute({ limit: 200 }),
+  ]);
 
-  // Résolution clients en parallèle pour la colonne Client.
+  // Résolution clients en parallèle pour la colonne Client de la table.
   const uniqueClientIds = Array.from(new Set(result.items.map((l) => l.clientId)));
   const clientsArr = await Promise.all(
     uniqueClientIds.map(async (id) => {
@@ -65,6 +85,15 @@ export default async function LicencesPage({
   );
   const clientsById = new Map(clientsArr.flatMap((c) => (c === null ? [] : [[c.id, c] as const])));
 
+  // Phase 18 R-12 — clients pour le combobox du wizard de création.
+  const dialogClients = clientsList.items.map((c) => ({
+    id: c.id,
+    codeClient: c.codeClient,
+    raisonSociale: c.raisonSociale,
+  }));
+
+  const canCreate = user.role === "ADMIN" || user.role === "SADMIN";
+
   const buildHref = (cursor: string | null): string => {
     const sp = new URLSearchParams();
     if (cursor !== null) sp.set("cursor", cursor);
@@ -76,21 +105,23 @@ export default async function LicencesPage({
 
   return (
     <div className="space-y-4 p-6">
-      <header>
-        <h1 className="font-display text-foreground text-2xl">Licences</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Vue cross-clients. {result.items.length} licence(s) sur la page courante.
-        </p>
+      <header className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-foreground text-2xl">Licences</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Vue cross-clients. {result.items.length} licence(s) sur la page courante.
+          </p>
+        </div>
+        {canCreate && <NewLicenceDialog clients={dialogClients} />}
       </header>
 
-      {/* Filtres */}
       <form
         method="GET"
         action="/licences"
-        className="border-spx-ink/10 flex flex-wrap items-end gap-3 rounded-md border bg-white p-3"
+        className="border-border bg-card flex flex-wrap items-end gap-3 rounded-md border p-3"
       >
         <div className="flex min-w-[260px] flex-1 flex-col gap-1">
-          <label htmlFor="q" className="text-spx-ink/60 text-xs uppercase tracking-wider">
+          <label htmlFor="q" className="text-muted-foreground text-xs uppercase tracking-wider">
             Référence
           </label>
           <input
@@ -99,18 +130,21 @@ export default async function LicencesPage({
             type="search"
             placeholder="LIC-2026-..."
             defaultValue={qFilter}
-            className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+            className="border-input bg-background text-foreground h-9 rounded-md border px-3 text-sm"
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="statut" className="text-spx-ink/60 text-xs uppercase tracking-wider">
+          <label
+            htmlFor="statut"
+            className="text-muted-foreground text-xs uppercase tracking-wider"
+          >
             Statut
           </label>
           <select
             id="statut"
             name="statut"
             defaultValue={statusFilter ?? ""}
-            className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+            className="border-input bg-background text-foreground h-9 rounded-md border px-3 text-sm"
           >
             <option value="">Tous</option>
             <option value="ACTIF">Active</option>
@@ -127,15 +161,15 @@ export default async function LicencesPage({
         </button>
         <Link
           href="/licences"
-          className="border-input h-9 rounded-md border px-3 text-sm leading-9"
+          className="border-input text-foreground h-9 rounded-md border px-3 text-sm leading-9"
         >
           Réinitialiser
         </Link>
       </form>
 
-      <div className="border-spx-ink/10 overflow-x-auto rounded-lg border bg-white">
+      <div className="border-border bg-card overflow-x-auto rounded-lg border">
         <table className="w-full text-sm">
-          <thead className="bg-spx-ink/5 text-spx-ink/70">
+          <thead className="bg-surface-2 text-muted-foreground">
             <tr>
               <th className="px-4 py-2 text-left font-medium">Référence</th>
               <th className="px-4 py-2 text-left font-medium">Client</th>
@@ -149,27 +183,31 @@ export default async function LicencesPage({
             {result.items.map((l) => {
               const c = clientsById.get(l.clientId);
               return (
-                <tr key={l.id} className="border-spx-ink/10 border-t">
+                <tr key={l.id} className="border-border border-t">
                   <td className="px-4 py-2 font-mono">{l.reference}</td>
                   <td className="px-4 py-2">
                     {c === undefined ? (
-                      <span className="text-spx-ink/40">—</span>
+                      <span className="text-muted-foreground">—</span>
                     ) : (
                       <Link
                         href={`/clients/${c.id}/info`}
-                        className="text-spx-blue-600 underline-offset-2 hover:underline"
+                        className="text-spx-cyan-500 underline-offset-2 hover:underline"
                       >
                         {c.codeClient} · {c.raisonSociale}
                       </Link>
                     )}
                   </td>
-                  <td className="px-4 py-2">{STATUS_LABEL[l.status] ?? l.status}</td>
+                  <td className="px-4 py-2">
+                    <span className={`rounded px-2 py-0.5 text-xs ${STATUS_BADGE[l.status] ?? ""}`}>
+                      {STATUS_LABEL[l.status] ?? l.status}
+                    </span>
+                  </td>
                   <td className="px-4 py-2">{new Date(l.dateDebut).toLocaleDateString("fr-FR")}</td>
                   <td className="px-4 py-2">{new Date(l.dateFin).toLocaleDateString("fr-FR")}</td>
                   <td className="px-4 py-2 text-right">
                     <Link
                       href={`/licences/${l.id}/resume`}
-                      className="text-spx-blue-600 underline-offset-2 hover:underline"
+                      className="text-spx-cyan-500 underline-offset-2 hover:underline"
                     >
                       Détail
                     </Link>
@@ -179,7 +217,7 @@ export default async function LicencesPage({
             })}
             {result.items.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-spx-ink/60 px-4 py-6 text-center">
+                <td colSpan={6} className="text-muted-foreground px-4 py-6 text-center">
                   Aucune licence.
                 </td>
               </tr>
@@ -192,7 +230,7 @@ export default async function LicencesPage({
         {params.cursor !== undefined && (
           <Link
             href={buildHref(null)}
-            className="border-spx-ink/20 hover:bg-spx-ink/5 rounded border px-3 py-1 text-sm"
+            className="border-border hover:bg-surface-2 rounded border px-3 py-1 text-sm"
           >
             ← Première page
           </Link>
@@ -200,7 +238,7 @@ export default async function LicencesPage({
         {result.nextCursor !== null && (
           <Link
             href={buildHref(result.nextCursor)}
-            className="border-spx-ink/20 hover:bg-spx-ink/5 rounded border px-3 py-1 text-sm"
+            className="border-border hover:bg-surface-2 rounded border px-3 py-1 text-sm"
           >
             Suivant →
           </Link>
