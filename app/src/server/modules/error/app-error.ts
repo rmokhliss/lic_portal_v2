@@ -52,6 +52,13 @@ export abstract class AppError extends Error implements AppErrorShape {
   readonly details?: Record<string, unknown>;
   abstract readonly httpStatus: number;
 
+  /** Phase 19+ — nom stable de la classe (résistant à la minification Next.js
+   *  prod / Turbopack qui écrase `Class.name` en token court "c", "a", etc.).
+   *  Chaque sous-classe override ce static avec son nom littéral, utilisé
+   *  par le check classe ↔ code ci-dessous. Sans ça, le check throw un
+   *  faux positif sur n'importe quelle erreur métier en build prod. */
+  static readonly typeName: string = "AppError";
+
   constructor(opts: AppErrorOptions) {
     // ERROR_CATALOGUE[opts.code] est typé `ErrorCodeEntry` (et non `| undefined`)
     // car `ErrorCode` est une union littérale fermée et le Record est exhaustif :
@@ -63,7 +70,11 @@ export abstract class AppError extends Error implements AppErrorShape {
       opts.cause !== undefined ? { cause: opts.cause } : undefined,
     );
 
-    this.name = new.target.name;
+    // Phase 19+ — `typeName` static survit à la minification (string littéral
+    // figé au build), contrairement à `new.target.name` qui est rebadgé en
+    // identifiant court par Turbopack/Webpack en prod.
+    const ctor = new.target;
+    this.name = ctor.typeName;
     this.code = opts.code;
     if (opts.details !== undefined) {
       this.details = opts.details;
@@ -73,7 +84,7 @@ export abstract class AppError extends Error implements AppErrorShape {
     // une mauvaise association code/classe produit une erreur de programmation
     // qu'on veut détecter en environnement réel, pas seulement en test.
     const expectedClass = entry.className;
-    const actualClass = new.target.name;
+    const actualClass = ctor.typeName;
     if (expectedClass !== actualClass) {
       // eslint-disable-next-line no-restricted-syntax -- bootstrap exception : lever une AppError ici récurserait dans ce même check
       throw new Error(
