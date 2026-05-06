@@ -351,7 +351,24 @@ function ProduitDialog({
               required
               readOnly={isEdit}
               defaultValue={initial?.code ?? ""}
+              // Validation client identique au regex Zod côté serveur
+              // (ProduitCodeSchema). Pattern HTML5 + auto-uppercase →
+              // évite la propagation d'un ZodError opaque depuis la
+              // Server Action quand l'utilisateur tape en minuscules.
+              pattern="[A-Z][A-Z0-9_-]*"
+              title="Majuscules, chiffres, tirets ou underscores. Doit commencer par une lettre."
+              className="font-mono uppercase"
+              onInput={
+                isEdit
+                  ? undefined
+                  : (e) => {
+                      e.currentTarget.value = e.currentTarget.value.toUpperCase();
+                    }
+              }
             />
+            <p className="text-muted-foreground text-xs">
+              Format : majuscules, chiffres, tirets ou underscores (ex : SPX-CORE).
+            </p>
           </div>
           <div className="space-y-1">
             <Label htmlFor="nom">{t("nom")}</Label>
@@ -461,7 +478,22 @@ function ArticleDialog({
               required
               readOnly={isEdit}
               defaultValue={initial?.code ?? ""}
+              // Cohérent ProduitDialog : pattern HTML5 + auto-uppercase
+              // alignés sur ProduitCodeSchema Zod côté serveur.
+              pattern="[A-Z][A-Z0-9_-]*"
+              title="Majuscules, chiffres, tirets ou underscores. Doit commencer par une lettre."
+              className="font-mono uppercase"
+              onInput={
+                isEdit
+                  ? undefined
+                  : (e) => {
+                      e.currentTarget.value = e.currentTarget.value.toUpperCase();
+                    }
+              }
             />
+            <p className="text-muted-foreground text-xs">
+              Format : majuscules, chiffres, tirets ou underscores (ex : KERNEL, ATM-STD).
+            </p>
           </div>
           <div className="space-y-1">
             <Label htmlFor="nom">{t("nom")}</Label>

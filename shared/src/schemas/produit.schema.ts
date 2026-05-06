@@ -9,7 +9,8 @@ const ProduitCodeSchema = z
   .min(1)
   .max(30)
   .regex(/^[A-Z][A-Z0-9_-]*$/, {
-    message: "code doit matcher /^[A-Z][A-Z0-9_-]*$/",
+    message:
+      "Le code doit commencer par une lettre majuscule et ne contenir que des majuscules, chiffres, tirets ou underscores (ex : SPX-CORE, KERNEL).",
   });
 
 export const CreateProduitSchema = z
