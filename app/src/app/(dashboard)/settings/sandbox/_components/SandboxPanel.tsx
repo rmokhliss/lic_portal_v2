@@ -363,6 +363,73 @@ export function SandboxPanel(): React.JSX.Element {
           </div>
         )}
       </section>
+
+      {/* ===== Phase 18 R-23 — Templates .lic / .hc téléchargeables ===== */}
+      <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold">Templates fichiers</h2>
+        <p className="text-spx-ink/70 mt-1 text-sm">
+          Modèles JSON vides à compléter pour tester l&apos;intégration côté client S2M. Aucune
+          signature/chiffrement appliqué — utiliser les sections 2 (signer .lic) et 4 (chiffrer .hc)
+          de cette page pour produire des artefacts valides.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              downloadAsFile(
+                JSON.stringify(LIC_TEMPLATE, null, 2),
+                "template.lic.json",
+                "application/json",
+              );
+            }}
+          >
+            Télécharger template .lic
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              downloadAsFile(
+                JSON.stringify(HC_TEMPLATE, null, 2),
+                "template.hc.json",
+                "application/json",
+              );
+            }}
+          >
+            Télécharger template .hc
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }
+
+// Phase 18 R-23 — Structure JSON des templates. Aligné PROJECT_CONTEXT_LIC
+// §spec format F2 (cf. docs/integration/F2_FORMATS.md).
+const LIC_TEMPLATE = {
+  reference: "LIC-2026-NNN",
+  clientCode: "CDM",
+  clientRaisonSociale: "Crédit du Maroc",
+  entiteNom: "Siège Crédit du Maroc",
+  dateDebut: "2026-01-01",
+  dateFin: "2027-12-31",
+  articles: [
+    {
+      code: "KERNEL",
+      nom: "Kernel Switch & Authorization",
+      volAutorise: 1000000,
+      uniteVolume: "transactions/jour",
+    },
+    { code: "HSM", nom: "HSM Interface", volAutorise: 500000, uniteVolume: "ops/jour" },
+  ],
+  generatedAt: "2026-05-01T10:00:00Z",
+  version: 1,
+} as const;
+
+const HC_TEMPLATE = {
+  licenceReference: "LIC-2026-NNN",
+  articles: [
+    { code: "KERNEL", volConsomme: 750000 },
+    { code: "HSM", volConsomme: 320000 },
+  ],
+  importedAt: "2026-05-01T10:00:00Z",
+} as const;
