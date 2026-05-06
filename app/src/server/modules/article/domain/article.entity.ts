@@ -1,8 +1,12 @@
 // ==============================================================================
-// LIC v2 — Entité Article (Phase 6 étape 6.B)
+// LIC v2 — Entité Article (Phase 6 étape 6.B + Phase 19 R-13 controleVolume)
 //
 // Référentiel paramétrable SADMIN. Pattern strict aligné sur Produit.
 // Identifiant business stable = (produitId, code) → unicité par produit.
+//
+// Phase 19 R-13 — `controleVolume` (default true) : si false, l'article est
+// une "fonctionnalité" (ATM-ADV, POS-ADV…) et le volume autorisé n'est pas
+// demandé à la création licence-article. Flag UI/routage — pas de validation.
 //
 // Codes : SPX-LIC-748 validation, 746 NotFound, 747 conflict.
 // ==============================================================================
@@ -22,6 +26,7 @@ export interface CreateArticleInput {
   readonly description?: string;
   readonly uniteVolume?: string;
   readonly actif?: boolean;
+  readonly controleVolume?: boolean;
 }
 
 export interface RehydrateArticleProps {
@@ -32,6 +37,7 @@ export interface RehydrateArticleProps {
   readonly description?: string;
   readonly uniteVolume: string;
   readonly actif: boolean;
+  readonly controleVolume: boolean;
 }
 
 interface ArticleProps {
@@ -41,6 +47,7 @@ interface ArticleProps {
   readonly description?: string;
   readonly uniteVolume: string;
   readonly actif: boolean;
+  readonly controleVolume: boolean;
 }
 
 export class Article {
@@ -50,6 +57,7 @@ export class Article {
   readonly description?: string;
   readonly uniteVolume: string;
   readonly actif: boolean;
+  readonly controleVolume: boolean;
 
   protected constructor(props: ArticleProps) {
     this.produitId = props.produitId;
@@ -58,6 +66,7 @@ export class Article {
     this.description = props.description;
     this.uniteVolume = props.uniteVolume;
     this.actif = props.actif;
+    this.controleVolume = props.controleVolume;
   }
 
   static create(input: CreateArticleInput): Article {
@@ -74,6 +83,7 @@ export class Article {
       description: input.description,
       uniteVolume: unite,
       actif: input.actif ?? true,
+      controleVolume: input.controleVolume ?? true,
     });
   }
 
@@ -86,6 +96,7 @@ export class Article {
         description: props.description,
         uniteVolume: props.uniteVolume,
         actif: props.actif,
+        controleVolume: props.controleVolume,
       },
       props.id,
     );
@@ -99,6 +110,7 @@ export class Article {
       description: this.description ?? null,
       uniteVolume: this.uniteVolume,
       actif: this.actif,
+      controleVolume: this.controleVolume,
     };
   }
 
@@ -201,6 +213,10 @@ export class PersistedArticle extends Article {
     return new PersistedArticle({ ...this.snapshot(), uniteVolume }, this.id);
   }
 
+  withControleVolume(controleVolume: boolean): PersistedArticle {
+    return new PersistedArticle({ ...this.snapshot(), controleVolume }, this.id);
+  }
+
   toggle(): PersistedArticle {
     return new PersistedArticle({ ...this.snapshot(), actif: !this.actif }, this.id);
   }
@@ -213,6 +229,7 @@ export class PersistedArticle extends Article {
       description: this.description,
       uniteVolume: this.uniteVolume,
       actif: this.actif,
+      controleVolume: this.controleVolume,
     };
   }
 

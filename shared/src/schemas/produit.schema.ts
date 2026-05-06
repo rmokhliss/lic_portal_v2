@@ -47,6 +47,8 @@ export const CreateArticleSchema = z
     description: z.string().min(1).max(1000).optional(),
     uniteVolume: z.string().min(1).max(30).optional(),
     actif: z.boolean().optional(),
+    /** Phase 19 R-13 — défaut true côté entité Article. */
+    controleVolume: z.boolean().optional(),
   })
   .strict();
 
@@ -58,6 +60,8 @@ export const UpdateArticleSchema = z
     nom: z.string().min(1).max(200).optional(),
     description: z.string().max(1000).nullable().optional(),
     uniteVolume: z.string().min(1).max(30).optional(),
+    /** Phase 19 R-13 — toggle volume contrôlé / illimité. */
+    controleVolume: z.boolean().optional(),
   })
   .strict();
 

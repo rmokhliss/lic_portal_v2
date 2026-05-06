@@ -1,8 +1,9 @@
 // ==============================================================================
-// LIC v2 — UpdateArticleUseCase (Phase 6 étape 6.B)
+// LIC v2 — UpdateArticleUseCase (Phase 6 étape 6.B + Phase 19 R-13 controleVolume)
 //
-// Patch partiel sur lookup id : nom, description, uniteVolume.
-// produitId et code immuables (FK targets). actif via toggle.
+// Patch partiel sur lookup id : nom, description, uniteVolume, controleVolume.
+// produitId et code immuables (FK targets). actif via toggle (toggle endpoint
+// dédié, pas exposé ici).
 // ==============================================================================
 
 import { toDTO, type ArticleDTO } from "../adapters/postgres/article.mapper";
@@ -14,6 +15,7 @@ export interface UpdateArticleUseCaseInput {
   readonly nom?: string;
   readonly description?: string | null;
   readonly uniteVolume?: string;
+  readonly controleVolume?: boolean;
 }
 
 export class UpdateArticleUseCase {
@@ -27,6 +29,8 @@ export class UpdateArticleUseCase {
     if (input.nom !== undefined) updated = updated.withName(input.nom);
     if ("description" in input) updated = updated.withDescription(input.description);
     if (input.uniteVolume !== undefined) updated = updated.withUniteVolume(input.uniteVolume);
+    if (input.controleVolume !== undefined)
+      updated = updated.withControleVolume(input.controleVolume);
 
     await this.articleRepository.update(updated);
     return toDTO(updated);

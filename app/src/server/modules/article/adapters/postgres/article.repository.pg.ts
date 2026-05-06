@@ -85,6 +85,7 @@ export class ArticleRepositoryPg extends ArticleRepository {
         description: article.description ?? null,
         uniteVolume: article.uniteVolume,
         actif: article.actif,
+        controleVolume: article.controleVolume,
       })
       .where(eq(articlesRef.id, article.id));
   }

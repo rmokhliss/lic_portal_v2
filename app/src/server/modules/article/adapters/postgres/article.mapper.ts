@@ -1,5 +1,5 @@
 // ==============================================================================
-// LIC v2 — Mapper Article (Phase 6 étape 6.B)
+// LIC v2 — Mapper Article (Phase 6 étape 6.B + Phase 19 R-13 controleVolume)
 // ==============================================================================
 
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
@@ -19,6 +19,7 @@ export interface ArticleDTO {
   readonly description: string | null;
   readonly uniteVolume: string;
   readonly actif: boolean;
+  readonly controleVolume: boolean;
 }
 
 export function toEntity(row: ArticleRow): PersistedArticle {
@@ -30,6 +31,7 @@ export function toEntity(row: ArticleRow): PersistedArticle {
     description: row.description ?? undefined,
     uniteVolume: row.uniteVolume,
     actif: row.actif,
+    controleVolume: row.controleVolume,
   });
 }
 
@@ -42,6 +44,7 @@ export function toDTO(entity: PersistedArticle): ArticleDTO {
     description: entity.description ?? null,
     uniteVolume: entity.uniteVolume,
     actif: entity.actif,
+    controleVolume: entity.controleVolume,
   };
 }
 
@@ -53,5 +56,6 @@ export function toPersistence(entity: Article): ArticleInsert {
     description: entity.description ?? null,
     uniteVolume: entity.uniteVolume,
     actif: entity.actif,
+    controleVolume: entity.controleVolume,
   };
 }

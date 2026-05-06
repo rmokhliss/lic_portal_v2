@@ -318,8 +318,11 @@ function ArticleRow({
     });
   };
 
+  // Phase 19 R-13 — controleVolume=false → article "fonctionnalité",
+  // volume illimité. On force ratio=0 et on affiche un placeholder.
+  const isUnlimited = liaison.article?.controleVolume === false;
   const ratio =
-    liaison.liaison.volumeAutorise === 0
+    isUnlimited || liaison.liaison.volumeAutorise === 0
       ? 0
       : (liaison.liaison.volumeConsomme / liaison.liaison.volumeAutorise) * 100;
   const ratioClass =
@@ -333,12 +336,25 @@ function ArticleRow({
         {liaison.article?.uniteVolume ?? "-"}
       </TableCell>
       <TableCell className="text-right tabular-nums">
-        {liaison.liaison.volumeConsomme.toLocaleString("fr-FR")}
+        {isUnlimited ? "—" : liaison.liaison.volumeConsomme.toLocaleString("fr-FR")}
       </TableCell>
       <TableCell className="text-right tabular-nums">
-        {liaison.liaison.volumeAutorise.toLocaleString("fr-FR")}
+        {isUnlimited ? (
+          <span
+            className="text-muted-foreground italic"
+            title="Article fonctionnalité — volume non contrôlé"
+          >
+            Illimité
+          </span>
+        ) : (
+          liaison.liaison.volumeAutorise.toLocaleString("fr-FR")
+        )}
       </TableCell>
-      <TableCell className={`text-right tabular-nums ${ratioClass}`}>{ratio.toFixed(1)}%</TableCell>
+      <TableCell
+        className={`text-right tabular-nums ${isUnlimited ? "text-muted-foreground" : ratioClass}`}
+      >
+        {isUnlimited ? "—" : `${ratio.toFixed(1)}%`}
+      </TableCell>
       <TableCell className="text-right">
         {canEdit && (
           <div className="flex items-center justify-end gap-2">
@@ -457,6 +473,9 @@ function AddArticleDialog({
   const t = useTranslations("licences.detail.articles.addArticleDialog");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
+  // Phase 19 R-13 — track l'article sélectionné pour masquer/afficher le
+  // champ volumeAutorise selon son controleVolume.
+  const [selectedArticleId, setSelectedArticleId] = useState<string>("");
 
   if (state.kind !== "addArticle") return null;
 
@@ -464,14 +483,22 @@ function AddArticleDialog({
     (a) => a.actif && !attachedArticleIds.has(a.id),
   );
 
+  const selectedArticle =
+    selectedArticleId === ""
+      ? null
+      : (candidates.find((a) => a.id === Number(selectedArticleId)) ?? null);
+  const isUnlimited = selectedArticle !== null && !selectedArticle.controleVolume;
+
   const onSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const articleIdStr = fd.get("articleId");
-    const volumeStr = fd.get("volumeAutorise");
-    if (typeof articleIdStr !== "string" || typeof volumeStr !== "string") return;
+    if (typeof articleIdStr !== "string") return;
     const articleId = Number(articleIdStr);
-    const volumeAutorise = Number(volumeStr);
+    // Phase 19 R-13 — pour un article fonctionnalité (controleVolume=false),
+    // on persiste volumeAutorise=0 ; le rendu UI affiche "Illimité" via le
+    // flag article.controleVolume (cf. ArticleRow ci-dessus).
+    const volumeAutorise = isUnlimited ? 0 : Number(fd.get("volumeAutorise"));
     startTransition(() => {
       void (async () => {
         try {
@@ -503,27 +530,39 @@ function AddArticleDialog({
               id="articleId"
               name="articleId"
               required
+              value={selectedArticleId}
+              onChange={(e) => {
+                setSelectedArticleId(e.target.value);
+              }}
               className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm"
             >
               <option value="">{t("placeholder")}</option>
               {candidates.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.nom} ({a.code}) — {a.uniteVolume}
+                  {!a.controleVolume ? " · Illimité" : ""}
                 </option>
               ))}
             </select>
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="volumeAutorise">{t("volumeLabel")}</Label>
-            <Input
-              id="volumeAutorise"
-              name="volumeAutorise"
-              type="number"
-              min={0}
-              step={1}
-              required
-            />
-          </div>
+          {isUnlimited ? (
+            <p className="text-muted-foreground rounded border border-amber-500/30 bg-amber-500/10 p-2 text-xs">
+              Article « fonctionnalité » — volume non contrôlé. Aucun vol autorisé à saisir,
+              l&apos;article sera enregistré en illimité.
+            </p>
+          ) : (
+            <div className="space-y-1">
+              <Label htmlFor="volumeAutorise">{t("volumeLabel")}</Label>
+              <Input
+                id="volumeAutorise"
+                name="volumeAutorise"
+                type="number"
+                min={0}
+                step={1}
+                required
+              />
+            </div>
+          )}
           {error && <p className="text-destructive text-sm">{error}</p>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={pending}>

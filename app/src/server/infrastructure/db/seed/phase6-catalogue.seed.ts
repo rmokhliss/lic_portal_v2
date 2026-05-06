@@ -55,7 +55,15 @@ interface ProduitSeed {
   readonly code: string;
   readonly nom: string;
   readonly description: string;
-  readonly articles: readonly { code: string; nom: string; uniteVolume: string }[];
+  readonly articles: readonly {
+    code: string;
+    nom: string;
+    uniteVolume: string;
+    /** Phase 19 R-13 — défaut true (volume contrôlé). Marqué false pour les
+     *  articles "fonctionnalités" (ex: ATM-ADV, POS-ADV) où l'unité de
+     *  volume `"fonctionnalités"` ne correspond pas à un compteur métier. */
+    controleVolume?: boolean;
+  }[];
 }
 
 const PRODUIT_SEEDS: readonly ProduitSeed[] = [
@@ -98,9 +106,19 @@ const PRODUIT_SEEDS: readonly ProduitSeed[] = [
     description: "Suite acquiring — ATM, POS, eCommerce",
     articles: [
       { code: "ATM-STD", nom: "ATM Management (standard)", uniteVolume: "ATM" },
-      { code: "ATM-ADV", nom: "ATM Management (valeur ajoutée)", uniteVolume: "fonctionnalités" },
+      {
+        code: "ATM-ADV",
+        nom: "ATM Management (valeur ajoutée)",
+        uniteVolume: "fonctionnalités",
+        controleVolume: false,
+      },
       { code: "POS-STD", nom: "POS Server (standard)", uniteVolume: "terminaux" },
-      { code: "POS-ADV", nom: "POS Server (valeur ajoutée)", uniteVolume: "fonctionnalités" },
+      {
+        code: "POS-ADV",
+        nom: "POS Server (valeur ajoutée)",
+        uniteVolume: "fonctionnalités",
+        controleVolume: false,
+      },
       { code: "ECOM", nom: "E-commerce Gateway", uniteVolume: "transactions/mois" },
     ],
   },
@@ -121,7 +139,12 @@ const PRODUIT_SEEDS: readonly ProduitSeed[] = [
     description: "Core SelectSystem V6",
     articles: [
       { code: "SSV6-KERNEL", nom: "SSV6 Kernel", uniteVolume: "transactions/jour" },
-      { code: "SSV6-FRAUD", nom: "SSV6 Fraud Module", uniteVolume: "alertes/mois" },
+      {
+        code: "SSV6-FRAUD",
+        nom: "SSV6 Fraud Module",
+        uniteVolume: "alertes/mois",
+        controleVolume: false,
+      },
     ],
   },
   {
@@ -189,6 +212,7 @@ async function seedProduitsAndArticles(
         code: a.code,
         nom: a.nom,
         uniteVolume: a.uniteVolume,
+        ...(a.controleVolume !== undefined ? { controleVolume: a.controleVolume } : {}),
       });
       const savedA = await repos.articleRepo.save(article);
       articleIds.push(savedA.id);
@@ -320,11 +344,24 @@ async function seedVolumeSnapshots(
   }
 }
 
+/** Phase 19 R-13 — aligne controle_volume sur les articles fonctionnalités
+ *  (UPDATE idempotent post-INSERT, appliqué même si seed déjà en place). */
+async function applyControleVolumeOverrides(sql: postgres.Sql): Promise<void> {
+  log.info("Phase 19 R-13 — overrides controle_volume sur articles fonctionnalités");
+  await sql`
+    UPDATE lic_articles_ref SET controle_volume = false
+    WHERE code IN ('ATM-ADV', 'POS-ADV', 'SSV6-FRAUD')
+  `;
+}
+
 export async function seedPhase6Catalogue(sql: postgres.Sql): Promise<void> {
   log.info("Phase 6.E — seed démo catalogue + liaisons + volume history");
 
   if (await alreadySeeded(sql)) {
-    log.info("lic_produits_ref déjà peuplée — seed Phase 6 skip (idempotent)");
+    log.info("lic_produits_ref déjà peuplée — seed Phase 6 INSERT skip (idempotent)");
+    // Phase 19 R-13 — l'override controle_volume doit s'appliquer même si
+    // les articles sont déjà seedés (alignement BD démo existante).
+    await applyControleVolumeOverrides(sql);
     return;
   }
 
@@ -340,6 +377,7 @@ export async function seedPhase6Catalogue(sql: postgres.Sql): Promise<void> {
   };
 
   const catalogue = await seedProduitsAndArticles(repos);
+  await applyControleVolumeOverrides(sql);
   const licenceIds = await loadAllLicenceIds(sql);
   if (licenceIds.length === 0) {
     log.warn("Aucune licence seedée Phase 5 — Phase 6 liaisons skip");

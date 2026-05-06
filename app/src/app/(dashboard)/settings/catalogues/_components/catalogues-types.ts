@@ -18,4 +18,6 @@ export interface ArticleClientDTO {
   readonly description: string | null;
   readonly uniteVolume: string;
   readonly actif: boolean;
+  /** Phase 19 R-13 — true = volume contrôlé (default). false = illimité. */
+  readonly controleVolume: boolean;
 }

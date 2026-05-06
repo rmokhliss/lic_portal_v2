@@ -76,7 +76,8 @@ describe("PersistedArticle — mutations immuables", () => {
 });
 
 describe("toAuditSnapshot", () => {
-  it("Article inclut les 6 champs business", () => {
+  // Phase 19 R-13 — controleVolume ajouté au snapshot (default true).
+  it("Article inclut les 7 champs business", () => {
     const a = Article.create(VALID);
     expect(a.toAuditSnapshot()).toEqual({
       produitId: 1,
@@ -85,6 +86,7 @@ describe("toAuditSnapshot", () => {
       description: null,
       uniteVolume: "transactions",
       actif: true,
+      controleVolume: true,
     });
   });
 });

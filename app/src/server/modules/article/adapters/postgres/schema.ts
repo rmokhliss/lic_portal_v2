@@ -1,5 +1,5 @@
 // ==============================================================================
-// LIC v2 — lic_articles_ref (Phase 6 étape 6.A)
+// LIC v2 — lic_articles_ref (Phase 6 étape 6.A + Phase 19 R-13 controleVolume)
 //
 // Articles d'un produit SELECT-PX. PK serial (ADR 0017). Identifiant business
 // stable = (produit_id, code) — code unique par produit (CORE-USERS,
@@ -10,6 +10,11 @@
 //
 // `unite_volume` : "transactions" / "utilisateurs" / "exports" / "Mo"…
 // libre côté SADMIN, affiché brut dans l'UI volumes Phase 6.F.
+//
+// `controle_volume` (Phase 19 R-13, migration 0014) : si false, l'article est
+// considéré comme une "fonctionnalité" (ATM-ADV, POS-ADV…) et le volume
+// autorisé n'est pas demandé à la création licence-article (substitué par
+// "Illimité" dans l'UI). Default true pour rétrocompat.
 // ==============================================================================
 
 import { boolean, index, integer, pgTable, serial, unique, varchar } from "drizzle-orm/pg-core";
@@ -28,6 +33,7 @@ export const articlesRef = pgTable(
     description: varchar("description", { length: 1000 }),
     uniteVolume: varchar("unite_volume", { length: 30 }).notNull().default("transactions"),
     actif: boolean("actif").notNull().default(true),
+    controleVolume: boolean("controle_volume").notNull().default(true),
   },
   (table) => [
     unique("uq_articles_ref_produit_code").on(table.produitId, table.code),

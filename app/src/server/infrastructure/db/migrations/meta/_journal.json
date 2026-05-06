@@ -99,6 +99,13 @@
       "when": 1777999000000,
       "tag": "0013_licence_reference_sequence",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1779000000000,
+      "tag": "0014_add_controle_volume_articles",
+      "breakpoints": true
     }
   ]
 }

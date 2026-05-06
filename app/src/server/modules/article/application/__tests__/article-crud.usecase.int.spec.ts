@@ -83,4 +83,37 @@ describe("Article CRUD use-cases", () => {
   it("get throw SPX-LIC-746 si id absent", async () => {
     await expect(get.execute(999999)).rejects.toMatchObject({ code: "SPX-LIC-746" });
   });
+
+  // Phase 19 R-13 — controleVolume
+  it("create avec controleVolume=false (article fonctionnalité)", async () => {
+    const created = await create.execute({
+      produitId,
+      code: "FEATURE-X",
+      nom: "Fonctionnalité X",
+      uniteVolume: "fonctionnalités",
+      controleVolume: false,
+    });
+    expect(created.controleVolume).toBe(false);
+
+    const fetched = await get.execute(created.id);
+    expect(fetched.controleVolume).toBe(false);
+  });
+
+  it("update toggle controleVolume true → false → true", async () => {
+    const created = await create.execute({
+      produitId,
+      code: "TOGGLE-CV",
+      nom: "Toggle CV",
+    });
+    // Default = true (cf. Article.create input.controleVolume ?? true).
+    expect(created.controleVolume).toBe(true);
+
+    const off = await update.execute({ id: created.id, controleVolume: false });
+    expect(off.controleVolume).toBe(false);
+    expect((await get.execute(created.id)).controleVolume).toBe(false);
+
+    const on = await update.execute({ id: created.id, controleVolume: true });
+    expect(on.controleVolume).toBe(true);
+    expect((await get.execute(created.id)).controleVolume).toBe(true);
+  });
 });

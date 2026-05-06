@@ -248,7 +248,17 @@ function ArticleRow({
     <TableRow>
       <TableCell className="font-mono text-xs">{article.code}</TableCell>
       <TableCell className="text-sm">{article.nom}</TableCell>
-      <TableCell className="text-muted-foreground text-xs">{article.uniteVolume}</TableCell>
+      <TableCell className="text-muted-foreground text-xs">
+        {article.uniteVolume}
+        {!article.controleVolume && (
+          <span
+            className="ml-2 inline-block rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-300"
+            title="Phase 19 R-13 — volume non contrôlé (illimité)"
+          >
+            Illimité
+          </span>
+        )}
+      </TableCell>
       <TableCell>
         <span
           className={`inline-block rounded-full px-2 py-0.5 text-xs ${
@@ -396,6 +406,8 @@ function ArticleDialog({
     const nom = strReq(fd.get("nom"));
     const descriptionRaw = strOpt(fd.get("description"));
     const uniteVolume = strReq(fd.get("uniteVolume"));
+    // Phase 19 R-13 — checkbox HTML "on" si cochée, absente sinon.
+    const controleVolume = fd.get("controleVolume") === "on";
     startTransition(() => {
       void (async () => {
         try {
@@ -405,6 +417,7 @@ function ArticleDialog({
               nom,
               description: descriptionRaw ?? null,
               uniteVolume,
+              controleVolume,
             });
           } else if (produitId !== null) {
             await createArticleAction({
@@ -412,6 +425,7 @@ function ArticleDialog({
               code,
               nom,
               uniteVolume,
+              controleVolume,
               ...(descriptionRaw !== undefined ? { description: descriptionRaw } : {}),
             });
           }
@@ -471,6 +485,25 @@ function ArticleDialog({
               maxLength={1000}
               defaultValue={initial?.description ?? ""}
             />
+          </div>
+          {/* Phase 19 R-13 — toggle volume contrôlé / illimité. Default
+              coché (true). Si décoché, le wizard ajout article à licence
+              ne demandera pas le vol autorisé (Illimité affiché). */}
+          <div className="flex items-start gap-2">
+            <input
+              id="controleVolume"
+              name="controleVolume"
+              type="checkbox"
+              defaultChecked={initial?.controleVolume ?? true}
+              className="mt-0.5 size-4"
+            />
+            <div className="space-y-0.5">
+              <Label htmlFor="controleVolume">Contrôle de volume activé</Label>
+              <p className="text-muted-foreground text-xs">
+                Décocher si l&apos;article correspond à une fonctionnalité (ex : ATM-ADV) — les
+                licences l&apos;utiliseront alors en volume illimité.
+              </p>
+            </div>
           </div>
           {error && <p className="text-destructive text-sm">{error}</p>}
           <DialogFooter>
