@@ -10,6 +10,7 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { useTranslations } from "next-intl";
 
@@ -18,6 +19,7 @@ import type { Theme } from "@/app/(dashboard)/_theme";
 import { Button } from "@/components/ui/button";
 
 export function ThemeToggle({ theme }: { readonly theme: Theme }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const t = useTranslations("header.theme");
 
@@ -33,6 +35,12 @@ export function ThemeToggle({ theme }: { readonly theme: Theme }) {
       onClick={() => {
         startTransition(async () => {
           await setThemeAction(next);
+          // Phase 18 R-02 — `revalidatePath('/')` côté Server Action ne suffit
+          // pas pour forcer le re-render <html className=...> dans Next.js 16.
+          // `router.refresh()` redécode l'arbre RSC complet et déclenche la
+          // ré-évaluation du root layout (qui relit le cookie spx-lic.theme et
+          // applique la nouvelle classe sur <html>).
+          router.refresh();
         });
       }}
       aria-label={label}
