@@ -20,6 +20,12 @@ FROM node:24-alpine AS base
 RUN corepack enable && apk add --no-cache libc6-compat
 WORKDIR /repo
 
+# Phase 19 — Puppeteer ne télécharge PAS Chromium pendant `pnpm install`.
+# La version installée par apk dans le runner-app sera utilisée à la place
+# (cf. ENV PUPPETEER_EXECUTABLE_PATH dans runner-app). Évite ~200MB de
+# binaires inutiles pendant les stages deps + builder.
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
 # --- Stage 2 : deps (cache layer) --------------------------------------------
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -44,6 +50,22 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+
+# Phase 19 — Chromium pour Puppeteer PDF export (R-21 /reports). Alpine
+# fournit le binaire via apk au chemin `/usr/bin/chromium`. Les libs
+# additionnelles (nss/freetype/harfbuzz/ttf-freefont) sont les dépendances
+# minimales pour render des pages HTML simples (assez pour les tableaux
+# rapports). Pas de fonts CJK — à compléter si l'export PDF doit afficher
+# des caractères non-latin1.
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
 RUN addgroup -S nodejs -g 1001 && adduser -S nextjs -u 1001 -G nodejs
 WORKDIR /app
 
