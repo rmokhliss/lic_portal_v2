@@ -31,10 +31,14 @@
   --color-danger:  #EF4444;
   --color-info:    #3B82F6;
 
-  /* Type — variables CSS injectées par next/font/google dans app/src/app/layout.tsx */
-  --font-display: var(--font-montserrat), "Helvetica Neue", sans-serif;
-  --font-sans:    var(--font-poppins), system-ui, sans-serif;
-  --font-mono:    var(--font-jetbrains-mono), ui-monospace, monospace;
+  /* Type — fonts système (Phase 23 : next/font/google retiré, build offline-safe).
+   * Pour réactiver Montserrat/Poppins/JetBrains Mono : self-host via
+   * next/font/local (placer les WOFF2 dans public/fonts/) et redéfinir les
+   * --font-* dans layout.tsx, ou réimporter next/font/google si le réseau
+   * permet le fetch fonts.googleapis.com au build. */
+  --font-display: "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+  --font-sans:    system-ui, "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-mono:    ui-monospace, "Cascadia Code", "Consolas", "Liberation Mono", monospace;
 
   /* Radii */
   --radius-xs: 4px;

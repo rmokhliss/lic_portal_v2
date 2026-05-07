@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Montserrat, Poppins, JetBrains_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
@@ -8,25 +7,14 @@ import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { OtelProvider } from "@/components/shared/OtelProvider";
 
-const montserrat = Montserrat({
-  weight: "800",
-  subsets: ["latin"],
-  variable: "--font-montserrat",
-  display: "swap",
-});
-
-const poppins = Poppins({
-  weight: ["300", "500"],
-  subsets: ["latin"],
-  variable: "--font-poppins",
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
-  display: "swap",
-});
+// Phase 23 — `next/font/google` retiré : le build offline (proxy/firewall
+// bloquant fonts.googleapis.com avec CRYPT_E_REVOCATION_OFFLINE) ne peut pas
+// fetch Montserrat/Poppins/JetBrains Mono au moment du build prod. Les
+// fallbacks CSS dans globals.css (Helvetica Neue / system-ui / ui-monospace)
+// prennent le relais. Pour réactiver les fonts SELECT-PX :
+//   - soit re-importer next/font/google quand le réseau permet le fetch
+//   - soit télécharger les WOFF2 dans public/fonts/ et utiliser
+//     next/font/local (recommandé pour la robustesse offline).
 
 export const metadata: Metadata = {
   title: "Licence Manager",
@@ -49,10 +37,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const theme = themeCookie === "light" ? "light" : "dark";
 
   return (
-    <html
-      lang={locale}
-      className={`${theme} ${montserrat.variable} ${poppins.variable} ${jetbrainsMono.variable}`}
-    >
+    <html lang={locale} className={theme}>
       <body className="font-sans antialiased">
         <OtelProvider>
           <NextIntlClientProvider locale={locale} messages={messages}>
