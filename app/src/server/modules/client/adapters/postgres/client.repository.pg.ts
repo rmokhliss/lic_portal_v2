@@ -108,6 +108,27 @@ export class ClientRepositoryPg extends ClientRepository {
     if (input.salesResponsable !== undefined && input.salesResponsable.length > 0) {
       businessConditions.push(eq(clients.salesResponsable, input.salesResponsable));
     }
+    // Phase 21 R-29 — filtre région : sub-query sur lic_pays_ref. Le client
+    // n'a pas de region_code (dérivation pays→région). On évite un JOIN qui
+    // changerait le shape du SELECT et complique le COUNT.
+    if (input.regionCode !== undefined && input.regionCode.length > 0) {
+      businessConditions.push(
+        sql`${clients.codePays} IN (
+          SELECT code_pays FROM lic_pays_ref WHERE region_code = ${input.regionCode}
+        )`,
+      );
+    }
+    // Phase 21 R-29 — filtre 'sans licence ACTIF' : NOT EXISTS sub-query.
+    // Note : on cible les licences au statut 'ACTIF' uniquement (un client
+    // avec une licence SUSPENDU/EXPIRE est considéré 'sans licence active').
+    if (input.sansLicence === true) {
+      businessConditions.push(
+        sql`NOT EXISTS (
+          SELECT 1 FROM lic_licences l
+          WHERE l.client_id = ${clients.id} AND l.status = 'ACTIF'
+        )`,
+      );
+    }
 
     const pageConditions = [...businessConditions];
     if (input.cursor !== undefined) {

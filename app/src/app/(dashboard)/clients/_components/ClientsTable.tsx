@@ -59,6 +59,10 @@ export interface ClientsTableProps {
   readonly currentPays: string;
   readonly currentAm: string;
   readonly currentSales: string;
+  /** Phase 21 R-29 — région + sansLicence. */
+  readonly currentRegion: string;
+  readonly currentSansLicence: boolean;
+  readonly regionsList: readonly RefItem[];
   /** Phase 20 R-29 — total clients matchant les filtres (hors pagination). */
   readonly total: number;
   readonly canCreate: boolean;
@@ -108,6 +112,9 @@ export function ClientsTable(props: ClientsTableProps) {
     if (props.currentPays !== "") sp.set("pays", props.currentPays);
     if (props.currentAm !== "") sp.set("am", props.currentAm);
     if (props.currentSales !== "") sp.set("sales", props.currentSales);
+    // Phase 21 R-29 — région + sansLicence.
+    if (props.currentRegion !== "") sp.set("region", props.currentRegion);
+    if (props.currentSansLicence) sp.set("sansLicence", "1");
     const qs = sp.toString();
     return qs.length === 0 ? "/clients" : `/clients?${qs}`;
   };
@@ -237,6 +244,42 @@ export function ClientsTable(props: ClientsTableProps) {
               </option>
             ))}
           </select>
+        </div>
+        {/* Phase 21 R-29 — Région (sub-query lic_pays_ref) */}
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor="region"
+            className="text-muted-foreground text-xs uppercase tracking-wider"
+          >
+            Région
+          </label>
+          <select
+            id="region"
+            name="region"
+            defaultValue={props.currentRegion}
+            className="border-input bg-background text-foreground h-9 rounded-md border px-3 text-sm"
+          >
+            <option value="">Toutes</option>
+            {props.regionsList.map((r) => (
+              <option key={r.code} value={r.code}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {/* Phase 21 R-29 — checkbox 'Sans licence active' (NOT EXISTS sub-query) */}
+        <div className="flex items-end gap-2 pb-1">
+          <input
+            id="sansLicence"
+            name="sansLicence"
+            type="checkbox"
+            value="1"
+            defaultChecked={props.currentSansLicence}
+            className="size-4"
+          />
+          <label htmlFor="sansLicence" className="text-foreground text-sm">
+            Sans licence active
+          </label>
         </div>
         <Button type="submit" variant="default">
           {t("filters.apply")}

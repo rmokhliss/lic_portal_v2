@@ -18,6 +18,10 @@ export interface ListClientsUseCaseInput {
   readonly codePays?: string;
   readonly accountManager?: string;
   readonly salesResponsable?: string;
+  /** Phase 21 R-29 — filtre région (sub-query lic_pays_ref). */
+  readonly regionCode?: string;
+  /** Phase 21 R-29 — true = clients sans licence ACTIF. */
+  readonly sansLicence?: boolean;
   readonly cursor?: string;
   readonly limit?: number;
 }
@@ -41,6 +45,8 @@ export class ListClientsUseCase {
       ...(input.codePays !== undefined ? { codePays: input.codePays } : {}),
       ...(input.accountManager !== undefined ? { accountManager: input.accountManager } : {}),
       ...(input.salesResponsable !== undefined ? { salesResponsable: input.salesResponsable } : {}),
+      ...(input.regionCode !== undefined ? { regionCode: input.regionCode } : {}),
+      ...(input.sansLicence !== undefined ? { sansLicence: input.sansLicence } : {}),
       ...(input.cursor !== undefined ? { cursor: input.cursor } : {}),
       ...(input.limit !== undefined ? { limit: input.limit } : {}),
     };

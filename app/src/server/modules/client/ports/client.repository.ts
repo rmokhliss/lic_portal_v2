@@ -44,6 +44,12 @@ export interface FindClientsPaginatedInput {
   readonly accountManager?: string;
   /** Phase 20 R-29 — filtre exact sales_responsable. */
   readonly salesResponsable?: string;
+  /** Phase 21 R-29 — filtre région via JOIN lic_pays_ref.region_code. Le
+   *  client n'a pas de region_code direct (dérivation pays → région). */
+  readonly regionCode?: string;
+  /** Phase 21 R-29 — true = retourne uniquement les clients SANS licence
+   *  ACTIF (NOT EXISTS sur lic_licences). undefined/false = pas de filtre. */
+  readonly sansLicence?: boolean;
   /** Cursor base64url(`<ISO>|<UUID>`). undefined = première page. */
   readonly cursor?: string;
   /** 1..200, default 50 (volume client gérable, plus que les 200 référentiels). */

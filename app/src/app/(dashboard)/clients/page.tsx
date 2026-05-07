@@ -18,6 +18,7 @@ import {
   listDevisesUseCase,
   listLanguesUseCase,
   listPaysUseCase,
+  listRegionsUseCase,
   listTeamMembersUseCase,
   listTypesContactUseCase,
 } from "@/server/composition-root";
@@ -41,6 +42,10 @@ interface ClientsPageProps {
     readonly pays?: string;
     readonly am?: string;
     readonly sales?: string;
+    /** Phase 21 R-29 — région (sub-query lic_pays_ref). */
+    readonly region?: string;
+    /** Phase 21 R-29 — checkbox 'Sans licence active' (string '1' = true). */
+    readonly sansLicence?: string;
   }>;
 }
 
@@ -59,33 +64,52 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     params.am !== undefined && params.am.trim().length > 0 ? params.am.trim() : undefined;
   const salesFilter =
     params.sales !== undefined && params.sales.trim().length > 0 ? params.sales.trim() : undefined;
+  // Phase 21 R-29 — filtre région + checkbox sans-licence.
+  const regionFilter =
+    params.region !== undefined && params.region.trim().length > 0
+      ? params.region.trim()
+      : undefined;
+  const sansLicenceFilter = params.sansLicence === "1";
 
   // Phase 18 R-09/R-10 — fallback gracieux sur listTypesContactUseCase :
   // si l'appel échoue (BD démo non seedée, types contact vides), le tableau
   // des clients reste utilisable et le formulaire de création affiche un
   // message guidant l'utilisateur vers /settings/team plutôt que de crasher.
-  const [result, caStatus, paysAll, devisesAll, languesAll, salesAll, amAll, typesContactAll] =
-    await Promise.all([
-      listClientsUseCase.execute({
-        ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
-        ...(params.q !== undefined && params.q.trim().length > 0 ? { q: params.q.trim() } : {}),
-        ...(statutFilter !== undefined ? { statutClient: statutFilter } : {}),
-        ...(paysFilter !== undefined ? { codePays: paysFilter } : {}),
-        ...(amFilter !== undefined ? { accountManager: amFilter } : {}),
-        ...(salesFilter !== undefined ? { salesResponsable: salesFilter } : {}),
-        limit: 25,
-      }),
-      getCAStatusUseCase.execute(),
-      // T-01 — référentiels SADMIN pour <select> ClientDialog (codes actifs only).
-      listPaysUseCase.execute({}),
-      listDevisesUseCase.execute({}),
-      listLanguesUseCase.execute({}),
-      // T-01 Volet A — team members SALES + AM pour selects salesResponsable / accountManager.
-      listTeamMembersUseCase.execute({ actif: true, roleTeam: "SALES" }),
-      listTeamMembersUseCase.execute({ actif: true, roleTeam: "AM" }),
-      // Phase 14 — DETTE-LIC-017 : types contact pour la section contacts à création.
-      listTypesContactUseCase.execute({}).catch(() => [] as const),
-    ]);
+  const [
+    result,
+    caStatus,
+    paysAll,
+    devisesAll,
+    languesAll,
+    salesAll,
+    amAll,
+    typesContactAll,
+    regionsAll,
+  ] = await Promise.all([
+    listClientsUseCase.execute({
+      ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
+      ...(params.q !== undefined && params.q.trim().length > 0 ? { q: params.q.trim() } : {}),
+      ...(statutFilter !== undefined ? { statutClient: statutFilter } : {}),
+      ...(paysFilter !== undefined ? { codePays: paysFilter } : {}),
+      ...(amFilter !== undefined ? { accountManager: amFilter } : {}),
+      ...(salesFilter !== undefined ? { salesResponsable: salesFilter } : {}),
+      ...(regionFilter !== undefined ? { regionCode: regionFilter } : {}),
+      ...(sansLicenceFilter ? { sansLicence: true } : {}),
+      limit: 25,
+    }),
+    getCAStatusUseCase.execute(),
+    // T-01 — référentiels SADMIN pour <select> ClientDialog (codes actifs only).
+    listPaysUseCase.execute({}),
+    listDevisesUseCase.execute({}),
+    listLanguesUseCase.execute({}),
+    // T-01 Volet A — team members SALES + AM pour selects salesResponsable / accountManager.
+    listTeamMembersUseCase.execute({ actif: true, roleTeam: "SALES" }),
+    listTeamMembersUseCase.execute({ actif: true, roleTeam: "AM" }),
+    // Phase 14 — DETTE-LIC-017 : types contact pour la section contacts à création.
+    listTypesContactUseCase.execute({}).catch(() => [] as const),
+    // Phase 21 R-29 — régions actives pour le select filtre.
+    listRegionsUseCase.execute({}),
+  ]);
 
   const paysList = paysAll.filter((p) => p.actif).map((p) => ({ code: p.codePays, label: p.nom }));
   const devisesList = devisesAll
@@ -94,6 +118,10 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const languesList = languesAll
     .filter((l) => l.actif)
     .map((l) => ({ code: l.codeLangue, label: l.nom }));
+  // Phase 21 R-29 — régions actives pour le select filtre.
+  const regionsList = regionsAll
+    .filter((r) => r.actif)
+    .map((r) => ({ code: r.regionCode, label: r.nom }));
   // T-01 : valeur stockée = display "Prénom NOM" (lic_clients.* sont des string
   // libres, pas FK). Format aligné L9 (sans matricule — team_members n'en a pas).
   const formatTeamMember = (m: { prenom: string | null; nom: string }): string =>
@@ -144,6 +172,10 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         currentPays={paysFilter ?? ""}
         currentAm={amFilter ?? ""}
         currentSales={salesFilter ?? ""}
+        // Phase 21 R-29 — région + sansLicence.
+        currentRegion={regionFilter ?? ""}
+        currentSansLicence={sansLicenceFilter}
+        regionsList={regionsList}
         total={result.total}
         canCreate={canCreateBase && !caMissing}
         paysList={paysList}
