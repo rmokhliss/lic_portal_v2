@@ -1,25 +1,37 @@
 // ==============================================================================
-// LIC v2 — Rechargement des données démo (Phase 17 F2 + Phase 20 R-35)
+// LIC v2 — Rechargement des données démo (Phase 17 F2 + Phase 20 R-35 +
+//          Phase 22 R-36)
 //
 // Réexécute le pipeline seed Phase 4-6 + Phase 17 D5 + Phase 18 D5/R-22
 // directement (pas de subprocess). Idempotent : les seeds early-return si
 // déjà peuplés. Utiliser après `purgeDemoData()` pour un reset complet.
 //
 // Phase 20 R-35 — chaque step encapsulée dans un wrapper qui log + propage
-// un message d'erreur clair (au lieu d'un crash 500 opaque côté UI). L'ordre
-// strict respecte les dépendances FK :
+// un message d'erreur clair (au lieu d'un crash 500 opaque côté UI).
+//
+// Phase 22 R-36 — alertes seedées AVANT notifications (alignement docs F2 :
+// alerts puis notifs). Ordre strict respecte les dépendances FK :
 //   Phase 4 (clients/entités/contacts) — pré-requis pour 5/6/8-alerts/10
 //   Phase 5 (licences/renouvellements) — pré-requis pour 6/8-notifs/10
 //   Phase 6 (catalogue + liaisons + volume_history) — pré-requis pour
 //     les écrans /licences/[id]/articles + /volumes
+//   Phase 8 R-03 (alertes) — dépend de clients seedés
 //   Phase 8 D5 (notifications) — dépend de SADMIN user (préservé par purge)
-//   Phase 18 R-03 (alertes) — dépend de clients seedés
 //   Phase 18 R-22 (fichiers démo) — dépend de licences seedées
 //
-// Note : on n'appelle PAS seedRegions/seedPays/seedDevises/seedLangues/
+// Note settings (R-36) : `lic_settings` n'est PAS purgée (cf. purge-demo.ts
+// ligne 4-7 — préservée avec users + référentiels). Les settings bootstrap
+// (`expose_s2m_ca_public`, `healthcheck_shared_aes_key`, etc.) survivent à
+// `purgeDemoData()`. Aucun re-insert nécessaire ici.
+//
+// Idempotence (R-36) : chaque seed a son propre garde-fou (early return sur
+// COUNT >0 ou tag DEMO_SEED). Le wrapper `step()` ci-dessous logue en INFO
+// si un seed skip — utile pour distinguer "skipped idempotent" d'un échec.
+//
+// On n'appelle PAS seedRegions/seedPays/seedDevises/seedLangues/
 // seedTypesContact/seedTeamMembers/seedUsers/seedSettings — ces référentiels
-// ne sont pas purgés par F2 (voir purge-demo.ts) et le seed bootstrap est
-// idempotent ON CONFLICT DO NOTHING.
+// ne sont pas purgés et le seed bootstrap est idempotent ON CONFLICT DO
+// NOTHING au boot du process.
 // ==============================================================================
 
 import "server-only";
@@ -59,8 +71,8 @@ export async function reloadDemoData(): Promise<void> {
   await step("phase4-clients", () => seedPhase4Clients(rawSql));
   await step("phase5-licences", () => seedPhase5Licences(rawSql));
   await step("phase6-catalogue", () => seedPhase6Catalogue(rawSql));
-  await step("phase8-notifications", () => seedPhase8Notifications(rawSql));
   await step("phase8-alerts", () => seedPhase8Alerts(rawSql));
+  await step("phase8-notifications", () => seedPhase8Notifications(rawSql));
   await step("phase10-fichiers", () => seedPhase10Fichiers(rawSql));
   log.warn("Rechargement démo terminé");
 }

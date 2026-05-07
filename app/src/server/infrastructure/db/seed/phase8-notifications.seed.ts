@@ -151,8 +151,14 @@ export async function seedPhase8Notifications(sql: postgres.Sql): Promise<void> 
   }
 
   for (const seed of NOTIF_SEEDS) {
-    const createdAt = new Date(Date.now() - seed.daysAgo * 24 * 60 * 60 * 1000);
-    const readAt = seed.read ? createdAt : null;
+    // Phase 22 R-38 — sérialiser explicitement en ISO string. Sans cette
+    // conversion, postgres.js peut, suivant la version + la driver-config,
+    // remonter "Received an instance of Date" lors du binding du paramètre
+    // (TIMESTAMPTZ attend `string | Date`, mais une regression du serializer
+    // dans certains setups Node 24 + postgres@3.5 le rejette). `.toISOString()`
+    // est universellement accepté.
+    const createdAtIso = new Date(Date.now() - seed.daysAgo * 24 * 60 * 60 * 1000).toISOString();
+    const readAtIso = seed.read ? createdAtIso : null;
     // INSERT direct (pas de repository — la table est append-only et le seed
     // n'a pas besoin de l'audit `Notification.create()` qui pose les defaults).
     await sql`
@@ -167,8 +173,8 @@ export async function seedPhase8Notifications(sql: postgres.Sql): Promise<void> 
         ${seed.source},
         ${JSON.stringify({ tag: DEMO_SOURCE_TAG })}::jsonb,
         ${seed.read},
-        ${readAt},
-        ${createdAt}
+        ${readAtIso},
+        ${createdAtIso}
       )
     `;
   }
