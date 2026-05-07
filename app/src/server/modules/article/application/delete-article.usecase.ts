@@ -6,7 +6,7 @@
 //   1. Aucune liaison lic_licence_articles ne référence l'article
 //   2. Aucun snapshot lic_article_volume_history (FK preserve l'historique)
 //
-// Sinon : ConflictError SPX-LIC-748 (article référencé). L'admin doit
+// Sinon : ConflictError SPX-LIC-762 (article référencé). L'admin doit
 // d'abord retirer les liaisons des licences concernées (ou désactiver
 // l'article via ToggleArticleUseCase).
 // ==============================================================================
@@ -40,7 +40,7 @@ export class DeleteArticleUseCase {
       const nbLiaisons = liaisonsRows[0]?.count ?? 0;
       if (nbLiaisons > 0) {
         throw new ConflictError({
-          code: "SPX-LIC-748",
+          code: "SPX-LIC-762",
           message: `Impossible de supprimer l'article : ${String(nbLiaisons)} licence(s) le référencent. Retirer les liaisons d'abord ou désactiver l'article.`,
         });
       }
@@ -54,7 +54,7 @@ export class DeleteArticleUseCase {
       const nbSnapshots = snapshotsRows[0]?.count ?? 0;
       if (nbSnapshots > 0) {
         throw new ConflictError({
-          code: "SPX-LIC-748",
+          code: "SPX-LIC-762",
           message: `Impossible de supprimer l'article : ${String(nbSnapshots)} snapshot(s) historique(s) le référencent. Désactiver l'article au lieu de supprimer.`,
         });
       }

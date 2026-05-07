@@ -91,6 +91,8 @@ export type ErrorCode =
   | "SPX-LIC-758"
   | "SPX-LIC-759"
   | "SPX-LIC-760"
+  | "SPX-LIC-761"
+  | "SPX-LIC-762"
   | "SPX-LIC-800"
   | "SPX-LIC-801"
   | "SPX-LIC-802"
@@ -587,6 +589,19 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     httpStatus: 403,
     defaultMessage: "Notification appartient à un autre utilisateur",
     className: "ForbiddenError",
+  },
+  // Phase 23 — suppression catalogue bloquée par références.
+  "SPX-LIC-761": {
+    code: "SPX-LIC-761",
+    httpStatus: 409,
+    defaultMessage: "Produit référencé — suppression impossible",
+    className: "ConflictError",
+  },
+  "SPX-LIC-762": {
+    code: "SPX-LIC-762",
+    httpStatus: 409,
+    defaultMessage: "Article référencé — suppression impossible",
+    className: "ConflictError",
   },
 
   // --- Email (800-899) -----------------------------------------------------

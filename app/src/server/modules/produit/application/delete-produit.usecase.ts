@@ -6,7 +6,7 @@
 //   1. Aucune liaison lic_licence_produits ne référence le produit
 //   2. Aucun article référence le produit (lic_articles_ref)
 //
-// Sinon : ConflictError SPX-LIC-744 (produit référencé). L'admin doit
+// Sinon : ConflictError SPX-LIC-761 (produit référencé). L'admin doit
 // d'abord retirer les liaisons / supprimer les articles enfants.
 //
 // Pour soft-disable (rétention historique), utiliser ToggleProduitUseCase
@@ -44,7 +44,7 @@ export class DeleteProduitUseCase {
       const nbLiaisons = liaisonsRows[0]?.count ?? 0;
       if (nbLiaisons > 0) {
         throw new ConflictError({
-          code: "SPX-LIC-744",
+          code: "SPX-LIC-761",
           message: `Impossible de supprimer le produit "${code}" : ${String(nbLiaisons)} licence(s) le référencent. Retirer les liaisons d'abord ou désactiver le produit.`,
         });
       }
@@ -58,7 +58,7 @@ export class DeleteProduitUseCase {
       const nbArticles = articlesRows[0]?.count ?? 0;
       if (nbArticles > 0) {
         throw new ConflictError({
-          code: "SPX-LIC-744",
+          code: "SPX-LIC-761",
           message: `Impossible de supprimer le produit "${code}" : ${String(nbArticles)} article(s) lui sont rattaché(s). Supprimer les articles d'abord.`,
         });
       }
