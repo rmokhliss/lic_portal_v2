@@ -43,7 +43,29 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.1. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phases 1 → 21 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée + module email + audit Master + Phase 17 (refonte seed v1 + 4 stubs débloqués + theme toggle + demo tab) + Phase 18 (corrections post-tests utilisateur R-01→R-23, R-13 différé) + Phase 19 (R-13 controleVolume + Chromium Docker) + Phase 20 (R-24→R-35, R-30 wizard 3 étapes différé Phase 21 + 4 fixes critiques bloquants prod : typeName minif, dark mode, logout, code regex) + Phase 21 (R-29 complet Région+SansLicence + R-30 wizard licence 3 étapes). **MVP livré, prêt pour push origin/main**.
+**Phase actuelle** : **Phases 1 → 22 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée + module email + audit Master + Phase 17 (refonte seed v1 + 4 stubs débloqués + theme toggle + demo tab) + Phase 18 (corrections post-tests utilisateur R-01→R-23, R-13 différé) + Phase 19 (R-13 controleVolume + Chromium Docker) + Phase 20 (R-24→R-35, R-30 wizard 3 étapes différé Phase 21 + 4 fixes critiques bloquants prod : typeName minif, dark mode, logout, code regex) + Phase 21 (R-29 complet Région+SansLicence + R-30 wizard licence 3 étapes) + Phase 22 (R-36 reload-demo réordonné + R-37 logo light figé slate + R-38 ISO Date notifications + R-39/40 sandbox templates F2 enrichis). **MVP livré, prêt pour push origin/main**.
+
+**Phase 22 close (Mai 2026) — Reload-demo + logo + sandbox F2** : 5 retours post-tests utilisateur fermés.
+
+R-36 — reload-demo : ordre seeds aligné docs F2 + idempotence
+
+- `reload-demo.ts` : `phase8-alerts` exécuté AVANT `phase8-notifications` (alignement docs F2 chronologie). Aucune nouvelle dépendance FK introduite — les notifs ne référencent pas les alertes.
+- Idempotence : chaque seed avait déjà son propre garde-fou (early-return sur COUNT >0 ou tag DEMO_SEED). Documenté dans le header.
+- Settings : `lic_settings` n'est PAS purgée par `purgeDemoData()` (cf. purge-demo.ts ligne 4-7 — préservée avec users + référentiels). Les settings bootstrap (`expose_s2m_ca_public`, `healthcheck_shared_aes_key`) survivent → aucun re-insert nécessaire au reload.
+
+R-37 — Logo light fix définitif
+
+- `SpxTile.tsx` : fond du tile passé de `var(--color-surface-1)` (qui flip clair en mode light → blanc-sur-clair invisible) à `#0F172A` slate-900 fixe. Path blanc + dégradé cyan-bleu garantis lisibles en light ET dark, comme un favicon (identité visuelle indépendante du thème global).
+- Phase 20 R-26 traitait le texte du `BrandLockup` (vars DS adaptatives) ; le tile lui-même restait au comportement Phase 17 buggé en mode light.
+
+R-38 — Fix `Received an instance of Date` dans phase8-notifications.seed
+
+- `phase8-notifications.seed.ts` : `createdAt` et `readAt` sérialisés explicitement en `.toISOString()` avant binding postgres.js. Sans cette conversion, certains setups Node 24 + postgres@3.5 rejettent l'instance Date ("Received an instance of Date" lors du binding TIMESTAMPTZ). ISO string = format universellement accepté.
+
+R-39/R-40 — Sandbox : templates `.lic`/`.hc` complets + scénario F2 documenté
+
+- Section « Templates fichiers » : `LIC_TEMPLATE_TEXT` enrichi en format texte multi-section (JSON + `--- SIGNATURE S2M ---` + `--- CERTIFICATE S2M ---`) avec produits → articles structurés, volumes conditionnels (`null` + `illimite: true` pour articles `controleVolume=false`), dates période, signature placeholder. `HC_TEMPLATE` enrichi avec `version`, `clientCode`, `importedAt`.
+- Nouvelle section « Scénario F2 — Test end-to-end » : intro + liste numérotée 5 étapes (générer paire RSA → signer .lic → vérifier signature → chiffrer .hc → déchiffrer .hc) + note règle L16 (sandbox sans persistance, artefacts non-acceptés par les imports prod).
 
 **Phase 21 close (Mai 2026) — Wizard licence + filtres clients complets** : 2 retours résiduels Phase 20 fermés.
 
