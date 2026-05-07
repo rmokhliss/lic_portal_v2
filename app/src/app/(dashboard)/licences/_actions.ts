@@ -46,6 +46,9 @@ export async function createLicenceAction(input: unknown): Promise<{ id: string 
   const parsed = CreateSchema.parse(input);
   const result = await createLicenceUseCase.execute(parsed, user.id);
   revalidatePath("/licences");
+  // Phase 23 — wizard depuis fiche client : refresh la liste licences du
+  // client pour que la nouvelle apparaisse immédiatement après fermeture.
+  revalidatePath(`/clients/${parsed.clientId}/licences`);
   return { id: result.licence.id };
 }
 
