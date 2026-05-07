@@ -109,6 +109,17 @@ export function ClientDialog({
         const v = strOpt(fd.get(f));
         if (v !== undefined) payload[f] = v;
       }
+      // Phase 23 — dates contrat & support (4 champs YYYY-MM-DD optionnels).
+      const dateFields = [
+        "dateSignatureContrat",
+        "dateMiseEnProd",
+        "dateDemarrageSupport",
+        "prochaineDateRenouvellementSupport",
+      ] as const;
+      for (const f of dateFields) {
+        const v = strOpt(fd.get(f));
+        if (v !== undefined) payload[f] = v;
+      }
 
       // Phase 14 : payload contacts (filtre lignes incomplètes côté client).
       const validContacts = contacts.filter(
@@ -168,6 +179,20 @@ export function ClientDialog({
     for (const f of editableFields) {
       const v = strOpt(fd.get(f));
       const current = client[f];
+      if (v === undefined && current === null) continue;
+      if (v !== current) patch[f] = v ?? "";
+    }
+    // Phase 23 — dates contrat & support. Comparaison sur YYYY-MM-DD slice
+    // pour neutraliser un éventuel suffixe ISO côté client.dateXxx.
+    const editableDateFields = [
+      "dateSignatureContrat",
+      "dateMiseEnProd",
+      "dateDemarrageSupport",
+      "prochaineDateRenouvellementSupport",
+    ] as const;
+    for (const f of editableDateFields) {
+      const v = strOpt(fd.get(f));
+      const current = client[f]?.slice(0, 10) ?? null;
       if (v === undefined && current === null) continue;
       if (v !== current) patch[f] = v ?? "";
     }
@@ -287,6 +312,47 @@ export function ClientDialog({
               items={amList}
               defaultValue={mode === "edit" ? (client?.accountManager ?? "") : ""}
             />
+          </div>
+
+          {/* Phase 23 — dates contrat & support (4 champs YYYY-MM-DD optionnels).
+               Visibles en création ET en édition (alimentent les rangées de
+               ClientInfoTab). */}
+          <div className="border-spx-ink/10 mt-2 rounded-md border p-3">
+            <p className="text-spx-ink mb-2 text-sm font-medium">Contrat & support</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Field
+                name="dateSignatureContrat"
+                label={t("fields.dateSignatureContrat")}
+                type="date"
+                defaultValue={
+                  mode === "edit" ? (client?.dateSignatureContrat?.slice(0, 10) ?? "") : ""
+                }
+              />
+              <Field
+                name="dateMiseEnProd"
+                label={t("fields.dateMiseEnProd")}
+                type="date"
+                defaultValue={mode === "edit" ? (client?.dateMiseEnProd?.slice(0, 10) ?? "") : ""}
+              />
+              <Field
+                name="dateDemarrageSupport"
+                label={t("fields.dateDemarrageSupport")}
+                type="date"
+                defaultValue={
+                  mode === "edit" ? (client?.dateDemarrageSupport?.slice(0, 10) ?? "") : ""
+                }
+              />
+              <Field
+                name="prochaineDateRenouvellementSupport"
+                label={t("fields.prochaineDateRenouvellementSupport")}
+                type="date"
+                defaultValue={
+                  mode === "edit"
+                    ? (client?.prochaineDateRenouvellementSupport?.slice(0, 10) ?? "")
+                    : ""
+                }
+              />
+            </div>
           </div>
 
           {mode === "create" && (

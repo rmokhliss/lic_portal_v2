@@ -293,7 +293,11 @@
         "codeLangue": "Langue",
         "siegeNom": "Nom du Siège (optionnel — défaut = raison sociale)",
         "salesResponsable": "Sales responsable",
-        "accountManager": "Account Manager"
+        "accountManager": "Account Manager",
+        "dateSignatureContrat": "Signature contrat",
+        "dateMiseEnProd": "Mise en production",
+        "dateDemarrageSupport": "Démarrage support",
+        "prochaineDateRenouvellementSupport": "Renouvellement support"
       },
       "submitCreate": "Créer",
       "submitEdit": "Enregistrer",

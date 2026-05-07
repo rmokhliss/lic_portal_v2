@@ -293,7 +293,11 @@
         "codeLangue": "Language",
         "siegeNom": "HQ entity name (optional — default = legal name)",
         "salesResponsable": "Sales lead",
-        "accountManager": "Account Manager"
+        "accountManager": "Account Manager",
+        "dateSignatureContrat": "Contract signed",
+        "dateMiseEnProd": "Production start",
+        "dateDemarrageSupport": "Support start",
+        "prochaineDateRenouvellementSupport": "Next support renewal"
       },
       "submitCreate": "Create",
       "submitEdit": "Save",
