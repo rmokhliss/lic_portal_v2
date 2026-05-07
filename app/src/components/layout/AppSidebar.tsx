@@ -1,17 +1,15 @@
 // ==============================================================================
-// LIC v2 — AppSidebar (Server Component, F-12 + Phase 23 R-37 logo fixe)
+// LIC v2 — AppSidebar (Server Component, F-12 + Phase 20 R-26 thème adaptatif)
 //
 // Sidebar fixe gauche. 4 groupes principaux + Paramétrage isolé en bas.
 // Filtrage par rôle utilisateur (canSeeRoute). Libellés via
 // getTranslations('nav') (next-intl Server Component).
 //
-// Phase 23 R-37 — Le mode adaptatif Phase 20 R-26 (vars DS qui flip via
-// `:root.light`) rendait le logo peu lisible en mode light : `text-foreground`
-// devient foncé sur fond `bg-surface-0` clair → contraste correct mais palette
-// mate, illisible avec le SpxTile. Fix : on enveloppe `<BrandLockup>` dans un
-// bloc `bg-slate-900` à fond foncé fixe (indépendant du thème) et on force
-// `tone="dark"` pour garantir un texte blanc. Le logo reste donc toujours en
-// blanc sur fond noir, quel que soit le thème global.
+// Phase 20 R-26 — `<BrandLockup>` sans prop `tone` → utilise les vars DS
+// dynamiques (`text-foreground` / `text-muted-foreground` / `text-border`)
+// qui flip via `:root.light` (cookie spx-lic.theme). Le logo reste lisible
+// quel que soit le thème. Le fond sidebar `bg-surface-0` flip aussi via
+// `:root.light --color-surface-0` (cf. globals.css Phase 19+).
 // ==============================================================================
 
 import { getTranslations } from "next-intl/server";
@@ -47,12 +45,9 @@ export async function AppSidebar({ userRole }: AppSidebarProps) {
 
   return (
     <aside className="bg-surface-0 border-border fixed inset-y-0 left-0 flex w-64 flex-col border-r">
-      {/* Brand en haut — Phase 23 R-37 : fond slate-900 fixe + tone="dark"
-           pour garantir lisibilité quel que soit le thème global. */}
-      <div className="border-border flex h-14 items-center border-b px-3">
-        <div className="inline-flex items-center rounded-md bg-slate-900 px-3 py-1.5">
-          <BrandLockup size={28} tone="dark" />
-        </div>
+      {/* Brand en haut */}
+      <div className="border-border flex h-14 items-center border-b px-6">
+        <BrandLockup size={32} />
       </div>
 
       {/* Groupes principaux */}
