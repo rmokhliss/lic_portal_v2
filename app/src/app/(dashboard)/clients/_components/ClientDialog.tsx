@@ -126,11 +126,18 @@ export function ClientDialog({
 
       startTransition(() => {
         void (async () => {
+          // Phase 23 R-45 — lecture du Result tagué (au lieu de try/catch
+          // sur throw, qui ne reçoit qu'un message digest sanitisé par Next).
           try {
-            await createClientAction(payload);
-            setError("");
-            onOpenChange(false);
+            const r = await createClientAction(payload);
+            if (r.success) {
+              setError("");
+              onOpenChange(false);
+            } else {
+              setError(r.error);
+            }
           } catch (err) {
+            // Erreur système (réseau, BD down) — pas un AppError métier.
             setError(err instanceof Error ? err.message : "Erreur");
           }
         })();
@@ -167,10 +174,15 @@ export function ClientDialog({
 
     startTransition(() => {
       void (async () => {
+        // Phase 23 R-45 — lecture du Result tagué (cf. createClientAction).
         try {
-          await updateClientAction(patch);
-          setError("");
-          onOpenChange(false);
+          const r = await updateClientAction(patch);
+          if (r.success) {
+            setError("");
+            onOpenChange(false);
+          } else {
+            setError(r.error);
+          }
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur");
         }

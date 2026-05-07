@@ -202,14 +202,19 @@ function ChangeStatusDialog({
     }
     startTransition(() => {
       void (async () => {
+        // Phase 23 R-45 — lecture du Result tagué.
         try {
-          await changeClientStatusAction({
+          const r = await changeClientStatusAction({
             clientId: client.id,
             expectedVersion: client.version,
             newStatus,
           });
-          setError("");
-          onOpenChange(false);
+          if (r.success) {
+            setError("");
+            onOpenChange(false);
+          } else {
+            setError(r.error);
+          }
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur");
         }
