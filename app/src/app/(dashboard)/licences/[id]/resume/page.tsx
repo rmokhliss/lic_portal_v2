@@ -6,7 +6,12 @@ import { notFound } from "next/navigation";
 
 import { isAppError } from "@/server/modules/error";
 import { requireAuthPage } from "@/server/infrastructure/auth";
-import { getClientUseCase, getEntiteUseCase, getLicenceUseCase } from "@/server/composition-root";
+import {
+  getClientUseCase,
+  getEntiteUseCase,
+  getLicenceUseCase,
+  listArticlesByLicenceUseCase,
+} from "@/server/composition-root";
 
 import { LicenceResumeTab } from "../_components/LicenceResumeTab";
 
@@ -26,10 +31,14 @@ export default async function LicenceResumePage({ params }: PageProps) {
     throw err;
   }
 
-  // Résolution display client + entité (best-effort, fallback sur ids).
-  const [client, entite] = await Promise.all([
+  // Phase 22 R-49 — comptage articles côté serveur pour piloter l'état
+  // « disabled » du bouton "Générer .lic" (évite le pattern click → erreur
+  // pour les licences sans aucun article attaché). Le humanizeError côté
+  // client gère déjà les cas CA absente / cert manquant (Phase 20 R-31).
+  const [client, entite, articles] = await Promise.all([
     getClientUseCase.execute(licence.clientId).catch(() => null),
     getEntiteUseCase.execute(licence.entiteId).catch(() => null),
+    listArticlesByLicenceUseCase.execute(id).catch(() => [] as readonly unknown[]),
   ]);
 
   return (
@@ -40,6 +49,7 @@ export default async function LicenceResumePage({ params }: PageProps) {
       }
       entiteLabel={entite !== null ? entite.nom : licence.entiteId}
       canEdit={user.role === "ADMIN" || user.role === "SADMIN"}
+      articlesCount={articles.length}
     />
   );
 }

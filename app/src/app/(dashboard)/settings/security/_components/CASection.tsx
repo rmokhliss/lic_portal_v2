@@ -188,11 +188,18 @@ export function CASection({
         </div>
       )}
 
-      {/* Phase 3.E — Backfill clients sans certificat */}
+      {/* Phase 3.E + Phase 22 R-50 — Backfill clients sans certificat */}
       {status.exists && (
         <div className="border-spx-ink/10 mt-8 border-t pt-6">
           <h3 className="text-spx-ink text-base font-semibold">{t("backfill.title")}</h3>
           <p className="text-spx-ink/70 mt-1 text-sm">
+            Le backfill génère un certificat PKI X.509 pour chaque client qui n&apos;en a pas
+            encore. Ce certificat est nécessaire pour signer les fichiers <code>.lic</code> envoyés
+            aux clients (format F2). La clé privée est chiffrée AES-256-GCM avec{" "}
+            <code>APP_MASTER_KEY</code> et stockée de manière sécurisée. Durée estimée : ~2s par
+            client.
+          </p>
+          <p className="text-spx-ink/70 mt-2 text-sm">
             {backfillStatus.pendingCount === 0
               ? t("backfill.allOk")
               : t("backfill.pending", { count: backfillStatus.pendingCount })}

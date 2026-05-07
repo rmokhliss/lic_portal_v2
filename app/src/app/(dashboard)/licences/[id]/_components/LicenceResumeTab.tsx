@@ -38,6 +38,9 @@ export interface LicenceResumeTabProps {
   readonly clientLabel: string;
   readonly entiteLabel: string;
   readonly canEdit: boolean;
+  /** Phase 22 R-49 — nombre d'articles attachés. 0 = bouton .lic disabled
+   *  + tooltip "Aucun article attaché à cette licence". */
+  readonly articlesCount: number;
 }
 
 type DialogState = { kind: "none" } | { kind: "edit" } | { kind: "status" };
@@ -47,6 +50,7 @@ export function LicenceResumeTab({
   clientLabel,
   entiteLabel,
   canEdit,
+  articlesCount,
 }: LicenceResumeTabProps) {
   const t = useTranslations("licences.detail.resume");
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
@@ -74,7 +78,7 @@ export function LicenceResumeTab({
             >
               {t("changeStatus")}
             </Button>
-            <GenerateLicFileButton licenceId={licence.id} />
+            <GenerateLicFileButton licenceId={licence.id} articlesCount={articlesCount} />
             <ImportHealthcheckButton licenceId={licence.id} />
           </div>
         )}
@@ -354,10 +358,18 @@ function strOpt(v: FormDataEntryValue | null): string | undefined {
 // Phase 3 (DETTE-LIC-008).
 // ============================================================================
 
-function GenerateLicFileButton({ licenceId }: { readonly licenceId: string }) {
+function GenerateLicFileButton({
+  licenceId,
+  articlesCount,
+}: {
+  readonly licenceId: string;
+  readonly articlesCount: number;
+}) {
   const t = useTranslations("licences.detail.resume.licFile");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
+  // Phase 22 R-49 — disable + tooltip si aucun article attaché.
+  const noArticles = articlesCount === 0;
 
   // Phase 20 R-31 — transformation du raw error en message UX explicite avec
   // remediation pour les codes les plus fréquents : CA absente / cert client
@@ -398,7 +410,13 @@ function GenerateLicFileButton({ licenceId }: { readonly licenceId: string }) {
 
   return (
     <>
-      <Button type="button" variant="outline" onClick={onGenerate} disabled={pending}>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onGenerate}
+        disabled={pending || noArticles}
+        title={noArticles ? "Aucun article attaché à cette licence" : undefined}
+      >
         {pending ? t("generating") : t("generate")}
       </Button>
       {error !== "" && <p className="text-destructive mt-1 whitespace-normal text-xs">{error}</p>}
