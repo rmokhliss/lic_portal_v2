@@ -67,7 +67,6 @@ export interface LicenceFichierContent {
      *  article volumétrique non encore plafonné côté admin). Equivalent
      *  métier d'illimité pour le client consommateur du .lic. */
     readonly volAutorise: number | null;
-    readonly uniteVolume: string;
   }[];
   readonly generatedAt: string;
 }
@@ -125,7 +124,6 @@ export class GenerateLicenceFichierUseCase {
       code: string;
       nom: string;
       volAutorise: number | null;
-      uniteVolume: string;
     }[] = [];
     for (const la of liaisons) {
       const article = await this.articleRepository.findById(la.articleId);
@@ -133,7 +131,6 @@ export class GenerateLicenceFichierUseCase {
         code: article?.code ?? `#${String(la.articleId)}`,
         nom: article?.nom ?? "Article inconnu",
         volAutorise: la.volumeAutorise,
-        uniteVolume: article?.uniteVolume ?? "transactions",
       });
     }
 

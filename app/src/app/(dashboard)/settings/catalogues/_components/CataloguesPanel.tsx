@@ -191,7 +191,7 @@ function ProduitSection({
           <TableRow>
             <TableHead>{t("table.code")}</TableHead>
             <TableHead>{t("table.nom")}</TableHead>
-            <TableHead>{t("table.unite")}</TableHead>
+            <TableHead>Support volume</TableHead>
             <TableHead>{t("table.actif")}</TableHead>
             <TableHead className="text-right">{t("table.actions")}</TableHead>
           </TableRow>
@@ -248,15 +248,16 @@ function ArticleRow({
     <TableRow>
       <TableCell className="font-mono text-xs">{article.code}</TableCell>
       <TableCell className="text-sm">{article.nom}</TableCell>
-      <TableCell className="text-muted-foreground text-xs">
-        {article.uniteVolume}
-        {!article.controleVolume && (
+      <TableCell className="text-xs">
+        {article.controleVolume ? (
           <span
-            className="ml-2 inline-block rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-300"
-            title="Phase 19 R-13 — volume non contrôlé (illimité)"
+            className="bg-success/15 text-success inline-block rounded-full px-2 py-0.5 text-[10px]"
+            title="Article volumétrique : volume autorisé/consommé suivi par licence"
           >
-            Illimité
+            Oui
           </span>
+        ) : (
+          <span className="text-muted-foreground">Non</span>
         )}
       </TableCell>
       <TableCell>
@@ -422,9 +423,12 @@ function ArticleDialog({
     const code = strReq(fd.get("code"));
     const nom = strReq(fd.get("nom"));
     const descriptionRaw = strOpt(fd.get("description"));
-    const uniteVolume = strReq(fd.get("uniteVolume"));
     // Phase 19 R-13 — checkbox HTML "on" si cochée, absente sinon.
     const controleVolume = fd.get("controleVolume") === "on";
+    // Phase 23 — uniteVolume conserve un défaut interne (BD NOT NULL côté
+    // schema actuel) mais n'est plus exposée dans le formulaire — info
+    // technique sans valeur métier UX.
+    const uniteVolume = initial?.uniteVolume ?? "transactions";
     startTransition(() => {
       void (async () => {
         try {
@@ -500,16 +504,6 @@ function ArticleDialog({
             <Input id="nom" name="nom" maxLength={200} required defaultValue={initial?.nom ?? ""} />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="uniteVolume">{t("uniteVolume")}</Label>
-            <Input
-              id="uniteVolume"
-              name="uniteVolume"
-              maxLength={30}
-              required
-              defaultValue={initial?.uniteVolume ?? "transactions"}
-            />
-          </div>
-          <div className="space-y-1">
             <Label htmlFor="description">{t("description")}</Label>
             <Input
               id="description"
@@ -518,9 +512,11 @@ function ArticleDialog({
               defaultValue={initial?.description ?? ""}
             />
           </div>
-          {/* Phase 19 R-13 — toggle volume contrôlé / illimité. Default
-              coché (true). Si décoché, le wizard ajout article à licence
-              ne demandera pas le vol autorisé (Illimité affiché). */}
+          {/* Phase 23 — l'option "Support volume" determine si l'article
+               porte un compteur metier (TPE/GAB/cartes) ou s'il s'agit d'une
+               fonctionnalite binaire (Core, modules). Coche → les licences
+               l'utiliseront avec volume autorise/consomme. Decoche → liaison
+               binaire (presence/absence), pas de notion de volume. */}
           <div className="flex items-start gap-2">
             <input
               id="controleVolume"
@@ -530,10 +526,11 @@ function ArticleDialog({
               className="mt-0.5 size-4"
             />
             <div className="space-y-0.5">
-              <Label htmlFor="controleVolume">Contrôle de volume activé</Label>
+              <Label htmlFor="controleVolume">Support volume</Label>
               <p className="text-muted-foreground text-xs">
-                Décocher si l&apos;article correspond à une fonctionnalité (ex : ATM-ADV) — les
-                licences l&apos;utiliseront alors en volume illimité.
+                Coché : l&apos;article porte un volume autorisé et un consommé suivi par licence
+                (TPE / GAB / SOFTPOS / cartes). Décoché : article fonctionnalité (Core, modules) —
+                liaison binaire sans gestion de volume.
               </p>
             </div>
           </div>

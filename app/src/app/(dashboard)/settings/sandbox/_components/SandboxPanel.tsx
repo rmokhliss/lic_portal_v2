@@ -451,11 +451,13 @@ const HC_TEMPLATE = {
   ],
 } as const;
 
-// Phase 22 R-39 — Template `.lic` complet (JSON + signature RSA + certificat
-// client PEM). Texte brut multi-section, format F2 (cf.
-// docs/integration/F2_FORMATS.md). Volumes peuvent être `null` + `illimite:
-// true` pour les articles non contrôlés (controleVolume=false côté catalogue,
-// Phase 19 R-13).
+// Phase 22 R-39 + Phase 23 — Template `.lic` complet (JSON + signature RSA +
+// certificat client PEM). Texte brut multi-section, format F2 (cf.
+// docs/integration/F2_FORMATS.md). Phase 23 : `volAutorise: null` signifie
+// volume non défini (équivalent illimité métier) — pour les articles
+// fonctionnalités (controleVolume=false côté catalogue) ou pour les articles
+// volumétriques non encore plafonnés. Le champ `uniteVolume` n'est plus émis
+// (info technique sans valeur côté consommateur du .lic).
 const LIC_TEMPLATE_TEXT = `${JSON.stringify(
   {
     version: "1.0",
@@ -474,14 +476,11 @@ const LIC_TEMPLATE_TEXT = `${JSON.stringify(
             code: "KERNEL",
             nom: "Kernel Switch",
             volAutorise: 1000000,
-            uniteVolume: "transactions/jour",
           },
           {
             code: "HSM",
             nom: "HSM Interface",
             volAutorise: null,
-            uniteVolume: null,
-            illimite: true,
           },
         ],
       },
