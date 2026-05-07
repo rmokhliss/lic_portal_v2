@@ -14,6 +14,7 @@
 
 "use server";
 
+import { getLocale } from "next-intl/server";
 import { z } from "zod";
 
 import { requireRole } from "@/server/infrastructure/auth";
@@ -243,7 +244,11 @@ async function buildPdf(bundle: RowsBundle): Promise<Buffer> {
   // Lazy import — puppeteer embarque Chromium, chargé uniquement au
   // moment de l'export PDF.
   const puppeteer = await import("puppeteer");
-  const html = renderPdfHtml(bundle);
+  // Phase 23 — i18n PDF : lit la locale active (cookie NEXT_LOCALE) pour
+  // adapter les libellés du header / footer.
+  const locale = await getLocale();
+  const reportLocale: ReportLocale = locale === "en" ? "en" : "fr";
+  const html = renderPdfHtml(bundle, reportLocale);
   const browser = await puppeteer.default.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -262,24 +267,60 @@ async function buildPdf(bundle: RowsBundle): Promise<Buffer> {
   }
 }
 
-function renderPdfHtml(bundle: RowsBundle): string {
+/** Phase 23 — i18n minimaliste pour les rapports. La locale est lue depuis
+ *  next-intl (cookie NEXT_LOCALE, fallback FR). On n'embarque pas une lib
+ *  de traduction lourde côté Server Action — un dictionnaire local suffit
+ *  pour les libellés du PDF (titre métier passe via bundle.title déjà
+ *  localisé par l'appelant). */
+type ReportLocale = "fr" | "en";
+interface ReportLabels {
+  readonly portal: string;
+  readonly generatedAt: string;
+  readonly rows: string;
+  readonly confidential: string;
+  readonly pageOf: string;
+  readonly pageSep: string;
+  readonly footerNote: string;
+}
+const REPORT_LABELS: Record<ReportLocale, ReportLabels> = {
+  fr: {
+    portal: "Portail de gestion des licences",
+    generatedAt: "Généré le",
+    rows: "ligne(s)",
+    confidential: "Document confidentiel destiné à un usage interne S2M / banque cliente.",
+    pageOf: "Page",
+    pageSep: "/",
+    footerNote: "S2M SELECT-PX · Confidentiel",
+  },
+  en: {
+    portal: "Licence management portal",
+    generatedAt: "Generated on",
+    rows: "row(s)",
+    confidential: "Confidential document for internal S2M / client bank use only.",
+    pageOf: "Page",
+    pageSep: "/",
+    footerNote: "S2M SELECT-PX · Confidential",
+  },
+};
+
+function renderPdfHtml(bundle: RowsBundle, locale: ReportLocale = "fr"): string {
+  const labels = REPORT_LABELS[locale];
   const escapeHtml = (s: string): string =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const headerCells = bundle.headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("");
   const bodyRows = bundle.rows
     .map((r) => `<tr>${r.map((c) => `<td>${escapeHtml(String(c))}</td>`).join("")}</tr>`)
     .join("");
-  const generatedAt = new Date().toLocaleString("fr-FR");
-  // Phase 20 R-33 — header pro avec mention S2M, footer numérotation pages,
-  // mention confidentielle, palette DS SELECT-PX (cyan + blue + ink).
-  // Logo : dégradé CSS inline reproduisant la signature visuelle (pas de
-  // PNG embarqué pour rester sans asset externe). Police Helvetica
-  // (compatible Chromium headless sans télécharger Google Fonts).
+  const generatedAt = new Date().toLocaleString(locale === "en" ? "en-US" : "fr-FR");
+  // Phase 23 — header textuel sans logo. La signature visuelle reposait sur
+  // un dégradé CSS reproduisant le SpxTile, retirée à la demande user
+  // (rendu PDF imprimable plus sobre + alignement avec exigences clients
+  // banque qui veulent leur propre branding sur les exports).
   return `<!DOCTYPE html>
-<html lang="fr">
+<html lang="${locale}">
 <head>
   <meta charset="UTF-8" />
-  <title>${escapeHtml(bundle.title)} — S2M Licence Manager</title>
+  <title>${escapeHtml(bundle.title)}</title>
   <style>
     @page {
       size: A4;
@@ -288,7 +329,7 @@ function renderPdfHtml(bundle: RowsBundle): string {
         content: element(pageHeader);
       }
       @bottom-center {
-        content: "Page " counter(page) " / " counter(pages) " · S2M SELECT-PX · Confidentiel";
+        content: "${labels.pageOf} " counter(page) " ${labels.pageSep} " counter(pages) " · ${labels.footerNote}";
         font-family: Helvetica, Arial, sans-serif;
         font-size: 8px;
         color: #888;
@@ -310,29 +351,20 @@ function renderPdfHtml(bundle: RowsBundle): string {
     }
     .brand {
       display: flex;
-      align-items: center;
-      gap: 10px;
+      flex-direction: column;
+      gap: 2px;
     }
-    .brand-tile {
-      width: 28px;
-      height: 28px;
-      border-radius: 4px;
-      background: linear-gradient(135deg, #74ECFF 0%, #00CAFF 50%, #0006A5 100%);
-    }
-    .brand-text {
+    .brand-product {
       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
       font-weight: 800;
-      font-size: 13px;
+      font-size: 14px;
       color: #1a1d24;
       letter-spacing: 0.02em;
     }
-    .brand-text small {
-      display: block;
-      font-weight: 400;
+    .brand-tagline {
       font-size: 8px;
-      color: #888;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
+      color: #666;
+      letter-spacing: 0.04em;
     }
     .doc-title {
       text-align: right;
@@ -390,21 +422,18 @@ function renderPdfHtml(bundle: RowsBundle): string {
 <body>
   <div class="pageHeader">
     <div class="brand">
-      <div class="brand-tile"></div>
-      <div class="brand-text">
-        <small>S2M</small>
-        SELECT-PX
-      </div>
+      <div class="brand-product">SELECT-PX</div>
+      <div class="brand-tagline">${escapeHtml(labels.portal)}</div>
     </div>
     <div class="doc-title">
       <h1>${escapeHtml(bundle.title)}</h1>
-      <p class="meta">Généré le ${escapeHtml(generatedAt)}</p>
+      <p class="meta">${escapeHtml(labels.generatedAt)} ${escapeHtml(generatedAt)}</p>
     </div>
   </div>
 
   <div class="summary">
-    Rapport <strong>${escapeHtml(bundle.title)}</strong> — ${String(bundle.rows.length)} ligne(s).
-    Document confidentiel destiné à un usage interne S2M / banque cliente.
+    <strong>${escapeHtml(bundle.title)}</strong> — ${String(bundle.rows.length)} ${labels.rows}.
+    ${escapeHtml(labels.confidential)}
   </div>
 
   <table>
