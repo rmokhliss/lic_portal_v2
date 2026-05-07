@@ -18,8 +18,19 @@
 
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
+
+// Phase 22 R-44 — invalidation cache des référentiels (TTL 60s) après chaque
+// mutation. Sans ces tags, les pages /clients, /licences, /renewals
+// continueraient d'afficher l'ancienne liste pendant 60s post-mutation.
+import {
+  REFERENTIALS_TAG_DEVISES,
+  REFERENTIALS_TAG_LANGUES,
+  REFERENTIALS_TAG_PAYS,
+  REFERENTIALS_TAG_REGIONS,
+  REFERENTIALS_TAG_TEAM_MEMBERS,
+} from "@/lib/cached-referentials";
 
 import { CreateUserSchema, SettingsGeneralSchema, UpdateUserSchema } from "@s2m-lic/shared";
 
@@ -111,6 +122,7 @@ export async function createRegionAction(input: unknown): Promise<void> {
   const parsed = RegionFormSchema.parse(input);
   await createRegionUseCase.execute(parsed);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_REGIONS);
 }
 
 export async function createPaysAction(input: unknown): Promise<void> {
@@ -118,6 +130,7 @@ export async function createPaysAction(input: unknown): Promise<void> {
   const parsed = PaysFormSchema.parse(input);
   await createPaysUseCase.execute(parsed);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_PAYS);
 }
 
 export async function createDeviseAction(input: unknown): Promise<void> {
@@ -125,6 +138,7 @@ export async function createDeviseAction(input: unknown): Promise<void> {
   const parsed = DeviseFormSchema.parse(input);
   await createDeviseUseCase.execute(parsed);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_DEVISES);
 }
 
 export async function createLangueAction(input: unknown): Promise<void> {
@@ -132,6 +146,7 @@ export async function createLangueAction(input: unknown): Promise<void> {
   const parsed = LangueFormSchema.parse(input);
   await createLangueUseCase.execute(parsed);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_LANGUES);
 }
 
 export async function createTypeContactAction(input: unknown): Promise<void> {
@@ -146,6 +161,7 @@ export async function createTeamMemberAction(input: unknown): Promise<void> {
   const parsed = TeamMemberFormSchema.parse(input);
   await createTeamMemberUseCase.execute(parsed);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_TEAM_MEMBERS);
 }
 
 // --- Onglet team — update (6) — Phase 14 (DETTE-LIC-006 résolue) -----------
@@ -197,6 +213,7 @@ export async function updateRegionAction(input: unknown): Promise<void> {
   const parsed = UpdateRegionFormSchema.parse(input);
   await updateRegionUseCase.execute(parsed);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_REGIONS);
 }
 
 export async function updatePaysAction(input: unknown): Promise<void> {
@@ -204,6 +221,7 @@ export async function updatePaysAction(input: unknown): Promise<void> {
   const parsed = UpdatePaysFormSchema.parse(input);
   await updatePaysUseCase.execute(parsed);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_PAYS);
 }
 
 export async function updateDeviseAction(input: unknown): Promise<void> {
@@ -211,6 +229,7 @@ export async function updateDeviseAction(input: unknown): Promise<void> {
   const parsed = UpdateDeviseFormSchema.parse(input);
   await updateDeviseUseCase.execute(parsed);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_DEVISES);
 }
 
 export async function updateLangueAction(input: unknown): Promise<void> {
@@ -218,6 +237,7 @@ export async function updateLangueAction(input: unknown): Promise<void> {
   const parsed = UpdateLangueFormSchema.parse(input);
   await updateLangueUseCase.execute(parsed);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_LANGUES);
 }
 
 export async function updateTypeContactAction(input: unknown): Promise<void> {
@@ -232,16 +252,20 @@ export async function updateTeamMemberAction(input: unknown): Promise<void> {
   const parsed = UpdateTeamMemberFormSchema.parse(input);
   await updateTeamMemberUseCase.execute(parsed);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_TEAM_MEMBERS);
 }
 
 // --- Onglet team — toggle actif (6) ----------------------------------------
 // Les toggle use-cases prennent un primitif (string code OU number id).
+// Phase 22 R-44 : un toggle modifie `actif` qui est filtré dans les caches
+// (`actif: true`) — flush du tag obligatoire.
 
 export async function toggleRegionAction(input: unknown): Promise<void> {
   await requireRole(["SADMIN"]);
   const { regionCode } = z.object({ regionCode: z.string().min(1) }).parse(input);
   await toggleRegionUseCase.execute(regionCode);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_REGIONS);
 }
 
 export async function togglePaysAction(input: unknown): Promise<void> {
@@ -249,6 +273,7 @@ export async function togglePaysAction(input: unknown): Promise<void> {
   const { codePays } = z.object({ codePays: z.string().length(2) }).parse(input);
   await togglePaysUseCase.execute(codePays);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_PAYS);
 }
 
 export async function toggleDeviseAction(input: unknown): Promise<void> {
@@ -256,6 +281,7 @@ export async function toggleDeviseAction(input: unknown): Promise<void> {
   const { codeDevise } = z.object({ codeDevise: z.string().length(3) }).parse(input);
   await toggleDeviseUseCase.execute(codeDevise);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_DEVISES);
 }
 
 export async function toggleLangueAction(input: unknown): Promise<void> {
@@ -263,6 +289,7 @@ export async function toggleLangueAction(input: unknown): Promise<void> {
   const { codeLangue } = z.object({ codeLangue: z.string().length(2) }).parse(input);
   await toggleLangueUseCase.execute(codeLangue);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_LANGUES);
 }
 
 export async function toggleTypeContactAction(input: unknown): Promise<void> {
@@ -277,6 +304,7 @@ export async function toggleTeamMemberAction(input: unknown): Promise<void> {
   const { id } = z.object({ id: z.number().int().positive() }).parse(input);
   await toggleTeamMemberUseCase.execute(id);
   revalidatePath("/settings/team");
+  updateTag(REFERENTIALS_TAG_TEAM_MEMBERS);
 }
 
 // ============================================================================

@@ -15,13 +15,15 @@ import { requireAuthPage } from "@/server/infrastructure/auth";
 import {
   getCAStatusUseCase,
   listClientsUseCase,
-  listDevisesUseCase,
-  listLanguesUseCase,
-  listPaysUseCase,
-  listRegionsUseCase,
-  listTeamMembersUseCase,
   listTypesContactUseCase,
 } from "@/server/composition-root";
+import {
+  getCachedDevises,
+  getCachedLangues,
+  getCachedPays,
+  getCachedRegions,
+  getCachedTeamMembersByRole,
+} from "@/lib/cached-referentials";
 
 import { ClientsTable } from "./_components/ClientsTable";
 import type { ClientStatutClient } from "./_components/clients-types";
@@ -98,17 +100,18 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
       limit: 25,
     }),
     getCAStatusUseCase.execute(),
-    // T-01 — référentiels SADMIN pour <select> ClientDialog (codes actifs only).
-    listPaysUseCase.execute({}),
-    listDevisesUseCase.execute({}),
-    listLanguesUseCase.execute({}),
-    // T-01 Volet A — team members SALES + AM pour selects salesResponsable / accountManager.
-    listTeamMembersUseCase.execute({ actif: true, roleTeam: "SALES" }),
-    listTeamMembersUseCase.execute({ actif: true, roleTeam: "AM" }),
+    // T-01 + Phase 22 R-44 — référentiels SADMIN cachés 60s pour les <select>
+    // (codes actifs only). Invalidés via revalidateTag dans
+    // settings/_actions.ts à chaque mutation référentielle.
+    getCachedPays(),
+    getCachedDevises(),
+    getCachedLangues(),
+    getCachedTeamMembersByRole("SALES"),
+    getCachedTeamMembersByRole("AM"),
     // Phase 14 — DETTE-LIC-017 : types contact pour la section contacts à création.
     listTypesContactUseCase.execute({}).catch(() => [] as const),
-    // Phase 21 R-29 — régions actives pour le select filtre.
-    listRegionsUseCase.execute({}),
+    // Phase 21 R-29 + Phase 22 R-44 — régions cachées 60s.
+    getCachedRegions(),
   ]);
 
   const paysList = paysAll.filter((p) => p.actif).map((p) => ({ code: p.codePays, label: p.nom }));
