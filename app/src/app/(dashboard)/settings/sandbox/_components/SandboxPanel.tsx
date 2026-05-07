@@ -437,27 +437,31 @@ export function SandboxPanel(): React.JSX.Element {
   );
 }
 
-// Phase 22 R-39 — Template `.hc` (healthcheck) enrichi. Format JSON simple,
+// Phase 22 R-39 + Phase 23 — Template `.hc` (healthcheck). Format JSON simple,
 // chiffré côté client S2M avant envoi (AES-256-GCM avec clé partagée du
-// settings `healthcheck_shared_aes_key`).
+// settings `healthcheck_shared_aes_key`). Phase 23 : champ `volume` unifié
+// .lic/.hc (ici = volume consommé reporté par la banque). Alias
+// `volConsomme` accepté en import pour rétrocompat.
 const HC_TEMPLATE = {
   version: "1.0",
   licenceReference: "LIC-2026-001",
   clientCode: "BAM",
   importedAt: "2026-05-06T12:00:00Z",
   articles: [
-    { code: "KERNEL", volConsomme: 750000 },
-    { code: "SMS-GW", volConsomme: 45000 },
+    { code: "KERNEL", volume: 750000 },
+    { code: "SMS-GW", volume: 45000 },
   ],
 } as const;
 
 // Phase 22 R-39 + Phase 23 — Template `.lic` complet (JSON + signature RSA +
 // certificat client PEM). Texte brut multi-section, format F2 (cf.
-// docs/integration/F2_FORMATS.md). Phase 23 : `volAutorise: null` signifie
-// volume non défini (équivalent illimité métier) — pour les articles
-// fonctionnalités (controleVolume=false côté catalogue) ou pour les articles
-// volumétriques non encore plafonnés. Le champ `uniteVolume` n'est plus émis
-// (info technique sans valeur côté consommateur du .lic).
+// docs/integration/F2_FORMATS.md). Phase 23 :
+//   - Champ `volume` unifie .lic / .hc (le .lic porte le volume autorise,
+//     le .hc le volume consomme — meme cle JSON pour faciliter la
+//     reutilisation cote client). null = volume non defini (equivalent
+//     illimite metier — articles fonctionnalites ou non plafonnes).
+//   - `uniteVolume` n'est plus emis (info technique sans valeur cote
+//     consommateur).
 const LIC_TEMPLATE_TEXT = `${JSON.stringify(
   {
     version: "1.0",
@@ -475,12 +479,12 @@ const LIC_TEMPLATE_TEXT = `${JSON.stringify(
           {
             code: "KERNEL",
             nom: "Kernel Switch",
-            volAutorise: 1000000,
+            volume: 1000000,
           },
           {
             code: "HSM",
             nom: "HSM Interface",
-            volAutorise: null,
+            volume: null,
           },
         ],
       },

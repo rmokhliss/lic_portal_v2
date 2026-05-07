@@ -243,12 +243,19 @@ function parseJsonHealthcheck(content: string): readonly ParsedArticleEntry[] {
     if (typeof entry !== "object" || entry === null) {
       throw new TypeError(`Article #${String(idx)} non-objet`);
     }
-    const e = entry as { code?: unknown; volConsomme?: unknown; vol_consomme?: unknown };
+    // Phase 23 — alias `volume` (champ unifie .lic/.hc) accepte en plus de
+    // volConsomme/vol_consomme pour retrocompat.
+    const e = entry as {
+      code?: unknown;
+      volume?: unknown;
+      volConsomme?: unknown;
+      vol_consomme?: unknown;
+    };
     const code = typeof e.code === "string" ? e.code : null;
-    const volRaw = e.volConsomme ?? e.vol_consomme;
+    const volRaw = e.volume ?? e.volConsomme ?? e.vol_consomme;
     const vol = typeof volRaw === "number" ? volRaw : null;
     if (code === null || vol === null) {
-      throw new TypeError(`Article #${String(idx)} : code ou volConsomme manquant`);
+      throw new TypeError(`Article #${String(idx)} : code ou volume manquant`);
     }
     return { code, volConsomme: vol };
   });
@@ -266,9 +273,10 @@ function parseCsvHealthcheck(content: string): readonly ParsedArticleEntry[] {
   if (header === undefined) throw new TypeError("CSV header absent");
   const cols = header.split(",").map((c) => c.trim().toLowerCase());
   const codeIdx = cols.indexOf("article_code");
-  const volIdx = cols.indexOf("vol_consomme");
+  // Phase 23 — header `volume` (unifie .lic/.hc) ou `vol_consomme` (legacy).
+  const volIdx = cols.includes("volume") ? cols.indexOf("volume") : cols.indexOf("vol_consomme");
   if (codeIdx === -1 || volIdx === -1) {
-    throw new TypeError("CSV header doit contenir 'article_code' et 'vol_consomme'");
+    throw new TypeError("CSV header doit contenir 'article_code' et 'volume' (ou 'vol_consomme')");
   }
   const out: ParsedArticleEntry[] = [];
   for (let i = 1; i < lines.length; i++) {

@@ -324,6 +324,13 @@ export {
   updateArticleUseCase,
 } from "@/server/modules/article/article.module";
 
+// Phase 23 — suppression dure (avec checks 0 liaison) catalogue.
+import { DeleteArticleUseCase } from "@/server/modules/article/application/delete-article.usecase";
+import { DeleteProduitUseCase } from "@/server/modules/produit/application/delete-produit.usecase";
+
+export const deleteProduitUseCase = new DeleteProduitUseCase();
+export const deleteArticleUseCase = new DeleteArticleUseCase();
+
 // --- Phase 6 étape 6.C : liaisons licence-produit + licence-article --------
 // Audit obligatoire — câblage ici avec userRepository + auditRepository.
 

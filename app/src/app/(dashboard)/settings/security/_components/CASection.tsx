@@ -17,6 +17,7 @@ import {
   backfillClientCertsAction,
   downloadCACertAction,
   generateCAAction,
+  getHealthcheckSharedKeyAction,
   setExposeS2mCaPublicAction,
   type BackfillStatusOutput,
   type CAStatusActionOutput,
@@ -43,6 +44,29 @@ export function CASection({
   const [exposeCaPublic, setExposeCaPublic] = useState<boolean>(initialExposeCaPublic);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  // Phase 23 — clé AES-256 partagée healthcheck (à transmettre à la banque
+  // par canal sécurisé pour chiffrer les .hc côté client).
+  const [healthcheckKey, setHealthcheckKey] = useState<string | null>(null);
+  const [healthcheckKeyVisible, setHealthcheckKeyVisible] = useState<boolean>(false);
+
+  function handleRevealHealthcheckKey(): void {
+    setError(null);
+    startTransition(() => {
+      void (async () => {
+        try {
+          const r = await getHealthcheckSharedKeyAction();
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
+          setHealthcheckKey(r.data);
+          setHealthcheckKeyVisible(true);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Erreur");
+        }
+      })();
+    });
+  }
 
   function handleToggleExposePublic(): void {
     setError(null);
@@ -235,6 +259,49 @@ export function CASection({
           )}
         </div>
       )}
+
+      {/* Phase 23 — clé AES-256 partagée healthcheck (transmise aux banques
+           pour chiffrer les .hc avant envoi). Affichage masqué par défaut,
+           bouton "Afficher" pour révéler à la demande SADMIN. */}
+      <div className="border-spx-ink/10 mt-8 border-t pt-6">
+        <h3 className="text-spx-ink text-base font-semibold">Clé AES-256 healthcheck</h3>
+        <p className="text-spx-ink/70 mt-1 text-sm">
+          Clé symétrique partagée entre S2M et la banque cliente pour chiffrer les fichiers
+          <code className="mx-1">.hc</code>
+          (healthcheck) avant envoi. Transmettre par canal sécurisé (1 fois à l&apos;intégration).
+        </p>
+        {healthcheckKeyVisible && healthcheckKey !== null ? (
+          <div className="mt-3 space-y-2">
+            <div className="bg-spx-ink/5 border-spx-ink/10 break-all rounded border p-2 font-mono text-xs">
+              {healthcheckKey.length > 0 ? healthcheckKey : "(non générée — relancer pnpm db:seed)"}
+            </div>
+            {healthcheckKey.length > 0 && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(healthcheckKey);
+                  }}
+                >
+                  Copier
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setHealthcheckKeyVisible(false);
+                  }}
+                >
+                  Masquer
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Button className="mt-3" variant="outline" onClick={handleRevealHealthcheckKey}>
+            Afficher la clé
+          </Button>
+        )}
+      </div>
     </section>
   );
 }

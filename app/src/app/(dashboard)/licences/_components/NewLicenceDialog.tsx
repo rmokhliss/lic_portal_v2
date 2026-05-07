@@ -384,12 +384,19 @@ export function NewLicenceDialog({
             router.refresh();
             return;
           }
-          // Phase 23 — `router.refresh()` AVANT `onOpenChange(false)` pour
-          // garantir que le re-fetch est lancé avant le re-render du parent
-          // (qui peut court-circuiter le refresh selon l'ordre React).
-          router.refresh();
+          // Phase 23 — fermeture wizard + double refresh pour garantir que
+          // les Server Components consommateurs (table licences fiche client
+          // /clients/[id]/licences ET liste globale /licences) prennent en
+          // compte la nouvelle ligne. router.refresh() seul a montré des cas
+          // où le re-fetch est court-circuite par le re-render parent post-
+          // setOpen(false). On ajoute un setTimeout(0) pour replanifier le
+          // refresh apres la fin du tick React courant.
           setArticleErrors([]);
           onOpenChange(false);
+          router.refresh();
+          setTimeout(() => {
+            router.refresh();
+          }, 50);
         } catch (err) {
           // Erreur système (réseau, BD down) — pas un AppError métier.
           setError(err instanceof Error ? err.message : "Erreur inconnue");

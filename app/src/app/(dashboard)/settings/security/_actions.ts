@@ -135,3 +135,32 @@ export async function setExposeS2mCaPublicAction(value: boolean): Promise<Action
     revalidatePath("/settings/security");
   });
 }
+
+// =============================================================================
+// Phase 23 — exposition cle AES-256 partagee healthcheck (.hc)
+// =============================================================================
+//
+// Cle generee au seed bootstrap (cf. seedSettings ligne 401), stockee dans
+// `lic_settings.healthcheck_shared_aes_key` (base64). C'est la meme cle qui
+// est utilisee :
+//  - cote banque cliente : pour chiffrer le .hc avant envoi
+//  - cote S2M (LIC portal) : pour dechiffrer a l'import + verifier signature
+//
+// Le SADMIN doit pouvoir afficher cette cle pour la transmettre a la banque
+// par canal securise (1 fois a l'integration). Pas de mutation cote UI —
+// la regeneration passe par un script CLI (preserve la coherence avec les
+// .hc deja chiffres en attente de traitement).
+
+const HEALTHCHECK_KEY_KEY = "healthcheck_shared_aes_key";
+
+export async function getHealthcheckSharedKeyAction(): Promise<ActionResult<string>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const settings = await settingRepository.findAll();
+    const setting = settings.find((s) => s.key === HEALTHCHECK_KEY_KEY);
+    if (setting === undefined || typeof setting.value !== "string") {
+      return "";
+    }
+    return setting.value;
+  });
+}

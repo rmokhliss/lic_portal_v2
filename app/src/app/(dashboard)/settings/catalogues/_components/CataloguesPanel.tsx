@@ -37,6 +37,8 @@ import {
 import {
   createArticleAction,
   createProduitAction,
+  deleteArticleAction,
+  deleteProduitAction,
   toggleArticleAction,
   toggleProduitAction,
   updateArticleAction,
@@ -154,6 +156,25 @@ function ProduitSection({
     });
   };
 
+  // Phase 23 — suppression dure si non utilisé en licence (le use-case
+  // vérifie 0 liaison + 0 article enfant côté serveur).
+  const onDelete = () => {
+    if (!window.confirm(`Supprimer définitivement le produit "${produit.code}" ?`)) return;
+    setError("");
+    startTransition(() => {
+      void (async () => {
+        try {
+          const r = await deleteProduitAction({ code: produit.code });
+          if (!r.success) {
+            setError(r.error);
+          }
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Erreur");
+        }
+      })();
+    });
+  };
+
   return (
     <section className="border-border rounded-md border p-4">
       <header className="flex items-start justify-between gap-4">
@@ -180,6 +201,16 @@ function ProduitSection({
           </Button>
           <Button type="button" variant="outline" size="sm" disabled={pending} onClick={onToggle}>
             {produit.actif ? t("disable") : t("enable")}
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            disabled={pending}
+            onClick={onDelete}
+            title="Supprimer définitivement (uniquement si aucune licence n'utilise ce produit ni ses articles)"
+          >
+            Supprimer
           </Button>
         </div>
       </header>
@@ -244,6 +275,25 @@ function ArticleRow({
     });
   };
 
+  // Phase 23 — suppression dure si non utilisé en licence (le use-case
+  // vérifie 0 liaison + 0 snapshot historique côté serveur).
+  const onDelete = () => {
+    if (!window.confirm(`Supprimer définitivement l'article "${article.code}" ?`)) return;
+    setError("");
+    startTransition(() => {
+      void (async () => {
+        try {
+          const r = await deleteArticleAction({ id: article.id });
+          if (!r.success) {
+            setError(r.error);
+          }
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Erreur");
+        }
+      })();
+    });
+  };
+
   return (
     <TableRow>
       <TableCell className="font-mono text-xs">{article.code}</TableCell>
@@ -276,6 +326,16 @@ function ArticleRow({
           </Button>
           <Button type="button" variant="outline" size="sm" disabled={pending} onClick={onToggle}>
             {article.actif ? t("disable") : t("enable")}
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            disabled={pending}
+            onClick={onDelete}
+            title="Supprimer définitivement (uniquement si aucune licence n'utilise cet article)"
+          >
+            Supprimer
           </Button>
         </div>
         {error !== "" && <p className="text-destructive mt-1 text-xs">{error}</p>}

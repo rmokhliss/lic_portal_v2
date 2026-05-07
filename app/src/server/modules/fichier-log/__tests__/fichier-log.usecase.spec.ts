@@ -175,7 +175,7 @@ describe("GenerateLicenceFichier (Phase 10.C)", () => {
     expect(result.content.reference).toBe("LIC-2026-001");
     expect(result.content.articles).toHaveLength(1);
     expect(result.content.articles[0]?.code).toBe("USERS");
-    expect(result.content.articles[0]?.volAutorise).toBe(1000);
+    expect(result.content.articles[0]?.volume).toBe(1000);
     expect(result.hash).toMatch(/^[a-f0-9]{64}$/);
 
     const logs = await listFichiers.execute(fixture.licenceId);

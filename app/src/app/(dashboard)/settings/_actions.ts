@@ -558,3 +558,28 @@ export async function toggleArticleAction(
     return result;
   });
 }
+
+// Phase 23 — suppression dure produit/article si non utilisé en licence.
+
+import { deleteArticleUseCase, deleteProduitUseCase } from "@/server/composition-root";
+
+const DeleteProduitSchema = z.object({ code: z.string().min(1).max(30) }).strict();
+const DeleteArticleSchema = z.object({ id: z.number().int().positive() }).strict();
+
+export async function deleteProduitAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const { code } = DeleteProduitSchema.parse(input);
+    await deleteProduitUseCase.execute(code);
+    revalidatePath("/settings/catalogues");
+  });
+}
+
+export async function deleteArticleAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const { id } = DeleteArticleSchema.parse(input);
+    await deleteArticleUseCase.execute(id);
+    revalidatePath("/settings/catalogues");
+  });
+}
