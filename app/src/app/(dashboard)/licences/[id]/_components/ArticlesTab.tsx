@@ -336,49 +336,62 @@ function ArticleRow({
     });
   };
 
-  // Phase 19 R-13 — controleVolume=false → article "fonctionnalité",
-  // volume illimité. On force ratio=0 et on affiche un placeholder.
-  const isUnlimited = liaison.article?.controleVolume === false;
+  // Phase 23 — contrôleVolume distingue les articles volumétriques (TPE/GAB/
+  // cartes : volume défini + consommation suivie) des articles fonctionnalités
+  // (Core, modules : pas de notion de volume). Pour les fonctionnalités, on
+  // masque entièrement les colonnes Conso/Autorisé/Taux et on retire le bouton
+  // "Modifier volume" — l'attache article est binaire (présent/absent).
+  // « Illimité » est réservé au cas spécifique d'un article volumétrique pour
+  // lequel l'admin a saisi `volumeAutorise = 0` (gestion volumétrique active
+  // mais cap explicitement levé).
+  const article = liaison.article;
+  const isVolumetrique = article?.controleVolume === true;
+  const uniteVolume = article?.controleVolume === true ? article.uniteVolume : "—";
+  const volAutorise = liaison.liaison.volumeAutorise;
+  const volConsomme = liaison.liaison.volumeConsomme;
+  const isUnlimitedExplicite = isVolumetrique && volAutorise === 0;
   const ratio =
-    isUnlimited || liaison.liaison.volumeAutorise === 0
+    !isVolumetrique || isUnlimitedExplicite || volAutorise === 0
       ? 0
-      : (liaison.liaison.volumeConsomme / liaison.liaison.volumeAutorise) * 100;
+      : (volConsomme / volAutorise) * 100;
   const ratioClass =
     ratio >= 100 ? "text-destructive" : ratio >= 80 ? "text-warning" : "text-success";
 
   return (
     <TableRow>
-      <TableCell className="font-mono text-xs">{liaison.article?.code ?? "-"}</TableCell>
-      <TableCell className="text-sm">{liaison.article?.nom ?? "-"}</TableCell>
-      <TableCell className="text-muted-foreground text-xs">
-        {liaison.article?.uniteVolume ?? "-"}
+      <TableCell className="font-mono text-xs">{article?.code ?? "-"}</TableCell>
+      <TableCell className="text-sm">{article?.nom ?? "-"}</TableCell>
+      <TableCell className="text-muted-foreground text-xs">{uniteVolume}</TableCell>
+      <TableCell className="text-right tabular-nums">
+        {!isVolumetrique ? "—" : volConsomme.toLocaleString("fr-FR")}
       </TableCell>
       <TableCell className="text-right tabular-nums">
-        {isUnlimited ? "—" : liaison.liaison.volumeConsomme.toLocaleString("fr-FR")}
-      </TableCell>
-      <TableCell className="text-right tabular-nums">
-        {isUnlimited ? (
+        {!isVolumetrique ? (
+          "—"
+        ) : isUnlimitedExplicite ? (
           <span
             className="text-muted-foreground italic"
-            title="Article fonctionnalité — volume non contrôlé"
+            title="Volume autorisé = 0 → illimité (cap levé)"
           >
             Illimité
           </span>
         ) : (
-          liaison.liaison.volumeAutorise.toLocaleString("fr-FR")
+          volAutorise.toLocaleString("fr-FR")
         )}
       </TableCell>
       <TableCell
-        className={`text-right tabular-nums ${isUnlimited ? "text-muted-foreground" : ratioClass}`}
+        className={`text-right tabular-nums ${isVolumetrique && !isUnlimitedExplicite ? ratioClass : "text-muted-foreground"}`}
       >
-        {isUnlimited ? "—" : `${ratio.toFixed(1)}%`}
+        {!isVolumetrique || isUnlimitedExplicite ? "—" : `${ratio.toFixed(1)}%`}
       </TableCell>
       <TableCell className="text-right">
         {canEdit && (
           <div className="flex items-center justify-end gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={onEditVolume}>
-              {t("editVolume")}
-            </Button>
+            {isVolumetrique && (
+              <Button type="button" variant="outline" size="sm" onClick={onEditVolume}>
+                {t("editVolume")}
+              </Button>
+            )}
             <Button
               type="button"
               variant="destructive"
@@ -671,49 +684,56 @@ function EditVolumeDialog({
           <DialogTitle>{t("title", { article: state.articleNom })}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-3">
-          {/* Phase 20 R-32 — édition séparée vol autorisé + vol consommé.
-              Le champ vol autorisé est masqué pour les articles
-              fonctionnalité (controleVolume=false) — illimité. Le champ
-              vol consommé reste éditable (cas de correction manuelle
-              admin avant le prochain snapshot Phase 8 batch). */}
+          {/* Phase 23 — édition volume autorisé + consommé visible UNIQUEMENT
+              pour les articles volumétriques (contrôleVolume=true côté
+              catalogue). Pour les articles fonctionnalité, le bouton
+              "Modifier volume" est masqué dans la table → ce dialog ne
+              s'ouvre normalement plus. Le branch `!controleVolume` reste
+              comme garde-fou (et message d'info si jamais déclenché). */}
           {state.controleVolume ? (
-            <div className="space-y-1">
-              <Label htmlFor="volumeAutorise">{t("volumeLabel")}</Label>
-              <Input
-                id="volumeAutorise"
-                name="volumeAutorise"
-                type="number"
-                min={0}
-                step={1}
-                defaultValue={state.currentAutorise}
-              />
-            </div>
+            <>
+              <div className="space-y-1">
+                <Label htmlFor="volumeAutorise">{t("volumeLabel")}</Label>
+                <Input
+                  id="volumeAutorise"
+                  name="volumeAutorise"
+                  type="number"
+                  min={0}
+                  step={1}
+                  defaultValue={state.currentAutorise}
+                />
+                <p className="text-muted-foreground text-xs">
+                  Saisir 0 pour activer un cap illimité (volume non plafonné).
+                </p>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="volumeConsomme">Volume consommé (correction manuelle)</Label>
+                <Input
+                  id="volumeConsomme"
+                  name="volumeConsomme"
+                  type="number"
+                  min={0}
+                  step={1}
+                  defaultValue={state.currentConsomme}
+                />
+                <p className="text-muted-foreground text-xs">
+                  Valeur normalement recalculée par le job batch snapshot. Édition manuelle utile
+                  pour corriger un import healthcheck erroné.
+                </p>
+              </div>
+            </>
           ) : (
             <p className="text-muted-foreground rounded border border-amber-500/30 bg-amber-500/10 p-2 text-xs">
-              Article « fonctionnalité » — volume autorisé non applicable (illimité).
+              Article « fonctionnalité » — pas de volume à définir. La liaison à la licence est
+              binaire (présent / absent).
             </p>
           )}
-          <div className="space-y-1">
-            <Label htmlFor="volumeConsomme">Volume consommé (correction manuelle)</Label>
-            <Input
-              id="volumeConsomme"
-              name="volumeConsomme"
-              type="number"
-              min={0}
-              step={1}
-              defaultValue={state.currentConsomme}
-            />
-            <p className="text-muted-foreground text-xs">
-              Valeur normalement recalculée par le job batch snapshot. Édition manuelle utile pour
-              corriger un import healthcheck erroné.
-            </p>
-          </div>
           {error && <p className="text-destructive text-sm">{error}</p>}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
               {t("cancel")}
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending || !state.controleVolume}>
               {pending ? t("submitting") : t("submit")}
             </Button>
           </DialogFooter>
