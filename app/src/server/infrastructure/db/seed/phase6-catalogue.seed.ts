@@ -231,6 +231,88 @@ async function loadAllLicenceIds(sql: postgres.Sql): Promise<readonly string[]> 
   return rows.map((r) => r.id);
 }
 
+/** Phase 23 R-43+ — backfill liaisons pour licences sans articles. Lit le
+ *  catalogue depuis la BD (produits/articles déjà seedés) et distribue
+ *  1 produit + 2-3 articles à chaque licence qui n'en a pas. SQL direct +
+ *  ON CONFLICT DO NOTHING — pas d'audit (pattern backfill, idempotent par
+ *  `uq_licence_*` UNIQUE constraints). Utilisé en mode already-seeded quand
+ *  l'INSERT initial a été interrompu et a laissé des liaisons partielles. */
+async function backfillMissingLiaisons(sql: postgres.Sql): Promise<void> {
+  // Charge le catalogue actif depuis la BD (riches = ≥2 articles).
+  const catalogueRows = await sql<{ produit_id: number; article_id: number }[]>`
+    SELECT p.id AS produit_id, a.id AS article_id
+    FROM lic_produits_ref p
+    JOIN lic_articles_ref a ON a.produit_id = p.id
+    WHERE p.actif = true AND a.actif = true
+    ORDER BY p.id, a.id
+  `;
+  const cataloguMap = new Map<number, number[]>();
+  for (const r of catalogueRows) {
+    const list = cataloguMap.get(r.produit_id) ?? [];
+    list.push(r.article_id);
+    cataloguMap.set(r.produit_id, list);
+  }
+  const richCatalogue = Array.from(cataloguMap.entries())
+    .filter(([, ids]) => ids.length >= 2)
+    .map(([produitId, articleIds]) => ({ produitId, articleIds }));
+
+  if (richCatalogue.length === 0) {
+    log.warn("Backfill liaisons — catalogue actif vide, skip");
+    return;
+  }
+
+  // Licences sans aucune liaison article.
+  const missing = await sql<{ id: string }[]>`
+    SELECT l.id FROM lic_licences l
+    WHERE NOT EXISTS (
+      SELECT 1 FROM lic_licence_articles la WHERE la.licence_id = l.id
+    )
+    ORDER BY l.reference ASC
+  `;
+  if (missing.length === 0) {
+    log.info("Backfill liaisons — toutes les licences ont déjà des articles");
+    return;
+  }
+
+  log.info(
+    { licencesSansArticles: missing.length, richProduits: richCatalogue.length },
+    "Backfill liaisons — distribution articles sur licences manquantes",
+  );
+
+  let liaisonsInserted = 0;
+  for (let i = 0; i < missing.length; i++) {
+    const licence = missing[i];
+    if (licence === undefined) continue;
+    const cat = richCatalogue[i % richCatalogue.length];
+    if (cat === undefined) continue;
+    const nArticles = Math.min(3, cat.articleIds.length);
+
+    await sql`
+      INSERT INTO lic_licence_produits (licence_id, produit_id, cree_par)
+      VALUES (${licence.id}, ${cat.produitId}, ${SYSTEM_USER_ID}::uuid)
+      ON CONFLICT (licence_id, produit_id) DO NOTHING
+    `;
+
+    for (let aIdx = 0; aIdx < nArticles; aIdx++) {
+      const articleId = cat.articleIds[aIdx];
+      if (articleId === undefined) continue;
+      const volumeAutorise = (aIdx + 1) * 1000 * (1 + (i % 3));
+      const volumeConsomme = Math.floor(volumeAutorise * (0.2 + ((i + aIdx) % 5) * 0.15));
+      await sql`
+        INSERT INTO lic_licence_articles
+          (licence_id, article_id, volume_autorise, volume_consomme, cree_par)
+        VALUES
+          (${licence.id}, ${articleId}, ${volumeAutorise}, ${volumeConsomme},
+           ${SYSTEM_USER_ID}::uuid)
+        ON CONFLICT (licence_id, article_id) DO NOTHING
+      `;
+      liaisonsInserted++;
+    }
+  }
+
+  log.info({ liaisonsInserted }, "Backfill liaisons terminé");
+}
+
 async function auditAdd(
   repos: Repos,
   tx: unknown,
@@ -384,6 +466,10 @@ export async function seedPhase6Catalogue(sql: postgres.Sql): Promise<void> {
     // Phase 19 R-13 — l'override controle_volume doit s'appliquer même si
     // les articles sont déjà seedés (alignement BD démo existante).
     await applyControleVolumeOverrides(sql);
+    // Phase 23 — backfill liaisons si l'INSERT initial a été interrompu
+    // (cas constaté : produits/articles seedés mais 1 seule licence avec
+    // articles sur 56). Idempotent : skip toute licence déjà équipée.
+    await backfillMissingLiaisons(sql);
     return;
   }
 

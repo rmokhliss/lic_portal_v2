@@ -43,6 +43,7 @@ import postgres from "postgres";
 import { seedPhase4Clients } from "./seed/phase4-clients.seed";
 import { seedPhase5Licences } from "./seed/phase5-licences.seed";
 import { seedPhase6Catalogue } from "./seed/phase6-catalogue.seed";
+import { seedPhase7VolumeSnapshots } from "./seed/phase7-volume-snapshots.seed";
 import { seedPhase8Alerts } from "./seed/phase8-alerts.seed";
 import { seedPhase8Notifications } from "./seed/phase8-notifications.seed";
 import { seedPhase10Fichiers } from "./seed/phase10-fichiers.seed";
@@ -438,8 +439,13 @@ async function runSeed(): Promise<void> {
     await seedPhase5Licences(seedClient);
 
     // Phase 6.E — catalogue produits/articles + liaisons + volume_history.
-    // Idempotent (early return si lic_produits_ref déjà peuplée).
+    // Idempotent (early return si lic_produits_ref déjà peuplée + backfill
+    // liaisons manquantes si seed initial interrompu — Phase 23).
     await seedPhase6Catalogue(seedClient);
+
+    // Phase 7 — snapshots historiques volumes (Phase 23 R-43). Idempotent
+    // (early return si lic_article_volume_history déjà peuplée).
+    await seedPhase7VolumeSnapshots(seedClient);
 
     // Phase 8.A — catalogue jobs batch (idempotent).
     await seedBatchJobsCatalog(seedClient);
