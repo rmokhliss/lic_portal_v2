@@ -19,7 +19,9 @@ import { requireAuthPage } from "@/server/infrastructure/auth";
 import {
   getClientUseCase,
   listAllLicencesUseCase,
+  listArticlesUseCase,
   listClientsUseCase,
+  listProduitsUseCase,
 } from "@/server/composition-root";
 
 import { NewLicenceDialog } from "./_components/NewLicenceDialog";
@@ -62,7 +64,11 @@ export default async function LicencesPage({
       : undefined;
   const qFilter = params.q !== undefined && params.q.trim().length > 0 ? params.q.trim() : "";
 
-  const [result, clientsList] = await Promise.all([
+  // Phase 21 R-30 — wizard de création licence : pré-charge le catalogue
+  // (produits + articles actifs) en parallèle. Volume cible <50 produits et
+  // <500 articles, donc pas de pagination — le filtrage est client-side dans
+  // le wizard.
+  const [result, clientsList, produitsAll, articlesAll] = await Promise.all([
     listAllLicencesUseCase.execute({
       ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
       ...(statusFilter !== undefined ? { status: statusFilter } : {}),
@@ -70,6 +76,8 @@ export default async function LicencesPage({
       limit: 25,
     }),
     listClientsUseCase.execute({ limit: 200 }),
+    listProduitsUseCase.execute({ actif: true }),
+    listArticlesUseCase.execute({ actif: true }),
   ]);
 
   // Résolution clients en parallèle pour la colonne Client de la table.
@@ -92,6 +100,22 @@ export default async function LicencesPage({
     raisonSociale: c.raisonSociale,
   }));
 
+  // Phase 21 R-30 — catalogue pour l'étape 2 du wizard (produits + articles
+  // actifs uniquement, structure plate aplatissable côté client).
+  const dialogProduits = produitsAll.map((p) => ({
+    id: p.id,
+    code: p.code,
+    nom: p.nom,
+  }));
+  const dialogArticles = articlesAll.map((a) => ({
+    id: a.id,
+    produitId: a.produitId,
+    code: a.code,
+    nom: a.nom,
+    uniteVolume: a.uniteVolume,
+    controleVolume: a.controleVolume,
+  }));
+
   const canCreate = user.role === "ADMIN" || user.role === "SADMIN";
 
   const buildHref = (cursor: string | null): string => {
@@ -112,7 +136,13 @@ export default async function LicencesPage({
             Vue cross-clients. {result.items.length} licence(s) sur la page courante.
           </p>
         </div>
-        {canCreate && <NewLicenceDialog clients={dialogClients} />}
+        {canCreate && (
+          <NewLicenceDialog
+            clients={dialogClients}
+            produits={dialogProduits}
+            articles={dialogArticles}
+          />
+        )}
       </header>
 
       <form
