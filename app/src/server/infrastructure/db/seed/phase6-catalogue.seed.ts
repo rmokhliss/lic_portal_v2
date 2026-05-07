@@ -344,13 +344,35 @@ async function seedVolumeSnapshots(
   }
 }
 
-/** Phase 19 R-13 — aligne controle_volume sur les articles fonctionnalités
- *  (UPDATE idempotent post-INSERT, appliqué même si seed déjà en place). */
+/** Phase 19 R-13 + Phase 22 R-51 — aligne controle_volume sur les articles
+ *  non-volumétriques. UPDATE idempotent post-INSERT, appliqué même si seed
+ *  déjà en place.
+ *
+ *  Phase 22 R-51 — extension à l'ensemble des articles dont l'unité de
+ *  volume ne correspond pas à un compteur métier (modules d'infrastructure,
+ *  middleware, clients packagés, fonctionnalités, kernels). Restent à
+ *  controleVolume=true uniquement les articles dont le métier consomme un
+ *  compteur réel : transactions, cartes actives, terminaux, ATM, SMS, ECOM. */
 async function applyControleVolumeOverrides(sql: postgres.Sql): Promise<void> {
-  log.info("Phase 19 R-13 — overrides controle_volume sur articles fonctionnalités");
+  log.info("Phase 22 R-51 — overrides controle_volume sur articles non-volumétriques (15 codes)");
   await sql`
     UPDATE lic_articles_ref SET controle_volume = false
-    WHERE code IN ('ATM-ADV', 'POS-ADV', 'SSV6-FRAUD')
+    WHERE code IN (
+      'HSM', 'SMTP-GW', 'OPEN-API', 'REPORTING', 'ALERTS', 'ARCHIVING',
+      'SWITCH-ISO', 'SWITCH-INST', 'ATM-ADV', 'POS-ADV', 'SSV6-FRAUD',
+      'SOFTPOS-APP', 'WALLET-CORE', 'TOKEN-CORE', 'SSV6-KERNEL'
+    )
+  `;
+  // Garantit l'inverse pour les articles volumétriques (au cas où un override
+  // précédent les aurait passés à false par erreur).
+  await sql`
+    UPDATE lic_articles_ref SET controle_volume = true
+    WHERE code IN (
+      'KERNEL', 'SMS-GW', 'ATM-STD', 'POS-STD', 'ECOM',
+      'ISS-DEBIT', 'ISS-CREDIT', 'ISS-PREPAID', 'ISS-ISLAMIC',
+      'SSV6-ATM', 'SSV6-POS', 'SSV6-VISA', 'SSV6-MC',
+      'SSV6-DEBIT', 'SSV6-CREDIT'
+    )
   `;
 }
 
