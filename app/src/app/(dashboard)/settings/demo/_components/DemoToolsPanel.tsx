@@ -34,12 +34,12 @@ export function DemoToolsPanel(): React.JSX.Element {
           confirmDescription={
             <>
               <p>
-                Cette action <strong>vide en cascade</strong> les tables clients, licences,
-                renouvellements, notifications, alertes, fichiers, audit, volumes, batchs.
+                Les <strong>données métier</strong> seront supprimées (clients, licences, contacts,
+                entités, renouvellements, notifications, alertes, fichiers, volumes, audit).
               </p>
               <p className="mt-2">
-                Les utilisateurs, settings et référentiels (pays, régions, devises, équipe,
-                catalogue) sont préservés.
+                La <strong>configuration système</strong> est préservée (CA PKI, settings,
+                référentiels pays/régions/devises/langues/équipe/catalogue, utilisateurs).
               </p>
               <p className="mt-2 text-amber-400">
                 <strong>Cette action est irréversible en prod.</strong>
