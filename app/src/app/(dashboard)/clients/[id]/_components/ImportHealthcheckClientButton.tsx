@@ -136,7 +136,7 @@ export function ImportHealthcheckClientButton(props: ImportHealthcheckClientButt
                 id="file"
                 name="file"
                 type="file"
-                accept=".csv,.json,application/json,text/csv"
+                accept=".hc,.csv,.json,application/json,text/csv,text/plain"
                 required
                 className="border-border bg-background w-full rounded-md border px-3 py-2 text-sm"
               />

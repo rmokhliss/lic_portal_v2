@@ -76,21 +76,13 @@ export function LicenceResumeTab({
 
   return (
     <>
-      {/* Phase 23 — bannière "fichier .lic obsolète" : produits/articles/
-           volumes ont changé depuis la dernière génération .lic. */}
-      {licFileStatus !== null && licFileStatus.status === "stale" && (
-        <div
-          role="alert"
-          className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
-        >
-          <p className="font-medium">⚠ Fichier .lic obsolète</p>
-          <p className="mt-1 text-xs">
-            Le contenu produit / article / volume a été modifié depuis la dernière génération (
-            {new Date(licFileStatus.generatedAt).toLocaleString("fr-FR")}). Il faut regénérer le
-            fichier .lic pour que le client reçoive la dernière configuration.
-          </p>
-        </div>
-      )}
+      {/* Phase 23 — la banniere "fichier .lic obsolete" est desormais
+           rendue par le layout commun /licences/[id]/layout.tsx pour etre
+           visible sur tous les onglets (le user peut modifier articles/
+           produits depuis n'importe quelle vue). Le prop licFileStatus
+           reste expose ici pour usage futur (ex : badge "obsolete" inline
+           a cote du bouton Generer .lic). */}
+      {void licFileStatus}
 
       <div className="flex items-start justify-between gap-4">
         <h2 className="font-display text-foreground text-lg">{t("section")}</h2>
@@ -521,7 +513,7 @@ function ImportHealthcheckButton({ licenceId }: { readonly licenceId: string }) 
         {pending ? t("importing") : t("import")}
         <input
           type="file"
-          accept=".csv,.json,application/json,text/csv"
+          accept=".hc,.csv,.json,application/json,text/csv,text/plain"
           className="hidden"
           onChange={onChange}
           disabled={pending}

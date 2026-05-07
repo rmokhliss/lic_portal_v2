@@ -197,8 +197,26 @@ async function decryptHealthcheckContent(
       "Clé partagée healthcheck (`healthcheck_shared_aes_key`) absente. Configurer la clé dans /settings/security.",
     );
   }
+  // Phase 23 — accepte deux formats :
+  //   1. String brute "iv_b64:tag_b64:ciphertext_b64" (format prod banque)
+  //   2. JSON wrapper sandbox { encrypted: "iv:tag:ct", algorithm, encryptedAt }
+  //      → extraction du champ `encrypted` avant dechiffrement (le sandbox
+  //      enrobe le payload chiffre dans un objet JSON pour traçabilité).
+  const trimmed = encrypted.trim();
+  let cipherString = trimmed;
+  if (trimmed.startsWith("{")) {
+    try {
+      const wrapper = JSON.parse(trimmed) as { encrypted?: unknown };
+      if (typeof wrapper.encrypted === "string" && wrapper.encrypted.length > 0) {
+        cipherString = wrapper.encrypted;
+      }
+    } catch {
+      // JSON invalide — on tente le decrypt direct (probable echec mais
+      // erreur AES plus parlante que JSON parse error).
+    }
+  }
   try {
-    return decryptAes256Gcm(encrypted.trim(), sharedKey);
+    return decryptAes256Gcm(cipherString, sharedKey);
   } catch (err) {
     if (err instanceof ValidationError && err.code === "SPX-LIC-402") {
       throw aesGcmTagMismatch(
