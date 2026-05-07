@@ -85,10 +85,16 @@ export function NewLicenceDialog({
   clients,
   produits,
   articles,
+  lockedClientId,
+  triggerLabel,
 }: {
   readonly clients: readonly ClientOption[];
   readonly produits: readonly ProduitOption[];
   readonly articles: readonly ArticleOption[];
+  /** Phase 22 R-46 — fiche client : clientId pré-sélectionné et non
+   *  modifiable. Le combobox client est remplacé par un label readonly. */
+  readonly lockedClientId?: string;
+  readonly triggerLabel?: string;
 }): React.JSX.Element {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -97,7 +103,7 @@ export function NewLicenceDialog({
   const [step, setStep] = useState<Step>(1);
 
   // Étape 1.
-  const [clientId, setClientId] = useState<string>("");
+  const [clientId, setClientId] = useState<string>(lockedClientId ?? "");
   const [entites, setEntites] = useState<readonly EntiteOption[]>([]);
   const [entiteId, setEntiteId] = useState<string>("");
   const [dateDebut, setDateDebut] = useState<string>(todayIso());
@@ -115,6 +121,9 @@ export function NewLicenceDialog({
   // Étape 3.
   const [doublons, setDoublons] = useState<readonly DoublonInfo[]>([]);
   const [doublonChecking, setDoublonChecking] = useState<boolean>(false);
+  // Phase 22 R-48 — résumé erreurs partielles ajout articles. null = pas
+  // encore tenté, [] = tout OK, listé = échecs partiels affichés.
+  const [articleErrors, setArticleErrors] = useState<readonly string[] | null>(null);
 
   // Recharge la liste des entités quand le client sélectionné change.
   useEffect(() => {
@@ -168,7 +177,7 @@ export function NewLicenceDialog({
   const resetAll = (): void => {
     setStep(1);
     setError("");
-    setClientId("");
+    setClientId(lockedClientId ?? "");
     setEntites([]);
     setEntiteId("");
     setDateDebut(todayIso());
@@ -178,6 +187,7 @@ export function NewLicenceDialog({
     setArticleSelection({});
     setDoublons([]);
     setDoublonChecking(false);
+    setArticleErrors(null);
   };
 
   const onOpenChange = (next: boolean): void => {
@@ -299,19 +309,35 @@ export function NewLicenceDialog({
             dateFin,
             renouvellementAuto,
           });
-          // Boucle d'ajout d'articles. Erreur partielle = on remonte le
-          // premier échec mais on garde la licence créée (cf. _actions.ts).
+          // Phase 22 R-48 — boucle robuste : chaque ajout est try/catch
+          // indépendamment. On collecte les échecs pour les afficher en
+          // résumé (l'utilisateur peut compléter via /licences/[id]/articles).
+          const failures: string[] = [];
           for (const id of selectedArticleIds()) {
             const art = articles.find((a) => a.id === id);
             if (art === undefined) continue;
             const sel = articleSelection[id];
             const volume = art.controleVolume && sel !== undefined ? Number(sel.volume) : 0;
-            await addArticleAfterCreateAction({
-              licenceId: created.id,
-              articleId: id,
-              volumeAutorise: Number.isFinite(volume) && volume >= 0 ? volume : 0,
-            });
+            try {
+              await addArticleAfterCreateAction({
+                licenceId: created.id,
+                articleId: id,
+                volumeAutorise: Number.isFinite(volume) && volume >= 0 ? volume : 0,
+              });
+            } catch (artErr) {
+              const msg = artErr instanceof Error ? artErr.message : "erreur inconnue";
+              failures.push(`${art.code} (${msg})`);
+            }
           }
+          if (failures.length > 0) {
+            // Échecs partiels — on garde le wizard ouvert avec un résumé.
+            // L'utilisateur peut soit fermer + compléter sur la fiche
+            // licence, soit retenter (mais la licence est déjà créée).
+            setArticleErrors(failures);
+            router.refresh();
+            return;
+          }
+          setArticleErrors([]);
           onOpenChange(false);
           router.refresh();
         } catch (err) {
@@ -336,11 +362,11 @@ export function NewLicenceDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <Button>+ Nouvelle licence</Button>
+        <Button>{triggerLabel ?? "+ Nouvelle licence"}</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Nouvelle licence — étape {step} / 3</DialogTitle>
+          <DialogTitle>Nouvelle licence — étape {String(step)} / 3</DialogTitle>
         </DialogHeader>
 
         {/* Stepper visuel */}
@@ -366,18 +392,32 @@ export function NewLicenceDialog({
           <div className="space-y-4">
             <div className="space-y-1">
               <Label htmlFor="clientId">Client</Label>
-              <SearchableSelect
-                id="clientId"
-                name="clientId"
-                options={clientOptions}
-                placeholder="Rechercher un client…"
-                emptyText="Aucun client."
-                required
-                defaultValue={clientId}
-                onSelect={(v) => {
-                  setClientId(v);
-                }}
-              />
+              {lockedClientId !== undefined ? (
+                // Phase 22 R-46 — fiche client : pré-rempli + non modifiable.
+                <input
+                  id="clientId"
+                  readOnly
+                  value={
+                    selectedClient !== undefined
+                      ? `${selectedClient.codeClient} · ${selectedClient.raisonSociale}`
+                      : lockedClientId
+                  }
+                  className="border-input bg-muted text-muted-foreground h-9 w-full cursor-not-allowed rounded-md border px-3 text-sm"
+                />
+              ) : (
+                <SearchableSelect
+                  id="clientId"
+                  name="clientId"
+                  options={clientOptions}
+                  placeholder="Rechercher un client…"
+                  emptyText="Aucun client."
+                  required
+                  defaultValue={clientId}
+                  onSelect={(v) => {
+                    setClientId(v);
+                  }}
+                />
+              )}
             </div>
 
             <div className="space-y-1">
@@ -601,6 +641,26 @@ export function NewLicenceDialog({
                   ))}
                 </ul>
                 <p className="mt-1 text-xs">Vous pouvez créer la licence quand même.</p>
+              </div>
+            )}
+
+            {/* Phase 22 R-48 — résumé erreurs partielles ajout articles. */}
+            {articleErrors !== null && articleErrors.length > 0 && (
+              <div
+                role="alert"
+                className="rounded-md border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900"
+              >
+                <p className="font-medium">
+                  Licence créée — {String(articleErrors.length)} article(s) non attaché(s) :
+                </p>
+                <ul className="mt-1 list-disc pl-5 text-xs">
+                  {articleErrors.map((m) => (
+                    <li key={m}>{m}</li>
+                  ))}
+                </ul>
+                <p className="mt-1 text-xs">
+                  Compléter manuellement via la fiche licence (onglet Articles).
+                </p>
               </div>
             )}
           </div>
