@@ -32,8 +32,6 @@ import {
 } from "@/server/composition-root";
 import { runAction, type ActionResult } from "@/server/infrastructure/actions/result";
 
-export type { ActionResult };
-
 export async function createClientAction(
   input: unknown,
 ): Promise<ActionResult<Awaited<ReturnType<typeof createClientUseCase.execute>>>> {
