@@ -56,6 +56,7 @@ describe("PersistedArticle — mutations immuables", () => {
     nom: "Utilisateurs",
     uniteVolume: "transactions",
     actif: true,
+    controleVolume: true,
   });
 
   it("withName change nom", () => {
