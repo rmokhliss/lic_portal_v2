@@ -43,7 +43,27 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.1. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phases 1 → 20 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée + module email + audit Master + Phase 17 (refonte seed v1 + 4 stubs débloqués + theme toggle + demo tab) + Phase 18 (corrections post-tests utilisateur R-01→R-23, R-13 différé) + Phase 19 (R-13 controleVolume + Chromium Docker) + Phase 20 (R-24→R-35, R-30 wizard 3 étapes différé Phase 21 + 4 fixes critiques bloquants prod : typeName minif, dark mode, logout, code regex). **MVP livré, prêt pour push origin/main**.
+**Phase actuelle** : **Phases 1 → 21 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée + module email + audit Master + Phase 17 (refonte seed v1 + 4 stubs débloqués + theme toggle + demo tab) + Phase 18 (corrections post-tests utilisateur R-01→R-23, R-13 différé) + Phase 19 (R-13 controleVolume + Chromium Docker) + Phase 20 (R-24→R-35, R-30 wizard 3 étapes différé Phase 21 + 4 fixes critiques bloquants prod : typeName minif, dark mode, logout, code regex) + Phase 21 (R-29 complet Région+SansLicence + R-30 wizard licence 3 étapes). **MVP livré, prêt pour push origin/main**.
+
+**Phase 21 close (Mai 2026) — Wizard licence + filtres clients complets** : 2 retours résiduels Phase 20 fermés.
+
+R-29 complet — filtre Région + filtre Sans licence active
+
+- Port `ClientRepository.FindClientsPaginatedInput` étendu (additif) : `regionCode?: string` (sub-query `lic_pays_ref.region_code`) + `sansLicence?: boolean` (NOT EXISTS sur `lic_licences` ACTIF). Sub-query préférée à un JOIN pour ne pas casser la shape COUNT(\*) cross-pagination.
+- Adapter `client.repository.pg.ts` : 2 conditions ajoutées dans `businessConditions` (donc COUNT total reflet du filtre).
+- Use-case `list-clients.usecase.ts` : forward strict des 2 nouveaux filtres dans `opts`.
+- UI clients/page.tsx + ClientsTable : `<select id="region">` (régions actives via `listRegionsUseCase`) + `<input type="checkbox" id="sansLicence">`. `buildHref` préserve les 2 nouveaux params dans la pagination.
+
+R-30 — Wizard création licence 3 étapes
+
+- Server Actions Phase 21 : `checkLicenceDoublonAction` (USER+, retourne `DoublonInfo[]` — chevauchement temporel non-strict via `listLicencesByClientUseCase` ACTIF + filter post-fetch ; pas de SQL dédié — simplicité), `addArticleAfterCreateAction` (ADMIN/SADMIN, helper boucle d'ajout articles).
+- `licences/page.tsx` Server Component : pré-charge le catalogue (`listProduitsUseCase` + `listArticlesUseCase` actifs) en parallèle, le passe en props au wizard. Volume cible <50 produits / <500 articles : pas de pagination, filtrage client-side.
+- `NewLicenceDialog.tsx` refacto multi-step (`useState<Step>` 1|2|3) :
+  - Étape 1 : Client (`SearchableSelect`) + Entité (rechargée via `listEntitesForClientAction` quand client change) + dates + renouvellement auto.
+  - Étape 2 : produits dépliables avec checkbox articles ; champ volume autorisé (entier ≥0) si `controleVolume=true`, sinon label « Illimité ». Validation : ≥1 article coché.
+  - Étape 3 : résumé + warning doublon (interroge `checkLicenceDoublonAction` au passage step 3) + bouton « Créer » → `createLicenceAction` puis boucle `addArticleAfterCreateAction`. Création + ajouts articles **non-atomiques** (limitation acceptée — un échec partiel laisse une licence créée avec un sous-ensemble d'articles, complétable via `/licences/[id]/articles`).
+
+`fix(article)` glissé en cours de Phase 21 : test `article.entity.spec.ts:52` rehydrate manquait `controleVolume` (dette Phase 19 R-13 — typecheck cassé latent, sans incidence runtime). Une ligne ajoutée.
 
 **Phase 20 close (Mai 2026) — corrections post-tests R-24 → R-35** : 11 retours catalogués traités en 8 commits + 4 pré-commits fixes critiques.
 
@@ -70,14 +90,12 @@ R-28/31/32 — Fiche licence robustesse + édition volume
 - R-31 : GenerateLicFileButton — helper `humanizeError(err)` qui transforme les codes PKI SPX-LIC-411/412/413 en messages avec lien `/settings/sécurité`. Affichage `<p>` whitespace-normal au lieu de `<span>` pour ne pas tronquer.
 - R-32 : EditVolumeDialog étendu pour éditer `volumeConsomme` (correction manuelle admin avant le prochain snapshot batch). Le champ `volumeAutorise` est masqué pour les articles `controleVolume=false`. Use-case backend déjà capable des 2 optionnels (Phase 6.C) — pas de modif port.
 
-R-29 — Filtres clients enrichis + total count (partiel — Région/SansLicence différés Phase 21)
+R-29 — Filtres clients enrichis + total count (partiel — Région/SansLicence livrés Phase 21)
 
 - Port `ClientRepository.findPaginated` étendu (additif) : 3 filtres `codePays`/`accountManager`/`salesResponsable` + `total: number` dans output. Adapter sépare `businessConditions` (pour COUNT) de `pageConditions` (avec cursor).
 - UI clients/page.tsx + ClientsTable : 3 nouveaux selects + 'N client(s) au total' dans subtitle. Préservation filtres dans buildHref pour pagination.
 
-R-30 — Wizard création licence 3 étapes — **DIFFÉRÉ Phase 21**
-
-- Scope massif : multi-step state + sélection catalogue (produits/articles avec checkbox + volume conditional sur controleVolume) + check doublon backend + 3 nouveaux Server Actions wizard step. Mérite Phase 21 dédiée. Le NewLicenceDialog actuel (Phase 18 R-12, 1 écran) reste fonctionnel.
+R-30 — Wizard création licence 3 étapes — **livré Phase 21** (cf. bloc Phase 21 ci-dessus).
 
 R-33 — PDF logo + header pro
 
