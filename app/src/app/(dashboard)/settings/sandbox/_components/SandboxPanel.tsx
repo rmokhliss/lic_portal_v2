@@ -364,23 +364,19 @@ export function SandboxPanel(): React.JSX.Element {
         )}
       </section>
 
-      {/* ===== Phase 18 R-23 — Templates .lic / .hc téléchargeables ===== */}
+      {/* ===== Phase 22 R-39 — Templates .lic / .hc enrichis ===== */}
       <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold">Templates fichiers</h2>
         <p className="text-spx-ink/70 mt-1 text-sm">
-          Modèles JSON vides à compléter pour tester l&apos;intégration côté client S2M. Aucune
-          signature/chiffrement appliqué — utiliser les sections 2 (signer .lic) et 4 (chiffrer .hc)
-          de cette page pour produire des artefacts valides.
+          Modèles JSON documentés (structure F2 complète : produits → articles, volumes
+          conditionnels, signature RSA-SHA256 et certificat client). À compléter et signer via la
+          section 2 (.lic) ou chiffrer via la section 4 (.hc) ci-dessus.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
             variant="outline"
             onClick={() => {
-              downloadAsFile(
-                JSON.stringify(LIC_TEMPLATE, null, 2),
-                "template.lic.json",
-                "application/json",
-              );
+              downloadAsFile(LIC_TEMPLATE_TEXT, "template.lic", "text/plain");
             }}
           >
             Télécharger template .lic
@@ -399,37 +395,107 @@ export function SandboxPanel(): React.JSX.Element {
           </Button>
         </div>
       </section>
+
+      {/* ===== Phase 22 R-40 — Scénario F2 documenté ===== */}
+      <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
+        <h2 className="text-lg font-semibold">Scénario F2 — Test end-to-end</h2>
+        <p className="text-spx-ink/70 mt-1 text-sm">
+          Cet outil permet de tester le flux cryptographique S2M (RSA + AES) avant déploiement. Les
+          clés générées ici sont éphémères et indépendantes de la CA de production (cf.{" "}
+          <code className="font-mono text-xs">/settings/security</code>).
+        </p>
+        <ol className="text-spx-ink/80 mt-3 list-decimal space-y-2 pl-5 text-sm">
+          <li>
+            <strong>Générer une paire RSA de test</strong> — clé privée + publique éphémères
+            (section 1).
+          </li>
+          <li>
+            <strong>Signer un fichier .lic de test</strong> avec la clé privée → télécharger le{" "}
+            <code className="font-mono text-xs">.lic</code> signé (section 2).
+          </li>
+          <li>
+            <strong>Vérifier la signature du .lic</strong> avec la clé publique → résultat «{" "}
+            <span className="text-green-700">Valide</span> » /{" "}
+            <span className="text-red-700">Invalide</span> » (section 3).
+          </li>
+          <li>
+            <strong>Chiffrer un fichier .hc de test</strong> avec une clé AES partagée → télécharger
+            le <code className="font-mono text-xs">.hc</code> chiffré (section 4).
+          </li>
+          <li>
+            <strong>Déchiffrer le .hc</strong> avec la même clé → affiche le contenu décodé (section
+            5).
+          </li>
+        </ol>
+        <p className="text-spx-ink/60 mt-3 text-xs italic">
+          Aucun appel BD — règle L16, sandbox SADMIN sans persistance. Les artefacts produits ne
+          sont JAMAIS acceptés par les imports `.lic` / `.hc` réels (signés par la CA prod
+          uniquement).
+        </p>
+      </section>
     </div>
   );
 }
 
-// Phase 18 R-23 — Structure JSON des templates. Aligné PROJECT_CONTEXT_LIC
-// §spec format F2 (cf. docs/integration/F2_FORMATS.md).
-const LIC_TEMPLATE = {
-  reference: "LIC-2026-NNN",
-  clientCode: "CDM",
-  clientRaisonSociale: "Crédit du Maroc",
-  entiteNom: "Siège Crédit du Maroc",
-  dateDebut: "2026-01-01",
-  dateFin: "2027-12-31",
-  articles: [
-    {
-      code: "KERNEL",
-      nom: "Kernel Switch & Authorization",
-      volAutorise: 1000000,
-      uniteVolume: "transactions/jour",
-    },
-    { code: "HSM", nom: "HSM Interface", volAutorise: 500000, uniteVolume: "ops/jour" },
-  ],
-  generatedAt: "2026-05-01T10:00:00Z",
-  version: 1,
-} as const;
-
+// Phase 22 R-39 — Template `.hc` (healthcheck) enrichi. Format JSON simple,
+// chiffré côté client S2M avant envoi (AES-256-GCM avec clé partagée du
+// settings `healthcheck_shared_aes_key`).
 const HC_TEMPLATE = {
-  licenceReference: "LIC-2026-NNN",
+  version: "1.0",
+  licenceReference: "LIC-2026-001",
+  clientCode: "BAM",
+  importedAt: "2026-05-06T12:00:00Z",
   articles: [
     { code: "KERNEL", volConsomme: 750000 },
-    { code: "HSM", volConsomme: 320000 },
+    { code: "SMS-GW", volConsomme: 45000 },
   ],
-  importedAt: "2026-05-01T10:00:00Z",
 } as const;
+
+// Phase 22 R-39 — Template `.lic` complet (JSON + signature RSA + certificat
+// client PEM). Texte brut multi-section, format F2 (cf.
+// docs/integration/F2_FORMATS.md). Volumes peuvent être `null` + `illimite:
+// true` pour les articles non contrôlés (controleVolume=false côté catalogue,
+// Phase 19 R-13).
+const LIC_TEMPLATE_TEXT = `${JSON.stringify(
+  {
+    version: "1.0",
+    reference: "LIC-2026-001",
+    clientCode: "BAM",
+    clientRaisonSociale: "Bank Al-Maghrib",
+    entiteNom: "Siège BAM",
+    dateDebut: "2026-01-01",
+    dateFin: "2028-12-31",
+    produits: [
+      {
+        code: "SPX-CORE",
+        nom: "SelectPX Core",
+        articles: [
+          {
+            code: "KERNEL",
+            nom: "Kernel Switch",
+            volAutorise: 1000000,
+            uniteVolume: "transactions/jour",
+          },
+          {
+            code: "HSM",
+            nom: "HSM Interface",
+            volAutorise: null,
+            uniteVolume: null,
+            illimite: true,
+          },
+        ],
+      },
+    ],
+    generatedAt: "2026-05-06T12:00:00Z",
+    signature: "BASE64_SIGNATURE_RSA_SHA256_ICI",
+  },
+  null,
+  2,
+)}
+--- SIGNATURE S2M ---
+BASE64_SIGNATURE_RSA_SHA256_ICI
+--- CERTIFICATE S2M ---
+-----BEGIN CERTIFICATE-----
+CONTENU_CERTIFICAT_CLIENT_PEM
+-----END CERTIFICATE-----
+`;
