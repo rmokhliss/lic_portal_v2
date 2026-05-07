@@ -271,7 +271,6 @@ function ProduitSection({
           <TableRow>
             <TableHead>{t("table.code")}</TableHead>
             <TableHead>{t("table.nom")}</TableHead>
-            <TableHead>{t("table.unite")}</TableHead>
             <TableHead className="text-right">{t("table.consomme")}</TableHead>
             <TableHead className="text-right">{t("table.autorise")}</TableHead>
             <TableHead className="text-right">{t("table.taux")}</TableHead>
@@ -281,7 +280,7 @@ function ProduitSection({
         <TableBody>
           {articles.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-muted-foreground text-center text-sm">
+              <TableCell colSpan={6} className="text-muted-foreground text-center text-sm">
                 {t("emptyArticles")}
               </TableCell>
             </TableRow>
@@ -341,19 +340,14 @@ function ArticleRow({
   // (Core, modules : pas de notion de volume). Pour les fonctionnalités, on
   // masque entièrement les colonnes Conso/Autorisé/Taux et on retire le bouton
   // "Modifier volume" — l'attache article est binaire (présent/absent).
-  // « Illimité » est réservé au cas spécifique d'un article volumétrique pour
-  // lequel l'admin a saisi `volumeAutorise = 0` (gestion volumétrique active
-  // mais cap explicitement levé).
+  // Pour un article volumétrique avec volume = 0 (sentinelle "non défini" en
+  // attendant la migration null), on affiche aussi "—" sans mention textuelle.
   const article = liaison.article;
   const isVolumetrique = article?.controleVolume === true;
-  const uniteVolume = article?.controleVolume === true ? article.uniteVolume : "—";
   const volAutorise = liaison.liaison.volumeAutorise;
   const volConsomme = liaison.liaison.volumeConsomme;
-  const isUnlimitedExplicite = isVolumetrique && volAutorise === 0;
-  const ratio =
-    !isVolumetrique || isUnlimitedExplicite || volAutorise === 0
-      ? 0
-      : (volConsomme / volAutorise) * 100;
+  const hasVolumeDefini = isVolumetrique && volAutorise > 0;
+  const ratio = hasVolumeDefini ? (volConsomme / volAutorise) * 100 : 0;
   const ratioClass =
     ratio >= 100 ? "text-destructive" : ratio >= 80 ? "text-warning" : "text-success";
 
@@ -361,28 +355,16 @@ function ArticleRow({
     <TableRow>
       <TableCell className="font-mono text-xs">{article?.code ?? "-"}</TableCell>
       <TableCell className="text-sm">{article?.nom ?? "-"}</TableCell>
-      <TableCell className="text-muted-foreground text-xs">{uniteVolume}</TableCell>
       <TableCell className="text-right tabular-nums">
         {!isVolumetrique ? "—" : volConsomme.toLocaleString("fr-FR")}
       </TableCell>
       <TableCell className="text-right tabular-nums">
-        {!isVolumetrique ? (
-          "—"
-        ) : isUnlimitedExplicite ? (
-          <span
-            className="text-muted-foreground italic"
-            title="Volume autorisé = 0 → illimité (cap levé)"
-          >
-            Illimité
-          </span>
-        ) : (
-          volAutorise.toLocaleString("fr-FR")
-        )}
+        {hasVolumeDefini ? volAutorise.toLocaleString("fr-FR") : "—"}
       </TableCell>
       <TableCell
-        className={`text-right tabular-nums ${isVolumetrique && !isUnlimitedExplicite ? ratioClass : "text-muted-foreground"}`}
+        className={`text-right tabular-nums ${hasVolumeDefini ? ratioClass : "text-muted-foreground"}`}
       >
-        {!isVolumetrique || isUnlimitedExplicite ? "—" : `${ratio.toFixed(1)}%`}
+        {hasVolumeDefini ? `${ratio.toFixed(1)}%` : "—"}
       </TableCell>
       <TableCell className="text-right">
         {canEdit && (
@@ -578,16 +560,14 @@ function AddArticleDialog({
               <option value="">{t("placeholder")}</option>
               {candidates.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.nom} ({a.code}) — {a.uniteVolume}
-                  {!a.controleVolume ? " · Illimité" : ""}
+                  {a.nom} ({a.code}){a.controleVolume ? "" : " · fonctionnalité"}
                 </option>
               ))}
             </select>
           </div>
           {isUnlimited ? (
             <p className="text-muted-foreground rounded border border-amber-500/30 bg-amber-500/10 p-2 text-xs">
-              Article « fonctionnalité » — volume non contrôlé. Aucun vol autorisé à saisir,
-              l&apos;article sera enregistré en illimité.
+              Article « fonctionnalité » — pas de volume à saisir.
             </p>
           ) : (
             <div className="space-y-1">
@@ -703,7 +683,7 @@ function EditVolumeDialog({
                   defaultValue={state.currentAutorise}
                 />
                 <p className="text-muted-foreground text-xs">
-                  Saisir 0 pour activer un cap illimité (volume non plafonné).
+                  Laisser vide ou saisir 0 si volume non encore défini.
                 </p>
               </div>
               <div className="space-y-1">

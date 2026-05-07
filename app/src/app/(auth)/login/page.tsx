@@ -31,7 +31,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <main className="bg-background flex min-h-screen items-center justify-center p-6">
       <div className="flex w-full max-w-md flex-col items-center gap-8">
-        <BrandLockup size={48} tone="dark" />
+        <BrandLockup size={48} />
 
         <div className="bg-card border-border flex w-full flex-col gap-6 rounded-lg border p-8">
           <div className="flex flex-col gap-1">

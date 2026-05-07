@@ -601,26 +601,20 @@ export function NewLicenceDialog({
                                 <span className="font-mono">{a.code}</span> · {a.nom}
                               </label>
                               {a.controleVolume ? (
-                                <div className="flex items-center gap-1">
-                                  <Input
-                                    type="number"
-                                    min={0}
-                                    step={1}
-                                    value={sel.volume}
-                                    onChange={(e) => {
-                                      setArticleVolume(a.id, e.target.value);
-                                    }}
-                                    disabled={!sel.checked}
-                                    className="h-8 w-24"
-                                  />
-                                  <span className="text-muted-foreground text-xs">
-                                    {a.uniteVolume}
-                                  </span>
-                                </div>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  step={1}
+                                  value={sel.volume}
+                                  onChange={(e) => {
+                                    setArticleVolume(a.id, e.target.value);
+                                  }}
+                                  disabled={!sel.checked}
+                                  placeholder="Volume"
+                                  className="h-8 w-28"
+                                />
                               ) : (
-                                <span className="text-muted-foreground text-xs italic">
-                                  Illimité
-                                </span>
+                                <span className="text-muted-foreground text-xs">—</span>
                               )}
                             </li>
                           );
