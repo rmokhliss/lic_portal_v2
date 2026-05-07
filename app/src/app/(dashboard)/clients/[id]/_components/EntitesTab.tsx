@@ -24,9 +24,15 @@ import { toggleEntiteActiveAction } from "../_actions";
 import { EntiteDialog } from "./EntiteDialog";
 import type { EntiteDTO } from "./clients-detail-types";
 
+export interface EntitesTabPaysItem {
+  readonly code: string;
+  readonly label: string;
+}
+
 export interface EntitesTabProps {
   readonly clientId: string;
   readonly rows: readonly EntiteDTO[];
+  readonly paysList: readonly EntitesTabPaysItem[];
   readonly canEdit: boolean;
 }
 
@@ -93,6 +99,7 @@ export function EntitesTab(props: EntitesTabProps) {
         clientId={props.clientId}
         mode={dialog.kind === "edit" ? "edit" : "create"}
         entite={dialog.kind === "edit" ? dialog.entite : undefined}
+        paysList={props.paysList}
       />
     </>
   );

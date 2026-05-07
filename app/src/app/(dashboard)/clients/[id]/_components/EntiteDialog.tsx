@@ -23,15 +23,28 @@ import { Label } from "@/components/ui/label";
 import { createEntiteAction, updateEntiteAction } from "../_actions";
 import type { EntiteDTO } from "./clients-detail-types";
 
+export interface EntitePaysItem {
+  readonly code: string;
+  readonly label: string;
+}
+
 export interface EntiteDialogProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly clientId: string;
   readonly mode: "create" | "edit";
   readonly entite?: EntiteDTO;
+  readonly paysList: readonly EntitePaysItem[];
 }
 
-export function EntiteDialog({ open, onOpenChange, clientId, mode, entite }: EntiteDialogProps) {
+export function EntiteDialog({
+  open,
+  onOpenChange,
+  clientId,
+  mode,
+  entite,
+  paysList,
+}: EntiteDialogProps) {
   const t = useTranslations("clients.detail.entites.dialog");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
@@ -95,13 +108,19 @@ export function EntiteDialog({ open, onOpenChange, clientId, mode, entite }: Ent
           </div>
           <div className="space-y-1">
             <Label htmlFor="codePays">{t("codePays")}</Label>
-            <Input
+            <select
               id="codePays"
               name="codePays"
-              maxLength={2}
               defaultValue={mode === "edit" ? (entite?.codePays ?? "") : ""}
-              className="font-mono uppercase"
-            />
+              className="border-input bg-background text-foreground h-9 w-full rounded-md border px-3 text-sm"
+            >
+              <option value="">—</option>
+              {paysList.map((p) => (
+                <option key={p.code} value={p.code}>
+                  {p.code} — {p.label}
+                </option>
+              ))}
+            </select>
           </div>
           {error && <p className="text-destructive text-sm">{error}</p>}
           <DialogFooter>
