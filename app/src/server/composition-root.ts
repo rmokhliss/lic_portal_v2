@@ -378,6 +378,11 @@ export {
   recordVolumeSnapshotUseCase,
 } from "@/server/modules/volume-history/volume-history.module";
 
+// Phase 23 — tendance + projection EC-04 (lecture directe BD via SQL).
+import { GetVolumeTrendsUseCase } from "@/server/modules/volume-history/application/get-volume-trends.usecase";
+
+export const getVolumeTrendsUseCase = new GetVolumeTrendsUseCase();
+
 // --- Phase 7 étape 7.A : audit-query (lecture seule, FTS + cursor + scope) --
 
 export {

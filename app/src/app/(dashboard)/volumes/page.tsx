@@ -1,10 +1,14 @@
 // ==============================================================================
-// LIC v2 — /volumes (Phase 17 S3)
+// LIC v2 — /volumes (Phase 17 S3 + Phase 23 EC-04 tendance/projection)
 //
-// Vue cross-clients du suivi des volumes consommés (snapshots mensuels
-// volume_history). Server Component, requireAuthPage(). Filtres GET :
-// clientId, articleId, since, until. MVP : fetch limit 500 + filtrage
-// in-page (pas de filtre client au niveau repo — volume démo faible).
+// Vue cross-clients du suivi des volumes consommés. Server Component,
+// requireAuthPage(). Filtres GET : clientId, articleCode.
+//
+// Phase 23 — refonte vers EC-04 : groupement par (licence × article) avec
+// pour chaque ligne la dernière valeur, la tendance ↗↘→ (3 derniers points),
+// la projection (date estimée de dépassement vs date_fin licence) et un
+// sparkline 12 mois inline. Le repère métier devient « santé du couple
+// licence×article » au lieu d'un tableau de snapshots bruts.
 // ==============================================================================
 
 import Link from "next/link";
@@ -14,16 +18,16 @@ import {
   getArticleUseCase,
   getClientUseCase,
   getLicenceUseCase,
+  getVolumeTrendsUseCase,
   listClientsUseCase,
-  listVolumeHistoryUseCase,
 } from "@/server/composition-root";
+
+import { VolumeSparkline } from "./_components/VolumeSparkline";
 
 interface VolumesPageProps {
   readonly searchParams: Promise<{
     readonly clientId?: string;
     readonly articleCode?: string;
-    readonly since?: string;
-    readonly until?: string;
   }>;
 }
 
@@ -38,23 +42,12 @@ export default async function VolumesPage({
     params.articleCode !== undefined && params.articleCode.length > 0
       ? params.articleCode
       : undefined;
-  const since = parseDate(params.since);
-  const until = parseDate(params.until);
 
-  // Volume démo faible — on tire 500 snapshots récents puis on filtre en page.
-  const all = await listVolumeHistoryUseCase.execute({ limit: 500 });
-
-  // Filtrer par période (sur `periode` YYYY-MM-DD) si fourni.
-  const filteredByPeriod = all.items.filter((s) => {
-    const periode = new Date(s.periode);
-    if (since !== undefined && periode < since) return false;
-    if (until !== undefined && periode > until) return false;
-    return true;
-  });
+  const trends = await getVolumeTrendsUseCase.execute({ months: 12 });
 
   // Résolution licence + article + client en parallèle.
-  const uniqueLicenceIds = Array.from(new Set(filteredByPeriod.map((s) => s.licenceId)));
-  const uniqueArticleIds = Array.from(new Set(filteredByPeriod.map((s) => s.articleId)));
+  const uniqueLicenceIds = Array.from(new Set(trends.map((t) => t.licenceId)));
+  const uniqueArticleIds = Array.from(new Set(trends.map((t) => t.articleId)));
 
   const [licencesArr, articlesArr] = await Promise.all([
     Promise.all(
@@ -99,25 +92,22 @@ export default async function VolumesPage({
   const clientsById = new Map(clientsArr.flatMap((c) => (c === null ? [] : [[c.id, c] as const])));
 
   // Filtre final post-resolution : client + article code.
-  const rows = filteredByPeriod
-    .filter((s) => {
-      const licence = licencesById.get(s.licenceId);
-      const article = articlesById.get(s.articleId);
-      if (clientFilter !== undefined && licence?.clientId !== clientFilter) return false;
-      if (articleCodeFilter !== undefined && article?.code !== articleCodeFilter) return false;
-      return true;
-    })
-    .map((s) => {
-      const licence = licencesById.get(s.licenceId);
-      const article = articlesById.get(s.articleId);
+  const rows = trends
+    .map((t) => {
+      const licence = licencesById.get(t.licenceId);
+      const article = articlesById.get(t.articleId);
       const client = licence !== undefined ? clientsById.get(licence.clientId) : undefined;
-      return { snapshot: s, licence, article, client };
+      return { trend: t, licence, article, client };
+    })
+    .filter((row) => {
+      if (clientFilter !== undefined && row.licence?.clientId !== clientFilter) return false;
+      if (articleCodeFilter !== undefined && row.article?.code !== articleCodeFilter) return false;
+      return true;
     });
 
   // Pour le selecteur client : tous les clients seedés.
   const clientsList = await listClientsUseCase.execute({ limit: 200 });
 
-  // Liste de codes article distincts pour datalist.
   const distinctArticleCodes = Array.from(
     new Set(articlesArr.flatMap((a) => (a === null ? [] : [a.code]))),
   ).sort();
@@ -127,15 +117,15 @@ export default async function VolumesPage({
       <header>
         <h1 className="font-display text-foreground text-2xl">Articles &amp; Volumes</h1>
         <p className="text-muted-foreground mt-1 text-sm">
-          Suivi des volumes consommés par article × licence (snapshots mensuels). {rows.length}{" "}
-          ligne(s) affichée(s).
+          Suivi des volumes consommés par couple licence × article (tendance + projection sur 12
+          derniers mois). {rows.length} ligne(s) affichée(s).
         </p>
       </header>
 
       <form
         method="GET"
         action="/volumes"
-        className="border-border bg-surface-1 flex flex-wrap items-end gap-3 rounded-md border p-3"
+        className="border-border bg-card flex flex-wrap items-end gap-3 rounded-md border p-3"
       >
         <div className="flex flex-col gap-1">
           <label
@@ -170,7 +160,7 @@ export default async function VolumesPage({
             name="articleCode"
             list="articleCodes"
             defaultValue={articleCodeFilter ?? ""}
-            placeholder="ex: KERNEL"
+            placeholder="ex: ATM-STD"
             className="border-input bg-background h-9 rounded-md border px-3 text-sm"
           />
           <datalist id="articleCodes">
@@ -178,30 +168,6 @@ export default async function VolumesPage({
               <option key={code} value={code} />
             ))}
           </datalist>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="since" className="text-muted-foreground text-xs uppercase tracking-wider">
-            Depuis
-          </label>
-          <input
-            id="since"
-            name="since"
-            type="date"
-            defaultValue={params.since ?? ""}
-            className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="until" className="text-muted-foreground text-xs uppercase tracking-wider">
-            Jusqu&apos;au
-          </label>
-          <input
-            id="until"
-            name="until"
-            type="date"
-            defaultValue={params.until ?? ""}
-            className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-          />
         </div>
         <button
           type="submit"
@@ -214,69 +180,83 @@ export default async function VolumesPage({
         </Link>
       </form>
 
-      <div className="border-border bg-surface-1 overflow-x-auto rounded-lg border">
+      <div className="border-border bg-card overflow-x-auto rounded-lg border">
         <table className="w-full text-sm">
           <thead className="bg-surface-2 text-muted-foreground">
             <tr>
-              <th className="px-4 py-2 text-left font-medium">Période</th>
               <th className="px-4 py-2 text-left font-medium">Client</th>
               <th className="px-4 py-2 text-left font-medium">Licence</th>
               <th className="px-4 py-2 text-left font-medium">Article</th>
               <th className="px-4 py-2 text-right font-medium">Vol. autorisé</th>
               <th className="px-4 py-2 text-right font-medium">Vol. consommé</th>
               <th className="px-4 py-2 text-right font-medium">Taux</th>
+              <th className="px-4 py-2 text-center font-medium">Tendance</th>
+              <th className="px-4 py-2 text-left font-medium">Projection</th>
+              <th className="px-4 py-2 text-center font-medium">12 mois</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => {
+              const { trend, licence, article, client } = row;
               const taux =
-                row.snapshot.volumeAutorise > 0
-                  ? Math.round((row.snapshot.volumeConsomme / row.snapshot.volumeAutorise) * 100)
+                trend.latest.volumeAutorise > 0
+                  ? Math.round((trend.latest.volumeConsomme / trend.latest.volumeAutorise) * 100)
                   : 0;
               const tauxClass =
-                taux >= 100 ? "text-rose-400" : taux >= 80 ? "text-amber-400" : "text-emerald-400";
+                taux >= 100 ? "text-destructive" : taux >= 80 ? "text-warning" : "text-success";
               return (
-                <tr key={row.snapshot.id} className="border-border border-t">
-                  <td className="px-4 py-2 font-mono text-xs">{row.snapshot.periode}</td>
+                <tr
+                  key={`${trend.licenceId}-${String(trend.articleId)}`}
+                  className="border-border border-t"
+                >
                   <td className="px-4 py-2">
-                    {row.client === undefined ? (
+                    {client === undefined ? (
                       <span className="text-muted-foreground">—</span>
                     ) : (
                       <Link
-                        href={`/clients/${row.client.id}/info`}
+                        href={`/clients/${client.id}/info`}
                         className="text-spx-cyan-500 hover:underline"
                       >
-                        {row.client.codeClient}
+                        {client.codeClient}
                       </Link>
                     )}
                   </td>
-                  <td className="px-4 py-2 font-mono">
-                    {row.licence === undefined ? (
+                  <td className="px-4 py-2 font-mono text-xs">
+                    {licence === undefined ? (
                       <span className="text-muted-foreground">—</span>
                     ) : (
                       <Link
-                        href={`/licences/${row.licence.id}/resume`}
+                        href={`/licences/${licence.id}/resume`}
                         className="text-spx-cyan-500 hover:underline"
                       >
-                        {row.licence.reference}
+                        {licence.reference}
                       </Link>
                     )}
                   </td>
-                  <td className="px-4 py-2 font-mono">
-                    {row.article === undefined ? "—" : row.article.code}
+                  <td className="px-4 py-2 font-mono text-xs">
+                    {article === undefined ? "—" : article.code}
                   </td>
                   <td className="px-4 py-2 text-right font-mono">
-                    {row.snapshot.volumeAutorise.toLocaleString("fr-FR")}
+                    {trend.latest.volumeAutorise.toLocaleString("fr-FR")}
                   </td>
                   <td className="px-4 py-2 text-right font-mono">
-                    {row.snapshot.volumeConsomme.toLocaleString("fr-FR")}
+                    {trend.latest.volumeConsomme.toLocaleString("fr-FR")}
                   </td>
                   <td className={`px-4 py-2 text-right font-mono ${tauxClass}`}>{taux}%</td>
+                  <td className="px-4 py-2 text-center text-base">
+                    <TendanceBadge tendance={trend.tendance} />
+                  </td>
+                  <td className="px-4 py-2 text-xs">
+                    <ProjectionLabel projection={trend.projection} />
+                  </td>
+                  <td className="px-4 py-2">
+                    <VolumeSparkline points={trend.history} />
+                  </td>
                   <td className="px-4 py-2 text-right">
-                    {row.licence === undefined ? null : (
+                    {licence === undefined ? null : (
                       <Link
-                        href={`/licences/${row.licence.id}/articles`}
+                        href={`/licences/${licence.id}/articles`}
                         className="text-spx-cyan-500 text-xs hover:underline"
                       >
                         Modifier
@@ -288,7 +268,7 @@ export default async function VolumesPage({
             })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-muted-foreground px-4 py-6 text-center">
+                <td colSpan={10} className="text-muted-foreground px-4 py-6 text-center">
                   Aucun snapshot pour les filtres sélectionnés.
                 </td>
               </tr>
@@ -300,8 +280,54 @@ export default async function VolumesPage({
   );
 }
 
-function parseDate(s: string | undefined): Date | undefined {
-  if (s === undefined || s.trim().length === 0) return undefined;
-  const d = new Date(s);
-  return Number.isFinite(d.getTime()) ? d : undefined;
+function TendanceBadge({ tendance }: { readonly tendance: "UP" | "DOWN" | "FLAT" }) {
+  if (tendance === "UP") {
+    return (
+      <span title="Consommation en hausse" className="text-warning">
+        ↗
+      </span>
+    );
+  }
+  if (tendance === "DOWN") {
+    return (
+      <span title="Consommation en baisse" className="text-success">
+        ↘
+      </span>
+    );
+  }
+  return (
+    <span title="Consommation stable" className="text-muted-foreground">
+      →
+    </span>
+  );
+}
+
+function ProjectionLabel({
+  projection,
+}: {
+  readonly projection: {
+    readonly kind: "ON_TIME" | "TIGHT" | "EXCEEDED" | "NA";
+    readonly estimatedExceedDate: string | null;
+  };
+}) {
+  switch (projection.kind) {
+    case "EXCEEDED":
+      return <span className="text-destructive font-medium">Déjà dépassé</span>;
+    case "TIGHT":
+      return (
+        <span className="text-warning">
+          Calibrage{" "}
+          {projection.estimatedExceedDate !== null && (
+            <span className="text-muted-foreground font-mono">
+              · ~{projection.estimatedExceedDate}
+            </span>
+          )}
+        </span>
+      );
+    case "ON_TIME":
+      return <span className="text-success">Dans les temps</span>;
+    case "NA":
+    default:
+      return <span className="text-muted-foreground">—</span>;
+  }
 }
