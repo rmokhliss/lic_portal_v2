@@ -26,7 +26,9 @@ export interface SettingsGeneralFormProps {
     warning_volume_pct?: number;
     warning_date_jours?: number;
   };
-  readonly action: (input: unknown) => Promise<void>;
+  /** Phase 23 R-45 — accepte un retour `Promise<unknown>` pour couvrir à la
+   *  fois les Server Actions legacy (Promise<void>) et migrées (Promise<ActionResult>). */
+  readonly action: (input: unknown) => Promise<unknown>;
 }
 
 export function SettingsGeneralForm({ initial, action }: SettingsGeneralFormProps) {
@@ -52,7 +54,19 @@ export function SettingsGeneralForm({ initial, action }: SettingsGeneralFormProp
     startTransition(() => {
       void (async () => {
         try {
-          await action(payload);
+          const r = await action(payload);
+          if (
+            r !== undefined &&
+            r !== null &&
+            typeof r === "object" &&
+            "success" in r &&
+            r.success === false
+          ) {
+            const msg = "error" in r && typeof r.error === "string" ? r.error : "Erreur inconnue";
+            setStatus("error");
+            setErrorMsg(msg);
+            return;
+          }
           setStatus("ok");
           setErrorMsg("");
         } catch (err) {

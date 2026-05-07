@@ -241,11 +241,15 @@ function ConfirmResetForRow({ state, onClose, onSuccess }: ConfirmResetForRowPro
     startTransition(() => {
       void (async () => {
         try {
-          const result = await resetUserPasswordAction({ userId: state.user.id });
-          onSuccess(result.newPassword, result.user.display);
+          const r = await resetUserPasswordAction({ userId: state.user.id });
+          if (!r.success) {
+            // Erreur AppError → le Dialog reste ouvert pour permettre une
+            // nouvelle tentative ; le détail est dans la console côté serveur.
+            onClose();
+            return;
+          }
+          onSuccess(r.data.newPassword, r.data.user.display);
         } catch {
-          // Erreur visible dans la console côté serveur ; le Dialog reste
-          // ouvert pour permettre une nouvelle tentative ou Annuler.
           onClose();
         }
       })();

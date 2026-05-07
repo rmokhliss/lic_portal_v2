@@ -119,7 +119,11 @@ export function NotificationsList(props: NotificationsListProps) {
       void (async () => {
         try {
           const r = await archiveOldNotificationsAction({ daysOld: 30 });
-          setArchiveResult(`${String(r.deleted)} notification(s) archivée(s).`);
+          if (!r.success) {
+            setArchiveResult(r.error);
+            return;
+          }
+          setArchiveResult(`${String(r.data.deleted)} notification(s) archivée(s).`);
           // Re-fetch pour rafraîchir la liste après suppression.
           const page = await fetchMyNotificationsAction({ onlyUnread });
           setItems(page.items);

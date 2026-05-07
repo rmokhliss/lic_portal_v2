@@ -71,11 +71,15 @@ export function UserDialog({
       startTransition(() => {
         void (async () => {
           try {
-            const result = await createUserAction(payload);
+            const r = await createUserAction(payload);
+            if (!r.success) {
+              setError(r.error);
+              return;
+            }
             setError("");
             onOpenChange(false);
             if (onPasswordRevealed) {
-              onPasswordRevealed(result.generatedPassword, result.user.display);
+              onPasswordRevealed(r.data.generatedPassword, r.data.user.display);
             }
           } catch (err) {
             setError(err instanceof Error ? err.message : "Erreur");
@@ -101,7 +105,11 @@ export function UserDialog({
     startTransition(() => {
       void (async () => {
         try {
-          await updateUserAction(patch);
+          const r = await updateUserAction(patch);
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
           setError("");
           onOpenChange(false);
         } catch (err) {

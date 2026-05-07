@@ -1,19 +1,18 @@
 // ==============================================================================
-// LIC v2 — Server Actions /settings (Phase 2.B étape 7/7)
+// LIC v2 — Server Actions /settings (Phase 2.B étape 7/7 + Phase 23 R-45)
 //
 // Toutes les Server Actions des onglets /settings/* — agrégées ici car le
 // layout est commun (garde SADMIN unique, revalidatePath sur /settings/<tab>).
 //
-// Pattern strict (CLAUDE.md §2 + Référentiel §4.12.4 adapté Next.js) :
+// Pattern Result tagué (Phase 23 R-45 — runAction) :
 //   1. requireRole(["SADMIN"])
 //   2. Schema.parse(input)
 //   3. await useCase.execute(parsed)
-//   4. revalidatePath(...)
+//   4. revalidatePath / updateTag
+//   5. Result tagué via runAction (catch AppError → success: false)
 //
 // Pas d'audit cross-module (R-27 — référentiels paramétrables + table
 // settings technique). updated_by est posé via session.user.id pour settings.
-// Les use-cases toggle prennent un primitif (string code OU number id pour
-// team_members PK serial).
 // ==============================================================================
 
 "use server";
@@ -65,16 +64,19 @@ import {
   updateUserUseCase,
 } from "@/server/composition-root";
 import { env } from "@/server/infrastructure/env";
+import { runAction, type ActionResult } from "@/server/infrastructure/actions/result";
 
 const userActionsLogger = createChildLogger("settings/users");
 
 // --- Onglet general ---------------------------------------------------------
 
-export async function updateGeneralSettingsAction(input: unknown): Promise<void> {
-  const user = await requireRole(["SADMIN"]);
-  const parsed = SettingsGeneralSchema.parse(input);
-  await updateSettingsUseCase.execute({ entries: parsed, updatedBy: user.id });
-  revalidatePath("/settings/general");
+export async function updateGeneralSettingsAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    const user = await requireRole(["SADMIN"]);
+    const parsed = SettingsGeneralSchema.parse(input);
+    await updateSettingsUseCase.execute({ entries: parsed, updatedBy: user.id });
+    revalidatePath("/settings/general");
+  });
 }
 
 // --- Onglet team — schémas formulaires --------------------------------------
@@ -117,58 +119,66 @@ const TeamMemberFormSchema = z.object({
 
 // --- Onglet team — création (6) --------------------------------------------
 
-export async function createRegionAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const parsed = RegionFormSchema.parse(input);
-  await createRegionUseCase.execute(parsed);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_REGIONS);
+export async function createRegionAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = RegionFormSchema.parse(input);
+    await createRegionUseCase.execute(parsed);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_REGIONS);
+  });
 }
 
-export async function createPaysAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const parsed = PaysFormSchema.parse(input);
-  await createPaysUseCase.execute(parsed);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_PAYS);
+export async function createPaysAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = PaysFormSchema.parse(input);
+    await createPaysUseCase.execute(parsed);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_PAYS);
+  });
 }
 
-export async function createDeviseAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const parsed = DeviseFormSchema.parse(input);
-  await createDeviseUseCase.execute(parsed);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_DEVISES);
+export async function createDeviseAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = DeviseFormSchema.parse(input);
+    await createDeviseUseCase.execute(parsed);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_DEVISES);
+  });
 }
 
-export async function createLangueAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const parsed = LangueFormSchema.parse(input);
-  await createLangueUseCase.execute(parsed);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_LANGUES);
+export async function createLangueAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = LangueFormSchema.parse(input);
+    await createLangueUseCase.execute(parsed);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_LANGUES);
+  });
 }
 
-export async function createTypeContactAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const parsed = TypeContactFormSchema.parse(input);
-  await createTypeContactUseCase.execute(parsed);
-  revalidatePath("/settings/team");
+export async function createTypeContactAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = TypeContactFormSchema.parse(input);
+    await createTypeContactUseCase.execute(parsed);
+    revalidatePath("/settings/team");
+  });
 }
 
-export async function createTeamMemberAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const parsed = TeamMemberFormSchema.parse(input);
-  await createTeamMemberUseCase.execute(parsed);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_TEAM_MEMBERS);
+export async function createTeamMemberAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = TeamMemberFormSchema.parse(input);
+    await createTeamMemberUseCase.execute(parsed);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_TEAM_MEMBERS);
+  });
 }
 
 // --- Onglet team — update (6) — Phase 14 (DETTE-LIC-006 résolue) -----------
-//
-// Schémas patch partiel : tous les champs sauf le sélecteur (code/id) sont
-// optionnels. Convention `null` (clear) vs `undefined` (no-op) alignée sur
-// les UpdateUseCases (cf. update-region.usecase.ts).
 
 const UpdateRegionFormSchema = z.object({
   regionCode: z.string().min(1).max(50),
@@ -208,206 +218,227 @@ const UpdateTeamMemberFormSchema = z.object({
   regionCode: z.string().min(1).max(50).nullable().optional(),
 });
 
-export async function updateRegionAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const parsed = UpdateRegionFormSchema.parse(input);
-  await updateRegionUseCase.execute(parsed);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_REGIONS);
+export async function updateRegionAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = UpdateRegionFormSchema.parse(input);
+    await updateRegionUseCase.execute(parsed);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_REGIONS);
+  });
 }
 
-export async function updatePaysAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const parsed = UpdatePaysFormSchema.parse(input);
-  await updatePaysUseCase.execute(parsed);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_PAYS);
+export async function updatePaysAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = UpdatePaysFormSchema.parse(input);
+    await updatePaysUseCase.execute(parsed);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_PAYS);
+  });
 }
 
-export async function updateDeviseAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const parsed = UpdateDeviseFormSchema.parse(input);
-  await updateDeviseUseCase.execute(parsed);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_DEVISES);
+export async function updateDeviseAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = UpdateDeviseFormSchema.parse(input);
+    await updateDeviseUseCase.execute(parsed);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_DEVISES);
+  });
 }
 
-export async function updateLangueAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const parsed = UpdateLangueFormSchema.parse(input);
-  await updateLangueUseCase.execute(parsed);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_LANGUES);
+export async function updateLangueAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = UpdateLangueFormSchema.parse(input);
+    await updateLangueUseCase.execute(parsed);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_LANGUES);
+  });
 }
 
-export async function updateTypeContactAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const parsed = UpdateTypeContactFormSchema.parse(input);
-  await updateTypeContactUseCase.execute(parsed);
-  revalidatePath("/settings/team");
+export async function updateTypeContactAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = UpdateTypeContactFormSchema.parse(input);
+    await updateTypeContactUseCase.execute(parsed);
+    revalidatePath("/settings/team");
+  });
 }
 
-export async function updateTeamMemberAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const parsed = UpdateTeamMemberFormSchema.parse(input);
-  await updateTeamMemberUseCase.execute(parsed);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_TEAM_MEMBERS);
+export async function updateTeamMemberAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = UpdateTeamMemberFormSchema.parse(input);
+    await updateTeamMemberUseCase.execute(parsed);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_TEAM_MEMBERS);
+  });
 }
 
 // --- Onglet team — toggle actif (6) ----------------------------------------
-// Les toggle use-cases prennent un primitif (string code OU number id).
-// Phase 22 R-44 : un toggle modifie `actif` qui est filtré dans les caches
-// (`actif: true`) — flush du tag obligatoire.
 
-export async function toggleRegionAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const { regionCode } = z.object({ regionCode: z.string().min(1) }).parse(input);
-  await toggleRegionUseCase.execute(regionCode);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_REGIONS);
+export async function toggleRegionAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const { regionCode } = z.object({ regionCode: z.string().min(1) }).parse(input);
+    await toggleRegionUseCase.execute(regionCode);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_REGIONS);
+  });
 }
 
-export async function togglePaysAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const { codePays } = z.object({ codePays: z.string().length(2) }).parse(input);
-  await togglePaysUseCase.execute(codePays);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_PAYS);
+export async function togglePaysAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const { codePays } = z.object({ codePays: z.string().length(2) }).parse(input);
+    await togglePaysUseCase.execute(codePays);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_PAYS);
+  });
 }
 
-export async function toggleDeviseAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const { codeDevise } = z.object({ codeDevise: z.string().length(3) }).parse(input);
-  await toggleDeviseUseCase.execute(codeDevise);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_DEVISES);
+export async function toggleDeviseAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const { codeDevise } = z.object({ codeDevise: z.string().length(3) }).parse(input);
+    await toggleDeviseUseCase.execute(codeDevise);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_DEVISES);
+  });
 }
 
-export async function toggleLangueAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const { codeLangue } = z.object({ codeLangue: z.string().length(2) }).parse(input);
-  await toggleLangueUseCase.execute(codeLangue);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_LANGUES);
+export async function toggleLangueAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const { codeLangue } = z.object({ codeLangue: z.string().length(2) }).parse(input);
+    await toggleLangueUseCase.execute(codeLangue);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_LANGUES);
+  });
 }
 
-export async function toggleTypeContactAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const { code } = z.object({ code: z.string().min(1) }).parse(input);
-  await toggleTypeContactUseCase.execute(code);
-  revalidatePath("/settings/team");
+export async function toggleTypeContactAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const { code } = z.object({ code: z.string().min(1) }).parse(input);
+    await toggleTypeContactUseCase.execute(code);
+    revalidatePath("/settings/team");
+  });
 }
 
-export async function toggleTeamMemberAction(input: unknown): Promise<void> {
-  await requireRole(["SADMIN"]);
-  const { id } = z.object({ id: z.number().int().positive() }).parse(input);
-  await toggleTeamMemberUseCase.execute(id);
-  revalidatePath("/settings/team");
-  updateTag(REFERENTIALS_TAG_TEAM_MEMBERS);
+export async function toggleTeamMemberAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const { id } = z.object({ id: z.number().int().positive() }).parse(input);
+    await toggleTeamMemberUseCase.execute(id);
+    revalidatePath("/settings/team");
+    updateTag(REFERENTIALS_TAG_TEAM_MEMBERS);
+  });
 }
 
 // ============================================================================
 // EC-08 Users — Phase 2.B.bis
 // ============================================================================
-//
-// 4 Server Actions back-office utilisateurs. Toutes garde SADMIN (règle L11
-// — doublée par le requireRolePage du settings/layout.tsx).
-// Les use-cases retournent UserDTO (toDTO appliqué dans application/), pas
-// d'entité — type-safe sur le wire Server Action ↔ Client Component.
-//
-// Log Pino { event: "user_password_to_communicate" } posé ICI (côté action,
-// pas côté use-case — règle Stop 4) après création / reset, pour traçabilité
-// du flow MDP transitoire (en attendant la Phase 8 qui introduira l'envoi
-// email réel).
-//
-// Erreurs use-case (SPX-LIC-720..723) propagées telles quelles ; le caller
-// UI (Client Component) les attrape et les affiche.
 
 const UserIdSchema = z.object({ userId: z.uuid() });
 
-export async function createUserAction(input: unknown) {
-  const actor = await requireRole(["SADMIN"]);
-  const parsed = CreateUserSchema.parse(input);
-  const result = await createUserUseCase.execute(parsed, actor.id);
-  userActionsLogger.info(
-    {
-      event: "user_password_to_communicate",
-      userId: result.user.id,
-      email: result.user.email,
-      actorId: actor.id,
-      reason: "admin_create",
-    },
-    "Mot de passe utilisateur à transmettre par canal sécurisé",
-  );
-  // Phase 14 — best-effort welcome email. Échec n'invalide pas la création.
-  await sendUserEmailBestEffort(
-    "user-welcome",
-    {
-      prenom: result.user.prenom,
-      email: result.user.email,
-      motDePasseInitial: result.generatedPassword,
-      urlConnexion: env.APP_URL,
-    },
-    result.user.email,
-  );
-  revalidatePath("/settings/users");
-  return result;
+export async function createUserAction(
+  input: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof createUserUseCase.execute>>>> {
+  return runAction(async () => {
+    const actor = await requireRole(["SADMIN"]);
+    const parsed = CreateUserSchema.parse(input);
+    const result = await createUserUseCase.execute(parsed, actor.id);
+    userActionsLogger.info(
+      {
+        event: "user_password_to_communicate",
+        userId: result.user.id,
+        email: result.user.email,
+        actorId: actor.id,
+        reason: "admin_create",
+      },
+      "Mot de passe utilisateur à transmettre par canal sécurisé",
+    );
+    // Phase 14 — best-effort welcome email. Échec n'invalide pas la création.
+    await sendUserEmailBestEffort(
+      "user-welcome",
+      {
+        prenom: result.user.prenom,
+        email: result.user.email,
+        motDePasseInitial: result.generatedPassword,
+        urlConnexion: env.APP_URL,
+      },
+      result.user.email,
+    );
+    revalidatePath("/settings/users");
+    return result;
+  });
 }
 
-export async function updateUserAction(input: unknown) {
-  const actor = await requireRole(["SADMIN"]);
-  const parsed = UpdateUserSchema.parse(input);
-  const { userId, ...patch } = parsed;
-  const result = await updateUserUseCase.execute({ userId, ...patch }, actor.id);
-  revalidatePath("/settings/users");
-  return result;
+export async function updateUserAction(
+  input: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof updateUserUseCase.execute>>>> {
+  return runAction(async () => {
+    const actor = await requireRole(["SADMIN"]);
+    const parsed = UpdateUserSchema.parse(input);
+    const { userId, ...patch } = parsed;
+    const result = await updateUserUseCase.execute({ userId, ...patch }, actor.id);
+    revalidatePath("/settings/users");
+    return result;
+  });
 }
 
-export async function toggleUserActiveAction(input: unknown) {
-  const actor = await requireRole(["SADMIN"]);
-  const { userId } = UserIdSchema.parse(input);
-  const result = await toggleUserActiveUseCase.execute({ userId }, actor.id);
-  revalidatePath("/settings/users");
-  return result;
+export async function toggleUserActiveAction(
+  input: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof toggleUserActiveUseCase.execute>>>> {
+  return runAction(async () => {
+    const actor = await requireRole(["SADMIN"]);
+    const { userId } = UserIdSchema.parse(input);
+    const result = await toggleUserActiveUseCase.execute({ userId }, actor.id);
+    revalidatePath("/settings/users");
+    return result;
+  });
 }
 
-export async function resetUserPasswordAction(input: unknown) {
-  const actor = await requireRole(["SADMIN"]);
-  // Phase 13.A — rate limit : 10 resets / minute / SADMIN. Bornage défensif
-  // contre un mauvais usage (un SADMIN ne fait normalement pas plus de quelques
-  // resets simultanés).
-  rateLimit(`reset-password:${actor.id}`, 10, 60_000);
-  const { userId } = UserIdSchema.parse(input);
-  const result = await resetUserPasswordUseCase.execute({ userId }, actor.id);
-  userActionsLogger.info(
-    {
-      event: "user_password_to_communicate",
-      userId: result.user.id,
-      email: result.user.email,
-      actorId: actor.id,
-      reason: "admin_reset",
-    },
-    "Mot de passe utilisateur à transmettre par canal sécurisé",
-  );
-  // Phase 14 — best-effort password-reset email. Échec n'invalide pas le reset.
-  await sendUserEmailBestEffort(
-    "password-reset",
-    {
-      prenom: result.user.prenom,
-      motDePasseTemp: result.newPassword,
-      urlConnexion: env.APP_URL,
-    },
-    result.user.email,
-  );
-  revalidatePath("/settings/users");
-  return result;
+export async function resetUserPasswordAction(
+  input: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof resetUserPasswordUseCase.execute>>>> {
+  return runAction(async () => {
+    const actor = await requireRole(["SADMIN"]);
+    // Phase 13.A — rate limit : 10 resets / minute / SADMIN. Bornage défensif
+    // contre un mauvais usage.
+    rateLimit(`reset-password:${actor.id}`, 10, 60_000);
+    const { userId } = UserIdSchema.parse(input);
+    const result = await resetUserPasswordUseCase.execute({ userId }, actor.id);
+    userActionsLogger.info(
+      {
+        event: "user_password_to_communicate",
+        userId: result.user.id,
+        email: result.user.email,
+        actorId: actor.id,
+        reason: "admin_reset",
+      },
+      "Mot de passe utilisateur à transmettre par canal sécurisé",
+    );
+    // Phase 14 — best-effort password-reset email. Échec n'invalide pas le reset.
+    await sendUserEmailBestEffort(
+      "password-reset",
+      {
+        prenom: result.user.prenom,
+        motDePasseTemp: result.newPassword,
+        urlConnexion: env.APP_URL,
+      },
+      result.user.email,
+    );
+    revalidatePath("/settings/users");
+    return result;
+  });
 }
 
 // Phase 14 — wrapper email best-effort. Toute erreur est loggée Pino mais ne
-// remonte pas — l'envoi email ne doit pas casser la mutation principale
-// (création / reset password). Le log Pino reste la source de vérité du flow
-// MDP transitoire (cf. event "user_password_to_communicate").
+// remonte pas — l'envoi email ne doit pas casser la mutation principale.
 async function sendUserEmailBestEffort(
   template: "user-welcome" | "password-reset",
   variables: Readonly<Record<string, string | number>>,
@@ -456,50 +487,74 @@ import {
   updateProduitUseCase,
 } from "@/server/composition-root";
 
-export async function createProduitAction(input: unknown) {
-  await requireRole(["SADMIN"]);
-  const parsed = CreateProduitSchema.parse(input);
-  const result = await createProduitUseCase.execute(parsed);
-  revalidatePath("/settings/catalogues");
-  return result;
+export async function createProduitAction(
+  input: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof createProduitUseCase.execute>>>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = CreateProduitSchema.parse(input);
+    const result = await createProduitUseCase.execute(parsed);
+    revalidatePath("/settings/catalogues");
+    return result;
+  });
 }
 
-export async function updateProduitAction(input: unknown) {
-  await requireRole(["SADMIN"]);
-  const parsed = UpdateProduitSchema.parse(input);
-  const result = await updateProduitUseCase.execute(parsed);
-  revalidatePath("/settings/catalogues");
-  return result;
+export async function updateProduitAction(
+  input: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof updateProduitUseCase.execute>>>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = UpdateProduitSchema.parse(input);
+    const result = await updateProduitUseCase.execute(parsed);
+    revalidatePath("/settings/catalogues");
+    return result;
+  });
 }
 
-export async function toggleProduitAction(input: unknown) {
-  await requireRole(["SADMIN"]);
-  const { code } = ToggleProduitSchema.parse(input);
-  const result = await toggleProduitUseCase.execute(code);
-  revalidatePath("/settings/catalogues");
-  return result;
+export async function toggleProduitAction(
+  input: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof toggleProduitUseCase.execute>>>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const { code } = ToggleProduitSchema.parse(input);
+    const result = await toggleProduitUseCase.execute(code);
+    revalidatePath("/settings/catalogues");
+    return result;
+  });
 }
 
-export async function createArticleAction(input: unknown) {
-  await requireRole(["SADMIN"]);
-  const parsed = CreateArticleSchema.parse(input);
-  const result = await createArticleUseCase.execute(parsed);
-  revalidatePath("/settings/catalogues");
-  return result;
+export async function createArticleAction(
+  input: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof createArticleUseCase.execute>>>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = CreateArticleSchema.parse(input);
+    const result = await createArticleUseCase.execute(parsed);
+    revalidatePath("/settings/catalogues");
+    return result;
+  });
 }
 
-export async function updateArticleAction(input: unknown) {
-  await requireRole(["SADMIN"]);
-  const parsed = UpdateArticleSchema.parse(input);
-  const result = await updateArticleUseCase.execute(parsed);
-  revalidatePath("/settings/catalogues");
-  return result;
+export async function updateArticleAction(
+  input: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof updateArticleUseCase.execute>>>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const parsed = UpdateArticleSchema.parse(input);
+    const result = await updateArticleUseCase.execute(parsed);
+    revalidatePath("/settings/catalogues");
+    return result;
+  });
 }
 
-export async function toggleArticleAction(input: unknown) {
-  await requireRole(["SADMIN"]);
-  const { id } = ToggleArticleSchema.parse(input);
-  const result = await toggleArticleUseCase.execute(id);
-  revalidatePath("/settings/catalogues");
-  return result;
+export async function toggleArticleAction(
+  input: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof toggleArticleUseCase.execute>>>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const { id } = ToggleArticleSchema.parse(input);
+    const result = await toggleArticleUseCase.execute(id);
+    revalidatePath("/settings/catalogues");
+    return result;
+  });
 }

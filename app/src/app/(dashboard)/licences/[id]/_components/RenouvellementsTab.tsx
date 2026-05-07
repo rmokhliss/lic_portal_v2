@@ -239,7 +239,7 @@ function RenouvellementDrawer({
       void (async () => {
         try {
           if (isEdit && initial !== null) {
-            await updateRenouvellementAction(
+            const r = await updateRenouvellementAction(
               {
                 renouvellementId: initial.id,
                 nouvelleDateDebut: `${debut}T00:00:00.000Z`,
@@ -248,8 +248,12 @@ function RenouvellementDrawer({
               },
               { licenceId },
             );
+            if (!r.success) {
+              setError(r.error);
+              return;
+            }
           } else {
-            await createRenouvellementAction(
+            const r = await createRenouvellementAction(
               {
                 licenceId,
                 nouvelleDateDebut: `${debut}T00:00:00.000Z`,
@@ -258,6 +262,10 @@ function RenouvellementDrawer({
               },
               { licenceId },
             );
+            if (!r.success) {
+              setError(r.error);
+              return;
+            }
           }
           onClose();
         } catch (err) {
@@ -345,7 +353,14 @@ function ValiderConfirmDialog({
     startTransition(() => {
       void (async () => {
         try {
-          await validerRenouvellementAction({ renouvellementId: state.renouv.id }, { licenceId });
+          const r = await validerRenouvellementAction(
+            { renouvellementId: state.renouv.id },
+            { licenceId },
+          );
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
           onClose();
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur");
@@ -409,13 +424,17 @@ function AnnulerConfirmDialog({
     startTransition(() => {
       void (async () => {
         try {
-          await annulerRenouvellementAction(
+          const r = await annulerRenouvellementAction(
             {
               renouvellementId: state.renouv.id,
               ...(motif !== "" ? { motif } : {}),
             },
             { licenceId },
           );
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
           onClose();
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur");

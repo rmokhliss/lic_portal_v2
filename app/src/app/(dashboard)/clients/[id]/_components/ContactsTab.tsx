@@ -176,7 +176,10 @@ function ContactRow({
     startTransition(() => {
       void (async () => {
         try {
-          await deleteContactAction({ contactId: contact.id }, { clientId });
+          const r = await deleteContactAction({ contactId: contact.id }, { clientId });
+          if (!r.success) {
+            setError(r.error);
+          }
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur");
         }

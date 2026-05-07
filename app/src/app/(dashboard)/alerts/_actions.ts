@@ -17,6 +17,7 @@ import {
   deleteAlertConfigUseCase,
   updateAlertConfigUseCase,
 } from "@/server/composition-root";
+import { runAction, type ActionResult } from "@/server/infrastructure/actions/result";
 
 const ChannelSchema = z.enum(["IN_APP", "EMAIL", "SMS"]);
 
@@ -44,23 +45,29 @@ const UpdateSchema = z
 
 const DeleteSchema = z.object({ id: z.uuid() }).strict();
 
-export async function createAlertConfigAction(input: unknown): Promise<void> {
-  const user = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = CreateSchema.parse(input);
-  await createAlertConfigUseCase.execute(parsed, user.id);
-  revalidatePath("/alerts");
+export async function createAlertConfigAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    const user = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = CreateSchema.parse(input);
+    await createAlertConfigUseCase.execute(parsed, user.id);
+    revalidatePath("/alerts");
+  });
 }
 
-export async function updateAlertConfigAction(input: unknown): Promise<void> {
-  const user = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = UpdateSchema.parse(input);
-  await updateAlertConfigUseCase.execute(parsed, user.id);
-  revalidatePath("/alerts");
+export async function updateAlertConfigAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    const user = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = UpdateSchema.parse(input);
+    await updateAlertConfigUseCase.execute(parsed, user.id);
+    revalidatePath("/alerts");
+  });
 }
 
-export async function deleteAlertConfigAction(input: unknown): Promise<void> {
-  const user = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = DeleteSchema.parse(input);
-  await deleteAlertConfigUseCase.execute({ id: parsed.id }, user.id);
-  revalidatePath("/alerts");
+export async function deleteAlertConfigAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    const user = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = DeleteSchema.parse(input);
+    await deleteAlertConfigUseCase.execute({ id: parsed.id }, user.id);
+    revalidatePath("/alerts");
+  });
 }

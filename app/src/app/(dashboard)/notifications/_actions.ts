@@ -14,6 +14,7 @@ import {
   markAllNotificationsReadUseCase,
   markNotificationReadUseCase,
 } from "@/server/composition-root";
+import { runAction, type ActionResult } from "@/server/infrastructure/actions/result";
 
 const FetchNotificationsSchema = z
   .object({
@@ -35,18 +36,24 @@ export async function fetchMyNotificationsAction(input: unknown) {
 
 const NotifIdSchema = z.object({ id: z.uuid() }).strict();
 
-export async function markNotificationReadAction(input: unknown) {
-  const user = await requireAuthPage();
-  const parsed = NotifIdSchema.parse(input);
-  await markNotificationReadUseCase.execute(parsed, user.id);
-  revalidatePath("/notifications");
+export async function markNotificationReadAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    const user = await requireAuthPage();
+    const parsed = NotifIdSchema.parse(input);
+    await markNotificationReadUseCase.execute(parsed, user.id);
+    revalidatePath("/notifications");
+  });
 }
 
-export async function markAllNotificationsReadAction() {
-  const user = await requireAuthPage();
-  const result = await markAllNotificationsReadUseCase.execute(user.id);
-  revalidatePath("/notifications");
-  return result;
+export async function markAllNotificationsReadAction(): Promise<
+  ActionResult<Awaited<ReturnType<typeof markAllNotificationsReadUseCase.execute>>>
+> {
+  return runAction(async () => {
+    const user = await requireAuthPage();
+    const result = await markAllNotificationsReadUseCase.execute(user.id);
+    revalidatePath("/notifications");
+    return result;
+  });
 }
 
 /** Phase 18 R-16 — supprime les notifications LUES de plus de N jours.
@@ -55,12 +62,14 @@ const ArchiveSchema = z.object({ daysOld: z.int().positive().max(365).optional()
 
 export async function archiveOldNotificationsAction(
   input: unknown = {},
-): Promise<{ deleted: number }> {
-  await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = ArchiveSchema.parse(input);
-  const result = await deleteOldNotificationsUseCase.execute({
-    daysOld: parsed.daysOld ?? 30,
+): Promise<ActionResult<{ deleted: number }>> {
+  return runAction(async () => {
+    await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = ArchiveSchema.parse(input);
+    const result = await deleteOldNotificationsUseCase.execute({
+      daysOld: parsed.daysOld ?? 30,
+    });
+    revalidatePath("/notifications");
+    return result;
   });
-  revalidatePath("/notifications");
-  return result;
 }

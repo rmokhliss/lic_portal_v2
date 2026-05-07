@@ -62,13 +62,17 @@ export function ContactDialog(props: ContactDialogProps) {
             if (prenom !== undefined) payload.prenom = prenom;
             if (email !== undefined) payload.email = email;
             if (telephone !== undefined) payload.telephone = telephone;
-            await createContactAction(payload, { clientId: props.clientId });
+            const r = await createContactAction(payload, { clientId: props.clientId });
+            if (!r.success) {
+              setError(r.error);
+              return;
+            }
           } else {
             if (!props.contact) {
               setError("Contact manquant");
               return;
             }
-            await updateContactAction(
+            const r = await updateContactAction(
               {
                 contactId: props.contact.id,
                 typeContactCode,
@@ -79,6 +83,10 @@ export function ContactDialog(props: ContactDialogProps) {
               },
               { clientId: props.clientId },
             );
+            if (!r.success) {
+              setError(r.error);
+              return;
+            }
           }
           setError("");
           props.onOpenChange(false);

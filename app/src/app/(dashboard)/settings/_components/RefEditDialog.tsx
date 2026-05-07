@@ -42,10 +42,13 @@ export interface RefFieldDef {
   readonly maxLength?: number;
 }
 
+/** Phase 23 R-45 — `onSubmit` peut retourner soit `undefined` (legacy throw),
+ *  soit un ActionResult tagué (Server Action migrée). RefEditDialog inspecte
+ *  le retour : si `success === false`, on affiche `error` sans fermer. */
 export interface RefEditDialogProps {
   readonly title: string;
   readonly fields: readonly RefFieldDef[];
-  readonly onSubmit: (payload: Record<string, string | null>) => Promise<void>;
+  readonly onSubmit: (payload: Record<string, string | null>) => Promise<unknown>;
 }
 
 export function RefEditDialog({ title, fields, onSubmit }: RefEditDialogProps): React.JSX.Element {
@@ -74,7 +77,18 @@ export function RefEditDialog({ title, fields, onSubmit }: RefEditDialogProps): 
     startTransition(() => {
       void (async () => {
         try {
-          await onSubmit(payload);
+          const r = await onSubmit(payload);
+          if (
+            r !== undefined &&
+            r !== null &&
+            typeof r === "object" &&
+            "success" in r &&
+            r.success === false
+          ) {
+            const msg = "error" in r && typeof r.error === "string" ? r.error : "Erreur";
+            setError(msg);
+            return;
+          }
           setError("");
           setOpen(false);
         } catch (err) {

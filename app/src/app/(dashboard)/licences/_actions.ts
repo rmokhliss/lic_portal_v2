@@ -24,6 +24,7 @@ import {
   listEntitesByClientUseCase,
   listLicencesByClientUseCase,
 } from "@/server/composition-root";
+import { runAction, type ActionResult } from "@/server/infrastructure/actions/result";
 
 const CreateSchema = z
   .object({
@@ -41,15 +42,17 @@ export interface EntiteOption {
   readonly nom: string;
 }
 
-export async function createLicenceAction(input: unknown): Promise<{ id: string }> {
-  const user = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = CreateSchema.parse(input);
-  const result = await createLicenceUseCase.execute(parsed, user.id);
-  revalidatePath("/licences");
-  // Phase 23 — wizard depuis fiche client : refresh la liste licences du
-  // client pour que la nouvelle apparaisse immédiatement après fermeture.
-  revalidatePath(`/clients/${parsed.clientId}/licences`);
-  return { id: result.licence.id };
+export async function createLicenceAction(input: unknown): Promise<ActionResult<{ id: string }>> {
+  return runAction(async () => {
+    const user = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = CreateSchema.parse(input);
+    const result = await createLicenceUseCase.execute(parsed, user.id);
+    revalidatePath("/licences");
+    // Phase 23 — wizard depuis fiche client : refresh la liste licences du
+    // client pour que la nouvelle apparaisse immédiatement après fermeture.
+    revalidatePath(`/clients/${parsed.clientId}/licences`);
+    return { id: result.licence.id };
+  });
 }
 
 /** Phase 18 R-12 — combobox entité du wizard. Lecture autorisée USER+. */
@@ -127,9 +130,13 @@ const AddArticleAfterCreateSchema = z
  *  atomiques (limitation acceptée — un échec partiel laisse une licence
  *  existante avec un sous-ensemble d'articles, l'utilisateur peut compléter
  *  manuellement via /licences/[id]/articles). */
-export async function addArticleAfterCreateAction(input: unknown): Promise<{ id: string }> {
-  const user = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = AddArticleAfterCreateSchema.parse(input);
-  const result = await addArticleToLicenceUseCase.execute(parsed, user.id);
-  return { id: result.id };
+export async function addArticleAfterCreateAction(
+  input: unknown,
+): Promise<ActionResult<{ id: string }>> {
+  return runAction(async () => {
+    const user = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = AddArticleAfterCreateSchema.parse(input);
+    const result = await addArticleToLicenceUseCase.execute(parsed, user.id);
+    return { id: result.id };
+  });
 }

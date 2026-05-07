@@ -301,17 +301,25 @@ export function NewLicenceDialog({
 
     startTransition(() => {
       void (async () => {
+        // Phase 23 R-45 — Result tagué : la Server Action ne throw plus pour
+        // les erreurs métier (Next.js sanitiserait le message). On lit
+        // result.success / result.error pour propager le message AppError.
         try {
-          const created = await createLicenceAction({
+          const createRes = await createLicenceAction({
             clientId,
             entiteId,
             dateDebut,
             dateFin,
             renouvellementAuto,
           });
-          // Phase 22 R-48 — boucle robuste : chaque ajout est try/catch
-          // indépendamment. On collecte les échecs pour les afficher en
-          // résumé (l'utilisateur peut compléter via /licences/[id]/articles).
+          if (!createRes.success) {
+            setError(createRes.error);
+            return;
+          }
+          const created = createRes.data;
+          // Phase 22 R-48 — boucle robuste : chaque ajout retourne un Result
+          // indépendant. On collecte les échecs pour les afficher en résumé
+          // (l'utilisateur peut compléter via /licences/[id]/articles).
           const failures: string[] = [];
           for (const id of selectedArticleIds()) {
             const art = articles.find((a) => a.id === id);
@@ -319,11 +327,14 @@ export function NewLicenceDialog({
             const sel = articleSelection[id];
             const volume = art.controleVolume && sel !== undefined ? Number(sel.volume) : 0;
             try {
-              await addArticleAfterCreateAction({
+              const addRes = await addArticleAfterCreateAction({
                 licenceId: created.id,
                 articleId: id,
                 volumeAutorise: Number.isFinite(volume) && volume >= 0 ? volume : 0,
               });
+              if (!addRes.success) {
+                failures.push(`${art.code} (${addRes.error})`);
+              }
             } catch (artErr) {
               const msg = artErr instanceof Error ? artErr.message : "erreur inconnue";
               failures.push(`${art.code} (${msg})`);
@@ -341,6 +352,7 @@ export function NewLicenceDialog({
           onOpenChange(false);
           router.refresh();
         } catch (err) {
+          // Erreur système (réseau, BD down) — pas un AppError métier.
           setError(err instanceof Error ? err.message : "Erreur inconnue");
         }
       })();

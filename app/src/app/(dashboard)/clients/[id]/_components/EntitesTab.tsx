@@ -118,7 +118,10 @@ function EntiteRow({
     startTransition(() => {
       void (async () => {
         try {
-          await toggleEntiteActiveAction({ entiteId: entite.id }, { clientId });
+          const r = await toggleEntiteActiveAction({ entiteId: entite.id }, { clientId });
+          if (!r.success) {
+            setError(r.error);
+          }
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur");
         }

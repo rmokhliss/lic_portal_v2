@@ -30,22 +30,16 @@ import {
   createClientUseCase,
   updateClientUseCase,
 } from "@/server/composition-root";
-import { AppError } from "@/server/modules/error";
+import { runAction, type ActionResult } from "@/server/infrastructure/actions/result";
 
-/** Phase 23 R-45 — Result tagué pour les Server Actions mutatrices. Permet
- *  de propager le message AppError métier (ConflictError, ValidationError, …)
- *  jusqu'au client sans passer par le mécanisme throw qui est sanitisé par
- *  Next.js 16 (perte du message au profit d'un digest opaque). */
-export type ActionResult<T> =
-  | { readonly success: true; readonly data: T }
-  | { readonly success: false; readonly error: string; readonly code?: string };
+export type { ActionResult };
 
 export async function createClientAction(
   input: unknown,
 ): Promise<ActionResult<Awaited<ReturnType<typeof createClientUseCase.execute>>>> {
-  const actor = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = CreateClientSchema.parse(input);
-  try {
+  return runAction(async () => {
+    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = CreateClientSchema.parse(input);
     // Phase 3.D : appMasterKey injecté par la Server Action (frontière
     // infra/env) pour permettre au use-case de chiffrer la clé privée
     // client AES-256-GCM.
@@ -53,45 +47,30 @@ export async function createClientAction(
       appMasterKey: env.APP_MASTER_KEY,
     });
     revalidatePath("/clients");
-    return { success: true, data: result };
-  } catch (err) {
-    if (err instanceof AppError) {
-      return { success: false, error: err.message, code: err.code };
-    }
-    throw err;
-  }
+    return result;
+  });
 }
 
 export async function updateClientAction(
   input: unknown,
 ): Promise<ActionResult<Awaited<ReturnType<typeof updateClientUseCase.execute>>>> {
-  const actor = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = UpdateClientSchema.parse(input);
-  try {
+  return runAction(async () => {
+    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = UpdateClientSchema.parse(input);
     const result = await updateClientUseCase.execute(parsed, actor.id);
     revalidatePath("/clients");
-    return { success: true, data: result };
-  } catch (err) {
-    if (err instanceof AppError) {
-      return { success: false, error: err.message, code: err.code };
-    }
-    throw err;
-  }
+    return result;
+  });
 }
 
 export async function changeClientStatusAction(
   input: unknown,
 ): Promise<ActionResult<Awaited<ReturnType<typeof changeClientStatusUseCase.execute>>>> {
-  const actor = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = ChangeClientStatusSchema.parse(input);
-  try {
+  return runAction(async () => {
+    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = ChangeClientStatusSchema.parse(input);
     const result = await changeClientStatusUseCase.execute(parsed, actor.id);
     revalidatePath("/clients");
-    return { success: true, data: result };
-  } catch (err) {
-    if (err instanceof AppError) {
-      return { success: false, error: err.message, code: err.code };
-    }
-    throw err;
-  }
+    return result;
+  });
 }

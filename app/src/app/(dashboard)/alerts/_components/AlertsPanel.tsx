@@ -259,7 +259,7 @@ function AlertForm({
       void (async () => {
         try {
           if (mode === "create") {
-            await createAlertConfigAction({
+            const r = await createAlertConfigAction({
               clientId,
               libelle,
               canaux,
@@ -267,8 +267,12 @@ function AlertForm({
               seuilDateJours: seuilDt,
               actif,
             });
+            if (!r.success) {
+              setError(r.error);
+              return;
+            }
           } else if (initial !== undefined) {
-            await updateAlertConfigAction({
+            const r = await updateAlertConfigAction({
               id: initial.id,
               libelle,
               canaux,
@@ -276,6 +280,10 @@ function AlertForm({
               seuilDateJours: seuilDt,
               actif,
             });
+            if (!r.success) {
+              setError(r.error);
+              return;
+            }
           }
           onDone();
         } catch (err) {
@@ -405,7 +413,11 @@ function DeleteAlertForm({
     startTransition(() => {
       void (async () => {
         try {
-          await deleteAlertConfigAction({ id: target.id });
+          const r = await deleteAlertConfigAction({ id: target.id });
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
           onDone();
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur inconnue");

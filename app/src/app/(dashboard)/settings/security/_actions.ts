@@ -14,6 +14,7 @@ import {
   getCACertificateUseCase,
   getCAStatusUseCase,
 } from "@/server/composition-root";
+import { runAction, type ActionResult } from "@/server/infrastructure/actions/result";
 
 const GenerateCASchema = z.object({
   subjectCN: z.string().trim().min(3).max(100).default("S2M Root CA"),
@@ -39,23 +40,27 @@ export async function getCAStatusAction(): Promise<CAStatusActionOutput> {
   };
 }
 
-export async function generateCAAction(input: unknown): Promise<{
-  certificatePem: string;
-  expiresAt: string;
-  subjectCN: string;
-}> {
-  const user = await requireRole(["SADMIN"]);
-  const parsed = GenerateCASchema.parse(input);
-  const result = await generateCAUseCase.execute(
-    { ...parsed, appMasterKey: env.APP_MASTER_KEY },
-    user.id,
-  );
-  revalidatePath("/settings/security");
-  return {
-    certificatePem: result.certificatePem,
-    expiresAt: result.expiresAt.toISOString(),
-    subjectCN: result.subjectCN,
-  };
+export async function generateCAAction(input: unknown): Promise<
+  ActionResult<{
+    certificatePem: string;
+    expiresAt: string;
+    subjectCN: string;
+  }>
+> {
+  return runAction(async () => {
+    const user = await requireRole(["SADMIN"]);
+    const parsed = GenerateCASchema.parse(input);
+    const result = await generateCAUseCase.execute(
+      { ...parsed, appMasterKey: env.APP_MASTER_KEY },
+      user.id,
+    );
+    revalidatePath("/settings/security");
+    return {
+      certificatePem: result.certificatePem,
+      expiresAt: result.expiresAt.toISOString(),
+      subjectCN: result.subjectCN,
+    };
+  });
 }
 
 /** Retourne le PEM clair de la CA — utilisé par le bouton "Télécharger" SADMIN. */
@@ -87,19 +92,21 @@ export interface BackfillResultOutput {
   failures: readonly { codeClient: string; error: string }[];
 }
 
-export async function backfillClientCertsAction(): Promise<BackfillResultOutput> {
-  await requireRole(["SADMIN"]);
-  const result = await backfillClientCertificatesUseCase.execute({
-    appMasterKey: env.APP_MASTER_KEY,
-    systemUserId: SYSTEM_USER_ID,
-    systemUserDisplay: SYSTEM_USER_DISPLAY,
+export async function backfillClientCertsAction(): Promise<ActionResult<BackfillResultOutput>> {
+  return runAction(async () => {
+    await requireRole(["SADMIN"]);
+    const result = await backfillClientCertificatesUseCase.execute({
+      appMasterKey: env.APP_MASTER_KEY,
+      systemUserId: SYSTEM_USER_ID,
+      systemUserDisplay: SYSTEM_USER_DISPLAY,
+    });
+    revalidatePath("/settings/security");
+    return {
+      processed: result.processed,
+      failed: result.failed.length,
+      failures: result.failed.map((f) => ({ codeClient: f.codeClient, error: f.error })),
+    };
   });
-  revalidatePath("/settings/security");
-  return {
-    processed: result.processed,
-    failed: result.failed.length,
-    failures: result.failed.map((f) => ({ codeClient: f.codeClient, error: f.error })),
-  };
 }
 
 // =============================================================================
@@ -118,11 +125,13 @@ export async function getExposeS2mCaPublicAction(): Promise<boolean> {
   return setting?.value === true;
 }
 
-export async function setExposeS2mCaPublicAction(value: boolean): Promise<void> {
-  const user = await requireRole(["SADMIN"]);
-  await updateSettingsUseCase.execute({
-    entries: { [EXPOSE_KEY]: value },
-    updatedBy: user.id,
+export async function setExposeS2mCaPublicAction(value: boolean): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    const user = await requireRole(["SADMIN"]);
+    await updateSettingsUseCase.execute({
+      entries: { [EXPOSE_KEY]: value },
+      updatedBy: user.id,
+    });
+    revalidatePath("/settings/security");
   });
-  revalidatePath("/settings/security");
 }

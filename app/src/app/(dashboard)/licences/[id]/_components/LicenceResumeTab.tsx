@@ -173,7 +173,11 @@ function EditDialog({
     startTransition(() => {
       void (async () => {
         try {
-          await updateLicenceAction(patch);
+          const r = await updateLicenceAction(patch);
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
           setError("");
           onOpenChange(false);
         } catch (err) {
@@ -290,11 +294,15 @@ function StatusDialog({
     startTransition(() => {
       void (async () => {
         try {
-          await changeLicenceStatusAction({
+          const r = await changeLicenceStatusAction({
             licenceId: licence.id,
             expectedVersion: licence.version,
             newStatus,
           });
+          if (!r.success) {
+            setError(humanizeStatusError(r.error));
+            return;
+          }
           setError("");
           onOpenChange(false);
         } catch (err) {
@@ -393,12 +401,16 @@ function GenerateLicFileButton({
     startTransition(() => {
       void (async () => {
         try {
-          const result = await generateLicenceFichierAction({ licenceId });
-          const blob = new Blob([result.contentJson], { type: "application/json" });
+          const r = await generateLicenceFichierAction({ licenceId });
+          if (!r.success) {
+            setError(humanizeError(r.error));
+            return;
+          }
+          const blob = new Blob([r.data.contentJson], { type: "application/json" });
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = result.filename;
+          a.download = r.data.filename;
           a.click();
           URL.revokeObjectURL(url);
         } catch (err) {
@@ -447,12 +459,16 @@ function ImportHealthcheckButton({ licenceId }: { readonly licenceId: string }) 
       void (async () => {
         try {
           const content = await file.text();
-          const result = (await importHealthcheckAction({
+          const r = await importHealthcheckAction({
             licenceId,
             filename: file.name,
             content,
-          })) as { updated: number; errors: number };
-          setInfo(t("doneSummary", { updated: result.updated, errors: result.errors }));
+          });
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
+          setInfo(t("doneSummary", { updated: r.data.updated, errors: r.data.errors }));
           // reset file input
           e.target.value = "";
         } catch (err) {

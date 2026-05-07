@@ -129,7 +129,7 @@ function ToggleButton({
   onToggle,
 }: {
   readonly actif: boolean;
-  readonly onToggle: () => Promise<void>;
+  readonly onToggle: () => Promise<unknown>;
 }) {
   const [pending, startTransition] = useTransition();
   return (

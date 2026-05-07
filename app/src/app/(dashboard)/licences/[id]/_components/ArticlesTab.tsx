@@ -216,7 +216,10 @@ function ProduitSection({
     startTransition(() => {
       void (async () => {
         try {
-          await removeProduitFromLicenceAction({ id: liaisonId }, { licenceId });
+          const r = await removeProduitFromLicenceAction({ id: liaisonId }, { licenceId });
+          if (!r.success) {
+            setError(r.error);
+          }
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur");
         }
@@ -322,7 +325,10 @@ function ArticleRow({
     startTransition(() => {
       void (async () => {
         try {
-          await removeArticleFromLicenceAction({ id: liaison.liaison.id }, { licenceId });
+          const r = await removeArticleFromLicenceAction({ id: liaison.liaison.id }, { licenceId });
+          if (!r.success) {
+            setError(r.error);
+          }
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur");
         }
@@ -414,7 +420,11 @@ function AddProduitDialog({
     startTransition(() => {
       void (async () => {
         try {
-          await addProduitToLicenceAction({ licenceId, produitId });
+          const r = await addProduitToLicenceAction({ licenceId, produitId });
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
           setError("");
           onOpenChange(false);
         } catch (err) {
@@ -514,7 +524,11 @@ function AddArticleDialog({
     startTransition(() => {
       void (async () => {
         try {
-          await addArticleToLicenceAction({ licenceId, articleId, volumeAutorise });
+          const r = await addArticleToLicenceAction({ licenceId, articleId, volumeAutorise });
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
           setError("");
           onClose();
         } catch (err) {
@@ -631,7 +645,11 @@ function EditVolumeDialog({
     startTransition(() => {
       void (async () => {
         try {
-          await updateArticleVolumeAction(payload, { licenceId });
+          const r = await updateArticleVolumeAction(payload, { licenceId });
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
           setError("");
           onClose();
         } catch (err) {

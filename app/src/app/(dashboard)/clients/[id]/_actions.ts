@@ -38,6 +38,7 @@ import {
   updateContactUseCase,
   updateEntiteUseCase,
 } from "@/server/composition-root";
+import { runAction, type ActionResult } from "@/server/infrastructure/actions/result";
 
 const ClientIdSchema = z.object({ clientId: z.uuid() });
 
@@ -47,85 +48,119 @@ function pathFor(clientId: string, tab: "entites" | "contacts" | "licences"): st
 
 // --- Entités ----------------------------------------------------------------
 
-export async function createEntiteAction(input: unknown) {
-  const actor = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = CreateEntiteSchema.parse(input);
-  const result = await createEntiteUseCase.execute(parsed, actor.id);
-  revalidatePath(pathFor(parsed.clientId, "entites"));
-  revalidatePath(pathFor(parsed.clientId, "contacts"));
-  return result;
+export async function createEntiteAction(
+  input: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof createEntiteUseCase.execute>>>> {
+  return runAction(async () => {
+    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = CreateEntiteSchema.parse(input);
+    const result = await createEntiteUseCase.execute(parsed, actor.id);
+    revalidatePath(pathFor(parsed.clientId, "entites"));
+    revalidatePath(pathFor(parsed.clientId, "contacts"));
+    return result;
+  });
 }
 
-export async function updateEntiteAction(input: unknown, clientIdContext: unknown) {
-  const actor = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = UpdateEntiteSchema.parse(input);
-  const { clientId } = ClientIdSchema.parse(clientIdContext);
-  const result = await updateEntiteUseCase.execute(parsed, actor.id);
-  revalidatePath(pathFor(clientId, "entites"));
-  revalidatePath(pathFor(clientId, "contacts"));
-  return result;
+export async function updateEntiteAction(
+  input: unknown,
+  clientIdContext: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof updateEntiteUseCase.execute>>>> {
+  return runAction(async () => {
+    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = UpdateEntiteSchema.parse(input);
+    const { clientId } = ClientIdSchema.parse(clientIdContext);
+    const result = await updateEntiteUseCase.execute(parsed, actor.id);
+    revalidatePath(pathFor(clientId, "entites"));
+    revalidatePath(pathFor(clientId, "contacts"));
+    return result;
+  });
 }
 
-export async function toggleEntiteActiveAction(input: unknown, clientIdContext: unknown) {
-  const actor = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = ToggleEntiteActiveSchema.parse(input);
-  const { clientId } = ClientIdSchema.parse(clientIdContext);
-  const result = await toggleEntiteActiveUseCase.execute(parsed, actor.id);
-  revalidatePath(pathFor(clientId, "entites"));
-  revalidatePath(pathFor(clientId, "contacts"));
-  return result;
+export async function toggleEntiteActiveAction(
+  input: unknown,
+  clientIdContext: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof toggleEntiteActiveUseCase.execute>>>> {
+  return runAction(async () => {
+    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = ToggleEntiteActiveSchema.parse(input);
+    const { clientId } = ClientIdSchema.parse(clientIdContext);
+    const result = await toggleEntiteActiveUseCase.execute(parsed, actor.id);
+    revalidatePath(pathFor(clientId, "entites"));
+    revalidatePath(pathFor(clientId, "contacts"));
+    return result;
+  });
 }
 
 // --- Contacts ---------------------------------------------------------------
 
-export async function createContactAction(input: unknown, clientIdContext: unknown) {
-  const actor = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = CreateContactSchema.parse(input);
-  const { clientId } = ClientIdSchema.parse(clientIdContext);
-  const result = await createContactUseCase.execute(parsed, actor.id);
-  revalidatePath(pathFor(clientId, "contacts"));
-  return result;
+export async function createContactAction(
+  input: unknown,
+  clientIdContext: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof createContactUseCase.execute>>>> {
+  return runAction(async () => {
+    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = CreateContactSchema.parse(input);
+    const { clientId } = ClientIdSchema.parse(clientIdContext);
+    const result = await createContactUseCase.execute(parsed, actor.id);
+    revalidatePath(pathFor(clientId, "contacts"));
+    return result;
+  });
 }
 
-export async function updateContactAction(input: unknown, clientIdContext: unknown) {
-  const actor = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = UpdateContactSchema.parse(input);
-  const { clientId } = ClientIdSchema.parse(clientIdContext);
-  const result = await updateContactUseCase.execute(parsed, actor.id);
-  revalidatePath(pathFor(clientId, "contacts"));
-  return result;
+export async function updateContactAction(
+  input: unknown,
+  clientIdContext: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof updateContactUseCase.execute>>>> {
+  return runAction(async () => {
+    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = UpdateContactSchema.parse(input);
+    const { clientId } = ClientIdSchema.parse(clientIdContext);
+    const result = await updateContactUseCase.execute(parsed, actor.id);
+    revalidatePath(pathFor(clientId, "contacts"));
+    return result;
+  });
 }
 
-export async function deleteContactAction(input: unknown, clientIdContext: unknown) {
-  const actor = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = DeleteContactSchema.parse(input);
-  const { clientId } = ClientIdSchema.parse(clientIdContext);
-  await deleteContactUseCase.execute(parsed, actor.id);
-  revalidatePath(pathFor(clientId, "contacts"));
+export async function deleteContactAction(
+  input: unknown,
+  clientIdContext: unknown,
+): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = DeleteContactSchema.parse(input);
+    const { clientId } = ClientIdSchema.parse(clientIdContext);
+    await deleteContactUseCase.execute(parsed, actor.id);
+    revalidatePath(pathFor(clientId, "contacts"));
+  });
 }
 
 // --- Licences (Phase 5.E) ---------------------------------------------------
 
-export async function createLicenceAction(input: unknown, clientIdContext: unknown) {
-  const actor = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = CreateLicenceSchema.parse(input);
-  const { clientId } = ClientIdSchema.parse(clientIdContext);
-  // Conversion ISO string → Date (le schéma Zod vérifie le format ISO).
-  const result = await createLicenceUseCase.execute(
-    {
-      clientId: parsed.clientId,
-      entiteId: parsed.entiteId,
-      dateDebut: new Date(parsed.dateDebut),
-      dateFin: new Date(parsed.dateFin),
-      ...(parsed.commentaire !== undefined ? { commentaire: parsed.commentaire } : {}),
-      ...(parsed.renouvellementAuto !== undefined
-        ? { renouvellementAuto: parsed.renouvellementAuto }
-        : {}),
-    },
-    actor.id,
-  );
-  revalidatePath(pathFor(clientId, "licences"));
-  return result;
+export async function createLicenceAction(
+  input: unknown,
+  clientIdContext: unknown,
+): Promise<ActionResult<Awaited<ReturnType<typeof createLicenceUseCase.execute>>>> {
+  return runAction(async () => {
+    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = CreateLicenceSchema.parse(input);
+    const { clientId } = ClientIdSchema.parse(clientIdContext);
+    // Conversion ISO string → Date (le schéma Zod vérifie le format ISO).
+    const result = await createLicenceUseCase.execute(
+      {
+        clientId: parsed.clientId,
+        entiteId: parsed.entiteId,
+        dateDebut: new Date(parsed.dateDebut),
+        dateFin: new Date(parsed.dateFin),
+        ...(parsed.commentaire !== undefined ? { commentaire: parsed.commentaire } : {}),
+        ...(parsed.renouvellementAuto !== undefined
+          ? { renouvellementAuto: parsed.renouvellementAuto }
+          : {}),
+      },
+      actor.id,
+    );
+    revalidatePath(pathFor(clientId, "licences"));
+    return result;
+  });
 }
 
 // --- Healthcheck import (Phase 10.D) ----------------------------------------
@@ -140,21 +175,25 @@ const ImportHealthcheckClientSchema = z
   })
   .strict();
 
-export async function importHealthcheckClientAction(input: unknown): Promise<{
-  updated: number;
-  errors: number;
-  errorDetails: readonly string[];
-}> {
-  const actor = await requireRole(["ADMIN", "SADMIN"]);
-  const parsed = ImportHealthcheckClientSchema.parse(input);
-  const result = await importHealthcheckUseCase.execute(parsed, actor.id);
-  revalidatePath(`/licences/${parsed.licenceId}/articles`);
-  revalidatePath(`/licences/${parsed.licenceId}/resume`);
-  return {
-    updated: result.updated,
-    errors: result.errors,
-    errorDetails: result.errorDetails,
-  };
+export async function importHealthcheckClientAction(input: unknown): Promise<
+  ActionResult<{
+    updated: number;
+    errors: number;
+    errorDetails: readonly string[];
+  }>
+> {
+  return runAction(async () => {
+    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = ImportHealthcheckClientSchema.parse(input);
+    const result = await importHealthcheckUseCase.execute(parsed, actor.id);
+    revalidatePath(`/licences/${parsed.licenceId}/articles`);
+    revalidatePath(`/licences/${parsed.licenceId}/resume`);
+    return {
+      updated: result.updated,
+      errors: result.errors,
+      errorDetails: result.errorDetails,
+    };
+  });
 }
 
 // --- Historique (Phase 7.B) -------------------------------------------------

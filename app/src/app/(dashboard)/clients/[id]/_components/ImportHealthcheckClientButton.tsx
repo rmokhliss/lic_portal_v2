@@ -67,12 +67,16 @@ export function ImportHealthcheckClientButton(props: ImportHealthcheckClientButt
       void (async () => {
         try {
           const content = await fileEntry.text();
-          const result = (await importHealthcheckClientAction({
+          const r = await importHealthcheckClientAction({
             licenceId,
             filename: fileEntry.name,
             content,
-          })) as { updated: number; errors: number };
-          setInfo(t("doneSummary", { updated: result.updated, errors: result.errors }));
+          });
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
+          setInfo(t("doneSummary", { updated: r.data.updated, errors: r.data.errors }));
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur");
         }

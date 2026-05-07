@@ -48,7 +48,11 @@ export function EntiteDialog({ open, onOpenChange, clientId, mode, entite }: Ent
           if (mode === "create") {
             const payload: Record<string, unknown> = { clientId, nom };
             if (codePays !== undefined) payload.codePays = codePays;
-            await createEntiteAction(payload);
+            const r = await createEntiteAction(payload);
+            if (!r.success) {
+              setError(r.error);
+              return;
+            }
           } else {
             if (!entite) {
               setError("Entité manquante");
@@ -57,7 +61,11 @@ export function EntiteDialog({ open, onOpenChange, clientId, mode, entite }: Ent
             const patch: Record<string, unknown> = { entiteId: entite.id };
             if (nom !== entite.nom) patch.nom = nom;
             if (codePays !== (entite.codePays ?? undefined)) patch.codePays = codePays;
-            await updateEntiteAction(patch, { clientId });
+            const r = await updateEntiteAction(patch, { clientId });
+            if (!r.success) {
+              setError(r.error);
+              return;
+            }
           }
           setError("");
           onOpenChange(false);

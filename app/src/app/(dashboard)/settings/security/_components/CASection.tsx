@@ -50,7 +50,11 @@ export function CASection({
     startTransition(() => {
       void (async () => {
         try {
-          await setExposeS2mCaPublicAction(next);
+          const r = await setExposeS2mCaPublicAction(next);
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
           setExposeCaPublic(next);
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur inconnue");
@@ -66,8 +70,12 @@ export function CASection({
       void (async () => {
         try {
           const r = await backfillClientCertsAction();
-          setBackfillResult({ processed: r.processed, failed: r.failed });
-          setBackfillStatus({ pendingCount: r.failed });
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
+          setBackfillResult({ processed: r.data.processed, failed: r.data.failed });
+          setBackfillStatus({ pendingCount: r.data.failed });
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur inconnue");
         }
@@ -80,14 +88,18 @@ export function CASection({
     startTransition(() => {
       void (async () => {
         try {
-          const result = await generateCAAction({
+          const r = await generateCAAction({
             subjectCN: "S2M Root CA",
             org: "S2M",
           });
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
           setStatus({
             exists: true,
-            expiresAt: result.expiresAt,
-            subjectCN: result.subjectCN,
+            expiresAt: r.data.expiresAt,
+            subjectCN: r.data.subjectCN,
             generatedAt: new Date().toISOString(),
           });
         } catch (err) {
