@@ -378,9 +378,12 @@ export function NewLicenceDialog({
             router.refresh();
             return;
           }
+          // Phase 23 — `router.refresh()` AVANT `onOpenChange(false)` pour
+          // garantir que le re-fetch est lancé avant le re-render du parent
+          // (qui peut court-circuiter le refresh selon l'ordre React).
+          router.refresh();
           setArticleErrors([]);
           onOpenChange(false);
-          router.refresh();
         } catch (err) {
           // Erreur système (réseau, BD down) — pas un AppError métier.
           setError(err instanceof Error ? err.message : "Erreur inconnue");
