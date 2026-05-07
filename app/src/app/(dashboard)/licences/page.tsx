@@ -31,6 +31,7 @@ interface LicencesPageProps {
     readonly cursor?: string;
     readonly statut?: string;
     readonly q?: string;
+    readonly clientId?: string;
   }>;
 }
 
@@ -63,6 +64,10 @@ export default async function LicencesPage({
       ? (params.statut as LicenceStatusFilter)
       : undefined;
   const qFilter = params.q !== undefined && params.q.trim().length > 0 ? params.q.trim() : "";
+  const clientIdFilter =
+    params.clientId !== undefined && params.clientId.trim().length > 0
+      ? params.clientId.trim()
+      : undefined;
 
   // Phase 21 R-30 — wizard de création licence : pré-charge le catalogue
   // (produits + articles actifs) en parallèle. Volume cible <50 produits et
@@ -73,6 +78,7 @@ export default async function LicencesPage({
       ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
       ...(statusFilter !== undefined ? { status: statusFilter } : {}),
       ...(qFilter.length > 0 ? { q: qFilter } : {}),
+      ...(clientIdFilter !== undefined ? { clientId: clientIdFilter } : {}),
       limit: 25,
     }),
     listClientsUseCase.execute({ limit: 200 }),
@@ -123,6 +129,7 @@ export default async function LicencesPage({
     if (cursor !== null) sp.set("cursor", cursor);
     if (statusFilter !== undefined) sp.set("statut", statusFilter);
     if (qFilter.length > 0) sp.set("q", qFilter);
+    if (clientIdFilter !== undefined) sp.set("clientId", clientIdFilter);
     const qs = sp.toString();
     return qs.length === 0 ? "/licences" : `/licences?${qs}`;
   };
@@ -162,6 +169,27 @@ export default async function LicencesPage({
             defaultValue={qFilter}
             className="border-input bg-background text-foreground h-9 rounded-md border px-3 text-sm"
           />
+        </div>
+        <div className="flex min-w-[200px] flex-col gap-1">
+          <label
+            htmlFor="clientId"
+            className="text-muted-foreground text-xs uppercase tracking-wider"
+          >
+            Client
+          </label>
+          <select
+            id="clientId"
+            name="clientId"
+            defaultValue={clientIdFilter ?? ""}
+            className="border-input bg-background text-foreground h-9 rounded-md border px-3 text-sm"
+          >
+            <option value="">Tous</option>
+            {dialogClients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.codeClient} · {c.raisonSociale}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="flex flex-col gap-1">
           <label

@@ -11,6 +11,7 @@ import type { LicenceStatus } from "../domain/licence.entity";
 import type { FindLicencesPaginatedInput, LicenceRepository } from "../ports/licence.repository";
 
 export interface ListAllLicencesUseCaseInput {
+  readonly clientId?: string;
   readonly status?: LicenceStatus | readonly LicenceStatus[];
   /** Recherche sous-chaîne sur reference (T-03 — page /licences). */
   readonly q?: string;
@@ -29,6 +30,7 @@ export class ListAllLicencesUseCase {
 
   async execute(input: ListAllLicencesUseCaseInput): Promise<ListAllLicencesUseCaseOutput> {
     const opts: FindLicencesPaginatedInput = {
+      ...(input.clientId !== undefined ? { clientId: input.clientId } : {}),
       ...(input.status !== undefined ? { status: input.status } : {}),
       ...(input.q !== undefined ? { q: input.q } : {}),
       ...(input.cursor !== undefined ? { cursor: input.cursor } : {}),
