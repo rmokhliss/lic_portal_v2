@@ -35,6 +35,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 
+import { addProduitToLicenceAction } from "../[id]/_actions";
+
 import {
   addArticleAfterCreateAction,
   checkLicenceDoublonAction,
@@ -317,11 +319,39 @@ export function NewLicenceDialog({
             return;
           }
           const created = createRes.data;
+          // Phase 23 — attache les produits parents avant les articles. Sans
+          // cette étape, lic_licence_articles est peuplée mais lic_licence_produits
+          // reste vide et /licences/[id]/articles affiche "Aucun produit attaché"
+          // (les articles sont rendus groupés par produit). Les conflits "produit
+          // déjà attaché" sont silencieusement ignorés.
+          const ids = selectedArticleIds();
+          const produitIds = new Set<number>();
+          for (const id of ids) {
+            const art = articles.find((a) => a.id === id);
+            if (art !== undefined) produitIds.add(art.produitId);
+          }
+          for (const produitId of produitIds) {
+            try {
+              const addProd = await addProduitToLicenceAction({
+                licenceId: created.id,
+                produitId,
+              });
+              // SPX-LIC-750 = produit déjà attaché → tolérance silencieuse.
+              if (!addProd.success && addProd.code !== "SPX-LIC-750") {
+                // Erreur autre que "déjà attaché" — log mais on continue
+                // pour permettre l'ajout des articles indépendants.
+
+                console.warn("Échec attache produit", produitId, addProd.error);
+              }
+            } catch {
+              // Silencieux — on continue sur les articles.
+            }
+          }
           // Phase 22 R-48 — boucle robuste : chaque ajout retourne un Result
           // indépendant. On collecte les échecs pour les afficher en résumé
           // (l'utilisateur peut compléter via /licences/[id]/articles).
           const failures: string[] = [];
-          for (const id of selectedArticleIds()) {
+          for (const id of ids) {
             const art = articles.find((a) => a.id === id);
             if (art === undefined) continue;
             const sel = articleSelection[id];
