@@ -1,9 +1,17 @@
 // ==============================================================================
-// LIC v2 — Job snapshot-volumes (Phase 8.C, schedule mensuel)
+// LIC v2 — Job snapshot-volumes (Phase 8.C, schedule mensuel + Phase 23 nullable)
 //
-// Pour chaque liaison licence×article actuelle, écrit un snapshot
-// dans lic_article_volume_history pour la périodicité courante (1er jour
-// du mois). Idempotent : conflit (licence, article, periode) UNIQUE → skip.
+// Pour chaque liaison licence×article actuelle dont l'article est volumétrique
+// ET dont les volumes sont définis (non-null), écrit un snapshot dans
+// lic_article_volume_history pour la périodicité courante (1er jour du mois).
+// Idempotent : conflit (licence, article, periode) UNIQUE → skip.
+//
+// Phase 23 — filtrage `controle_volume=true AND volume_autorise IS NOT NULL` :
+// les articles fonctionnalités (Core, modules) n'ont pas de notion de volume,
+// snapshot-er leurs liaisons n'aurait pas de sens (et casserait le use-case
+// qui exige des entiers). Les articles volumétriques sans volume défini
+// (volume_autorise=NULL = "non encore plafonné") sont également skip jusqu'à
+// ce que l'admin renseigne un volume.
 // ==============================================================================
 
 import { sql } from "drizzle-orm";
@@ -27,15 +35,21 @@ export async function runSnapshotVolumes(declencheur: "SCHEDULED" | "MANUAL" = "
     const now = new Date();
     const periode = new Date(now.getFullYear(), now.getMonth(), 1);
 
+    // Phase 23 — JOIN sur lic_articles_ref pour filtrer controle_volume=true.
+    // Les liaisons sans volume défini sont aussi exclues (snapshot inutile).
     const rowsResult = await db.execute<LicenceArticleRow>(sql`
-      SELECT licence_id, article_id, volume_autorise, volume_consomme
-      FROM lic_licence_articles
+      SELECT la.licence_id, la.article_id, la.volume_autorise, la.volume_consomme
+      FROM lic_licence_articles la
+      JOIN lic_articles_ref a ON a.id = la.article_id
+      WHERE a.controle_volume = true
+        AND la.volume_autorise IS NOT NULL
+        AND la.volume_consomme IS NOT NULL
     `);
     const rows = rowsResult as unknown as readonly LicenceArticleRow[];
 
     await log.info("Starting snapshot-volumes", {
       periode: periode.toISOString().slice(0, 10),
-      totalRows: rows.length,
+      eligibleRows: rows.length,
     });
 
     let created = 0;

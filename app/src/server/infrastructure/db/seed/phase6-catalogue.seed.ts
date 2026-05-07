@@ -426,6 +426,29 @@ async function seedVolumeSnapshots(
   }
 }
 
+/** Phase 23 — aligne les volumes sur le flag `controle_volume` du catalogue.
+ *  Les articles non-volumétriques (Core, modules fonctionnalités, kernels)
+ *  n'ont pas de notion métier de volume → on remet leurs liaisons à NULL
+ *  même si le seed initial a posé un 0 explicite.
+ *
+ *  Idempotent : peut tourner après chaque re-seed pour aligner les volumes
+ *  aux overrides controleVolume appliqués entre-temps. */
+async function nullifyNonVolumetricVolumes(sql: postgres.Sql): Promise<void> {
+  const result = await sql`
+    UPDATE lic_licence_articles la
+    SET volume_autorise = NULL, volume_consomme = NULL
+    WHERE EXISTS (
+      SELECT 1 FROM lic_articles_ref a
+      WHERE a.id = la.article_id AND a.controle_volume = false
+    )
+    AND (la.volume_autorise IS NOT NULL OR la.volume_consomme IS NOT NULL)
+  `;
+  log.info(
+    { updated: result.count },
+    "Phase 23 — volumes mis à NULL sur articles non-volumétriques",
+  );
+}
+
 /** Phase 19 R-13 + Phase 22 R-51 — aligne controle_volume sur les articles
  *  non-volumétriques. UPDATE idempotent post-INSERT, appliqué même si seed
  *  déjà en place.
@@ -470,6 +493,9 @@ export async function seedPhase6Catalogue(sql: postgres.Sql): Promise<void> {
     // (cas constaté : produits/articles seedés mais 1 seule licence avec
     // articles sur 56). Idempotent : skip toute licence déjà équipée.
     await backfillMissingLiaisons(sql);
+    // Phase 23 — aligne les volumes sur controle_volume (les articles
+    // non-volumétriques voient leurs volumes mis à NULL).
+    await nullifyNonVolumetricVolumes(sql);
     return;
   }
 
@@ -493,6 +519,9 @@ export async function seedPhase6Catalogue(sql: postgres.Sql): Promise<void> {
   }
   const attachments = await seedLicenceLiaisons(repos, catalogue, licenceIds);
   await seedVolumeSnapshots(repos, attachments);
+  // Phase 23 — aligne les volumes sur controle_volume (les articles
+  // non-volumétriques voient leurs volumes mis à NULL).
+  await nullifyNonVolumetricVolumes(sql);
 
   log.info({ licences: licenceIds.length }, "Phase 6.E seed completed");
 }

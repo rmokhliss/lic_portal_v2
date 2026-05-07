@@ -122,6 +122,24 @@ export function BatchesPanel(props: BatchesPanelProps) {
                 )}
               </header>
 
+              {/* Phase 23 — mini-timeline sparkline des dernières exécutions
+                   (statut couleur + durée relative), vue d'oeil sur la santé
+                   du job avant le détail tabulaire. */}
+              {execs.length > 0 && (
+                <div className="mt-3 flex items-end gap-1" aria-label="Timeline exécutions">
+                  {[...execs].reverse().map((exec) => (
+                    <div
+                      key={`spark-${exec.id}`}
+                      className={`w-4 rounded-sm ${sparklineColor(exec.status)}`}
+                      style={{
+                        height: `${String(sparklineHeight(exec.startedAt, exec.endedAt))}px`,
+                      }}
+                      title={`${exec.status} · ${formatDuration(exec.startedAt, exec.endedAt)}`}
+                    />
+                  ))}
+                </div>
+              )}
+
               <Table className="mt-3">
                 <TableHeader>
                   <TableRow>
@@ -129,13 +147,14 @@ export function BatchesPanel(props: BatchesPanelProps) {
                     <TableHead>{t("table.declencheur")}</TableHead>
                     <TableHead>{t("table.status")}</TableHead>
                     <TableHead>{t("table.duration")}</TableHead>
+                    <TableHead className="text-right">Items</TableHead>
                     <TableHead className="text-right">{t("table.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {execs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-muted-foreground text-center text-sm">
+                      <TableCell colSpan={6} className="text-muted-foreground text-center text-sm">
                         {t("noExecutions")}
                       </TableCell>
                     </TableRow>
@@ -151,6 +170,9 @@ export function BatchesPanel(props: BatchesPanelProps) {
                         </TableCell>
                         <TableCell className="text-xs">
                           {formatDuration(exec.startedAt, exec.endedAt)}
+                        </TableCell>
+                        <TableCell className="text-right text-xs tabular-nums">
+                          {summarizeItems(exec.stats)}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -225,37 +247,65 @@ function LogsDialog({
             {t("title")} — {exec.id.slice(0, 8)}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-2 text-sm">
+        <div className="space-y-3 text-sm">
+          {/* Phase 23 — résumé en grille au lieu de JSON brut. */}
+          <div className="border-border bg-muted/30 grid grid-cols-2 gap-2 rounded-md border p-3 text-xs sm:grid-cols-4">
+            <Stat label="Statut" value={exec.status} />
+            <Stat label="Déclencheur" value={exec.declencheur} />
+            <Stat
+              label="Démarré"
+              value={exec.startedAt === null ? "—" : formatDate(exec.startedAt)}
+            />
+            <Stat label="Durée" value={formatDuration(exec.startedAt, exec.endedAt)} />
+            {exec.stats !== null &&
+              Object.entries(exec.stats).map(([k, v]) => (
+                <Stat key={k} label={k} value={String(v)} />
+              ))}
+          </div>
+
           {exec.errorMessage !== null && (
-            <div className="bg-destructive/10 text-destructive rounded-md p-3 text-xs">
-              {exec.errorMessage}
+            <div className="bg-destructive/10 text-destructive rounded-md p-3">
+              <p className="text-xs font-semibold">Erreur principale</p>
+              <pre className="mt-1 whitespace-pre-wrap font-mono text-xs">{exec.errorMessage}</pre>
             </div>
           )}
-          {exec.stats !== null && Object.keys(exec.stats).length > 0 && (
-            <pre className="bg-muted text-foreground max-h-32 overflow-auto rounded-md p-2 font-mono text-xs">
-              {JSON.stringify(exec.stats, null, 2)}
-            </pre>
-          )}
-          {logs.length === 0 ? (
-            <p className="text-muted-foreground text-xs">{t("empty")}</p>
-          ) : (
-            <ul className="bg-muted/40 max-h-96 overflow-auto rounded-md p-2 text-xs">
-              {logs.map((log) => (
-                <li key={log.id} className="border-border border-b py-1 last:border-0">
-                  <span className="text-muted-foreground font-mono">
-                    {formatDate(log.createdAt)}
-                  </span>{" "}
-                  <LevelBadge level={log.level} />{" "}
-                  <span className="text-foreground">{log.message}</span>
-                  {log.metadata !== null && (
-                    <pre className="text-muted-foreground mt-0.5 font-mono">
-                      {JSON.stringify(log.metadata)}
-                    </pre>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+
+          <div>
+            <p className="text-muted-foreground mb-1 text-xs uppercase tracking-wider">
+              Logs ({logs.length})
+            </p>
+            {logs.length === 0 ? (
+              <p className="text-muted-foreground text-xs">{t("empty")}</p>
+            ) : (
+              <ul className="bg-muted/20 max-h-96 space-y-0.5 overflow-auto rounded-md p-2 text-xs">
+                {logs.map((log) => (
+                  <li
+                    key={log.id}
+                    className={`border-border rounded px-2 py-1 ${
+                      log.level === "ERROR"
+                        ? "bg-destructive/10"
+                        : log.level === "WARN"
+                          ? "bg-warning/10"
+                          : ""
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground font-mono">
+                        {formatDate(log.createdAt)}
+                      </span>
+                      <LevelBadge level={log.level} />
+                      <span className="text-foreground flex-1">{log.message}</span>
+                    </div>
+                    {log.metadata !== null && Object.keys(log.metadata).length > 0 && (
+                      <pre className="text-muted-foreground ml-2 mt-1 whitespace-pre-wrap font-mono text-[10px]">
+                        {JSON.stringify(log.metadata, null, 2)}
+                      </pre>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -291,4 +341,57 @@ function formatDuration(start: string | null, end: string | null): string {
   const ms = new Date(end).getTime() - new Date(start).getTime();
   if (ms < 1000) return `${String(ms)}ms`;
   return `${(ms / 1000).toFixed(1)}s`;
+}
+
+/** Phase 23 — stat label/value pour le LogsDialog (alternative au JSON brut). */
+function Stat({ label, value }: { readonly label: string; readonly value: string }) {
+  return (
+    <div className="space-y-0.5">
+      <p className="text-muted-foreground text-[10px] uppercase tracking-wider">{label}</p>
+      <p className="text-foreground font-mono text-xs tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+/** Phase 23 — extrait les compteurs métier depuis stats pour la colonne "Items"
+ *  de la table : "created/skipped/errors" pour snapshot-volumes, etc. Format
+ *  "+N traités" pour vue rapide. */
+function summarizeItems(stats: Record<string, unknown> | null): string {
+  if (stats === null) return "—";
+  const candidates = ["created", "processed", "updated", "deleted", "expired", "renewed"];
+  for (const k of candidates) {
+    const v = stats[k];
+    if (typeof v === "number") return `${String(v)} ${k}`;
+  }
+  // fallback : premier number trouvé
+  for (const [k, v] of Object.entries(stats)) {
+    if (typeof v === "number") return `${String(v)} ${k}`;
+  }
+  return "—";
+}
+
+/** Phase 23 — couleur barre sparkline selon statut. */
+function sparklineColor(status: string): string {
+  switch (status) {
+    case "SUCCESS":
+      return "bg-success/70";
+    case "FAILED":
+      return "bg-destructive/70";
+    case "RUNNING":
+      return "bg-info/70";
+    case "QUEUED":
+    case "CANCELLED":
+      return "bg-muted-foreground/40";
+    default:
+      return "bg-muted-foreground/30";
+  }
+}
+
+/** Phase 23 — hauteur barre sparkline proportionnelle à la durée (4-32px). */
+function sparklineHeight(start: string | null, end: string | null): number {
+  if (start === null || end === null) return 8;
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  // log scale 100ms → 60s
+  const clamped = Math.max(100, Math.min(60_000, ms));
+  return Math.round(4 + 28 * (Math.log10(clamped / 100) / Math.log10(600)));
 }
