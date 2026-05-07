@@ -6,10 +6,10 @@
 // message AppError métier (ConflictError, ValidationError, …) est perdu.
 //
 // Pattern : toute Server Action mutatrice doit retourner un Result tagué via
-// le helper `runAction(fn)` ci-dessous, qui catch les AppError et les
-// convertit en `{ success: false, error, code }`. Les erreurs systèmes
-// (DB down, panne réseau, bug TypeScript) continuent de throw → bannière
-// 500 Next.js standard.
+// le helper `runAction(fn)` ci-dessous, qui catch les AppError ET les ZodError
+// (validation schéma) et les convertit en `{ success: false, error, code }`.
+// Les erreurs systèmes (DB down, panne réseau, bug TypeScript) continuent de
+// throw → bannière 500 Next.js standard.
 //
 // Usage :
 //
@@ -27,8 +27,10 @@
 //
 //   const r = await createXAction(payload);
 //   if (r.success) { setError(""); onClose(); }
-//   else { setError(r.error); }   // message AppError préservé
+//   else { setError(r.error); }   // message AppError / ZodError préservé
 // ==============================================================================
+
+import { ZodError } from "zod";
 
 import { AppError } from "@/server/modules/error";
 
@@ -36,9 +38,21 @@ export type ActionResult<T> =
   | { readonly success: true; readonly data: T }
   | { readonly success: false; readonly error: string; readonly code?: string };
 
-/** Exécute la fonction et catch les AppError métier en Result.failure.
- *  Re-throw les erreurs non-AppError (Zod, système, programmation) — Next.js
- *  les digest comme avant (acceptable car ce sont des cas non-prévus). */
+/** Concatène les issues Zod en un message lisible utilisateur. Format :
+ *  `[chemin] message` pour faciliter la corrélation avec le champ fautif. */
+function formatZodIssues(err: ZodError): string {
+  return err.issues
+    .map((issue) => {
+      const path = issue.path.length > 0 ? issue.path.join(".") : "input";
+      return `${path}: ${issue.message}`;
+    })
+    .join("; ");
+}
+
+/** Exécute la fonction et catch les erreurs prévisibles (AppError métier +
+ *  ZodError validation schéma) en Result.failure. Re-throw les erreurs
+ *  systèmes (panne BD, bug TypeScript, ...) — Next.js les digest comme
+ *  avant (acceptable car cas non-prévus). */
 export async function runAction<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
   try {
     const data = await fn();
@@ -46,6 +60,9 @@ export async function runAction<T>(fn: () => Promise<T>): Promise<ActionResult<T
   } catch (err) {
     if (err instanceof AppError) {
       return { success: false, error: err.message, code: err.code };
+    }
+    if (err instanceof ZodError) {
+      return { success: false, error: formatZodIssues(err), code: "VALIDATION" };
     }
     throw err;
   }
