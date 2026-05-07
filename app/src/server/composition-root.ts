@@ -450,6 +450,7 @@ export {
 
 import { articleRepository as articleRepoPhase10 } from "@/server/modules/article/article.module";
 import { GenerateLicenceFichierUseCase } from "@/server/modules/fichier-log/application/generate-licence-fichier.usecase";
+import { GetLicFileStaleStatusUseCase } from "@/server/modules/fichier-log/application/get-lic-file-stale-status.usecase";
 import { ImportHealthcheckUseCase } from "@/server/modules/fichier-log/application/import-healthcheck.usecase";
 import {
   fichierLogRepository,
@@ -468,6 +469,9 @@ export const generateLicenceFichierUseCase = new GenerateLicenceFichierUseCase(
   articleRepoPhase10,
   logFichierGenereSingleton,
 );
+
+// Phase 23 — comparateur hash pour la bannière "fichier .lic obsolete".
+export const getLicFileStaleStatusUseCase = new GetLicFileStaleStatusUseCase();
 
 // --- Phase 10.D + Phase 14 : import healthcheck (cross-module : licence +
 // article + licence-article + fichier-log + updateArticleVolumeUseCase +

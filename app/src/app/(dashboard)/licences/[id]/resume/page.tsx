@@ -10,6 +10,7 @@ import {
   getClientUseCase,
   getEntiteUseCase,
   getLicenceUseCase,
+  getLicFileStaleStatusUseCase,
   listArticlesByLicenceUseCase,
 } from "@/server/composition-root";
 
@@ -35,10 +36,12 @@ export default async function LicenceResumePage({ params }: PageProps) {
   // « disabled » du bouton "Générer .lic" (évite le pattern click → erreur
   // pour les licences sans aucun article attaché). Le humanizeError côté
   // client gère déjà les cas CA absente / cert manquant (Phase 20 R-31).
-  const [client, entite, articles] = await Promise.all([
+  const [client, entite, articles, licFileStatus] = await Promise.all([
     getClientUseCase.execute(licence.clientId).catch(() => null),
     getEntiteUseCase.execute(licence.entiteId).catch(() => null),
     listArticlesByLicenceUseCase.execute(id).catch(() => [] as readonly unknown[]),
+    // Phase 23 — statut fichier .lic (never/fresh/stale) pour banniere UI.
+    getLicFileStaleStatusUseCase.execute(id).catch(() => null),
   ]);
 
   return (
@@ -50,6 +53,7 @@ export default async function LicenceResumePage({ params }: PageProps) {
       entiteLabel={entite !== null ? entite.nom : licence.entiteId}
       canEdit={user.role === "ADMIN" || user.role === "SADMIN"}
       articlesCount={articles.length}
+      licFileStatus={licFileStatus}
     />
   );
 }

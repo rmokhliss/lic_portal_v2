@@ -57,6 +57,12 @@ export const licences = pgTable(
     version: integer("version").notNull().default(0),
     renouvellementAuto: boolean("renouvellement_auto").notNull().default(false),
     notifEnvoyee: boolean("notif_envoyee").notNull().default(false),
+    // Phase 23 — empreinte SHA-256 du contenu produit/article/volume au moment
+    // de la dernière génération .lic. Permet de détecter qu'un fichier .lic
+    // est obsolète (modifications post-génération → bannière UI). NULL tant
+    // qu'aucun .lic n'a été généré pour cette licence.
+    lastLicFileHash: varchar("last_lic_file_hash", { length: 64 }),
+    lastLicFileGeneratedAt: timestamp("last_lic_file_generated_at", { withTimezone: true }),
     ...timestamps(),
     creePar: referenceUuid("cree_par", () => users.id),
     modifiePar: referenceUuid("modifie_par", () => users.id),

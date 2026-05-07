@@ -19,6 +19,9 @@
 
 import { createHash } from "node:crypto";
 
+import { sql } from "drizzle-orm";
+
+import { db } from "@/server/infrastructure/db/client";
 import type { ArticleRepository } from "@/server/modules/article/ports/article.repository";
 import type { ClientRepository } from "@/server/modules/client/ports/client.repository";
 import { decryptAes256Gcm } from "@/server/modules/crypto/domain/aes";
@@ -31,6 +34,8 @@ import type { LicenceArticleRepository } from "@/server/modules/licence-article/
 import { InternalError } from "@/server/modules/error";
 
 import type { FichierLogDTO } from "../adapters/postgres/fichier-log.mapper";
+
+import { computeLicenceContentHash } from "./__shared/compute-licence-content-hash";
 import type { LogFichierGenereUseCase } from "./log-fichier-genere.usecase";
 
 export interface GenerateLicenceFichierInput {
@@ -183,6 +188,17 @@ export class GenerateLicenceFichierUseCase {
       },
       creePar: actorId,
     });
+
+    // Phase 23 — empreinte du contenu produit/article/volume (independant du
+    // .lic signe) pour detecter les modifications post-generation. Stocke
+    // hash + timestamp dans lic_licences pour comparaison ulterieure cote UI.
+    const contentHash = await computeLicenceContentHash(licence.id);
+    await db.execute(sql`
+      UPDATE lic_licences
+      SET last_lic_file_hash = ${contentHash},
+          last_lic_file_generated_at = ${new Date().toISOString()}
+      WHERE id = ${licence.id}
+    `);
 
     return { content, contentJson, signedPayload, signatureBase64, hash, fichierLog };
   }

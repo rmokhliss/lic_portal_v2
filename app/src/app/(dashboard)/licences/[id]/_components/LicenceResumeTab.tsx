@@ -33,6 +33,22 @@ import { LicenceStatusBadge } from "./LicenceStatusBadge";
 
 const STATUTS: readonly LicenceStatusClient[] = ["ACTIF", "INACTIF", "SUSPENDU", "EXPIRE"];
 
+/** Phase 23 — statut fichier .lic envoyé par le Server Component parent. */
+export type LicFileStatus =
+  | { readonly status: "never"; readonly currentHash: string }
+  | {
+      readonly status: "fresh";
+      readonly currentHash: string;
+      readonly storedHash: string;
+      readonly generatedAt: string;
+    }
+  | {
+      readonly status: "stale";
+      readonly currentHash: string;
+      readonly storedHash: string;
+      readonly generatedAt: string;
+    };
+
 export interface LicenceResumeTabProps {
   readonly licence: LicenceDTO;
   readonly clientLabel: string;
@@ -41,6 +57,8 @@ export interface LicenceResumeTabProps {
   /** Phase 22 R-49 — nombre d'articles attachés. 0 = bouton .lic disabled
    *  + tooltip "Aucun article attaché à cette licence". */
   readonly articlesCount: number;
+  /** Phase 23 — affiche une bannière "fichier .lic obsolète" si stale. */
+  readonly licFileStatus: LicFileStatus | null;
 }
 
 type DialogState = { kind: "none" } | { kind: "edit" } | { kind: "status" };
@@ -51,12 +69,29 @@ export function LicenceResumeTab({
   entiteLabel,
   canEdit,
   articlesCount,
+  licFileStatus,
 }: LicenceResumeTabProps) {
   const t = useTranslations("licences.detail.resume");
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
 
   return (
     <>
+      {/* Phase 23 — bannière "fichier .lic obsolète" : produits/articles/
+           volumes ont changé depuis la dernière génération .lic. */}
+      {licFileStatus !== null && licFileStatus.status === "stale" && (
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+        >
+          <p className="font-medium">⚠ Fichier .lic obsolète</p>
+          <p className="mt-1 text-xs">
+            Le contenu produit / article / volume a été modifié depuis la dernière génération (
+            {new Date(licFileStatus.generatedAt).toLocaleString("fr-FR")}). Il faut regénérer le
+            fichier .lic pour que le client reçoive la dernière configuration.
+          </p>
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-4">
         <h2 className="font-display text-foreground text-lg">{t("section")}</h2>
         {canEdit && (
