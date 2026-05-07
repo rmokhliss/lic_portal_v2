@@ -1,3 +1,10 @@
+// LIC v2 — SpxTile (Phase 22 R-37 — fond figé slate, lisible en light/dark)
+//
+// Phase 20 R-26 utilisait var(--color-surface-1) pour le fond, mais cette var
+// flip en clair (#F1F5F9) en mode light → le path blanc devenait invisible
+// (blanc sur clair). Comme un favicon, le tile a sa propre identité visuelle
+// indépendante du thème global : fond slate sombre fixe garanti, garantit le
+// contraste du path blanc + dégradé cyan-bleu quel que soit `:root.light`.
 export function SpxTile({ size = 40 }: { size?: number }) {
   return (
     <svg viewBox="0 0 120 120" width={size} height={size} role="img" aria-label="SELECT-PX">
@@ -8,7 +15,7 @@ export function SpxTile({ size = 40 }: { size?: number }) {
           <stop offset="100%" stopColor="#0006A5" />
         </linearGradient>
       </defs>
-      <rect x="0" y="0" width="120" height="120" rx="22" fill="var(--color-surface-1)" />
+      <rect x="0" y="0" width="120" height="120" rx="22" fill="#0F172A" />
       <g transform="translate(20 20) scale(0.667)">
         <path d="M 8 14 L 28 14 L 76 82 L 112 112 L 92 112 L 44 60 L 8 30 Z" fill="#FFFFFF" />
         <path d="M 112 14 L 92 14 L 60 58 L 72 74 L 112 22 Z" fill="url(#spxGradient)" />
