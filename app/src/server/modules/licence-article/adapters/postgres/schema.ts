@@ -1,13 +1,15 @@
 // ==============================================================================
-// LIC v2 — lic_licence_articles (Phase 6 étape 6.A)
+// LIC v2 — lic_licence_articles (Phase 6 étape 6.A + Phase 23 volumes nullable)
 //
 // Article d'une licence + volume autorisé/consommé. PK uuidv7. UNIQUE
 // (licence_id, article_id) : un article unique par licence (l'évolution
 // volume passe par updateArticleVolume + snapshot vers volume_history).
 //
-// `volume_consomme` est une dénormalisation last-known-value, recalculée
-// par le job snapshot Phase 8 (cf. ADR 0017+ futur). En attendant, peut
-// être édité manuellement par SADMIN pour démos.
+// Phase 23 — volume_autorise + volume_consomme deviennent NULL = "non défini"
+// (équivalent métier d'illimité côté UI / .lic / .hc). Articles fonctionnalité
+// (controle_volume=false) ont toujours leurs volumes à NULL ; articles
+// volumétriques peuvent être créés sans volume puis renseignés plus tard.
+// CHECK >= 0 conservés (NULL passe le check NOT FALSE).
 //
 // Audit obligatoire — mutation volumes = changement de contrat.
 // ==============================================================================
@@ -28,8 +30,8 @@ export const licenceArticles = pgTable(
     articleId: integer("article_id")
       .notNull()
       .references(() => articlesRef.id),
-    volumeAutorise: integer("volume_autorise").notNull().default(0),
-    volumeConsomme: integer("volume_consomme").notNull().default(0),
+    volumeAutorise: integer("volume_autorise"),
+    volumeConsomme: integer("volume_consomme"),
     ...timestamps(),
     creePar: referenceUuid("cree_par", () => users.id),
     modifiePar: referenceUuid("modifie_par", () => users.id),

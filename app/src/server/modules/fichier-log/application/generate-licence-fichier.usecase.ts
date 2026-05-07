@@ -58,7 +58,10 @@ export interface LicenceFichierContent {
   readonly articles: readonly {
     readonly code: string;
     readonly nom: string;
-    readonly volAutorise: number;
+    /** Phase 23 — null = volume non défini (article fonctionnalité ou
+     *  article volumétrique non encore plafonné côté admin). Equivalent
+     *  métier d'illimité pour le client consommateur du .lic. */
+    readonly volAutorise: number | null;
     readonly uniteVolume: string;
   }[];
   readonly generatedAt: string;
@@ -116,7 +119,7 @@ export class GenerateLicenceFichierUseCase {
     const articles: {
       code: string;
       nom: string;
-      volAutorise: number;
+      volAutorise: number | null;
       uniteVolume: string;
     }[] = [];
     for (const la of liaisons) {

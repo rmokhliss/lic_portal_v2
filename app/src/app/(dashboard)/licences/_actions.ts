@@ -120,7 +120,9 @@ const AddArticleAfterCreateSchema = z
   .object({
     licenceId: z.uuid(),
     articleId: z.number().int().positive(),
-    volumeAutorise: z.number().int().nonnegative(),
+    /** Phase 23 — null = volume non défini (article fonctionnalité ou
+     *  volumétrique non encore plafonné). */
+    volumeAutorise: z.number().int().nonnegative().nullable(),
   })
   .strict();
 

@@ -21,8 +21,9 @@ import type { LicenceArticleRepository } from "../ports/licence-article.reposito
 export interface AddArticleToLicenceInput {
   readonly licenceId: string;
   readonly articleId: number;
-  readonly volumeAutorise: number;
-  readonly volumeConsomme?: number;
+  /** null = volume non défini (équivalent illimité métier). */
+  readonly volumeAutorise: number | null;
+  readonly volumeConsomme?: number | null;
 }
 
 export class AddArticleToLicenceUseCase {

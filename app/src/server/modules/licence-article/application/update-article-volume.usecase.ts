@@ -20,8 +20,9 @@ import type { LicenceArticleRepository } from "../ports/licence-article.reposito
 
 export interface UpdateArticleVolumeInput {
   readonly id: string;
-  readonly volumeAutorise?: number;
-  readonly volumeConsomme?: number;
+  /** null = remettre à NULL (volume non défini / illimité métier). undefined = pas modifié. */
+  readonly volumeAutorise?: number | null;
+  readonly volumeConsomme?: number | null;
 }
 
 export class UpdateArticleVolumeUseCase {

@@ -1,12 +1,14 @@
 // ==============================================================================
-// LIC v2 — Entité LicenceArticle (Phase 6 étape 6.C)
+// LIC v2 — Entité LicenceArticle (Phase 6 étape 6.C + Phase 23 nullable)
 //
 // Article d'une licence avec volume autorisé/consommé. PK uuidv7.
 // Mutation = audit obligatoire (changement de contrat).
 //
-// Validation volumes : entiers >= 0 (règle L2 + CHECK BD).
-// Mutation withVolumeAutorise : retourne nouvelle instance + le caller doit
-// passer modifiePar dans repository.update().
+// Phase 23 — volumes nullable : NULL = volume non défini (équivalent métier
+// d'illimité côté UI / .lic / .hc). Validation : NULL OU entier >= 0.
+// Articles fonctionnalité (controle_volume=false) ont toujours leurs volumes
+// à NULL ; articles volumétriques peuvent être créés sans volume puis
+// renseignés plus tard.
 // ==============================================================================
 
 import { ValidationError } from "@/server/modules/error";
@@ -14,16 +16,16 @@ import { ValidationError } from "@/server/modules/error";
 export interface LicenceArticleProps {
   readonly licenceId: string;
   readonly articleId: number;
-  readonly volumeAutorise: number;
-  readonly volumeConsomme: number;
+  readonly volumeAutorise: number | null;
+  readonly volumeConsomme: number | null;
 }
 
 export interface RehydrateLicenceArticleProps {
   readonly id: string;
   readonly licenceId: string;
   readonly articleId: number;
-  readonly volumeAutorise: number;
-  readonly volumeConsomme: number;
+  readonly volumeAutorise: number | null;
+  readonly volumeConsomme: number | null;
   readonly creePar: string | null;
   readonly modifiePar: string | null;
 }
@@ -31,15 +33,15 @@ export interface RehydrateLicenceArticleProps {
 export interface CreateLicenceArticleInput {
   readonly licenceId: string;
   readonly articleId: number;
-  readonly volumeAutorise: number;
-  readonly volumeConsomme?: number;
+  readonly volumeAutorise: number | null;
+  readonly volumeConsomme?: number | null;
 }
 
 export class LicenceArticle {
   readonly licenceId: string;
   readonly articleId: number;
-  readonly volumeAutorise: number;
-  readonly volumeConsomme: number;
+  readonly volumeAutorise: number | null;
+  readonly volumeConsomme: number | null;
 
   protected constructor(props: LicenceArticleProps) {
     this.licenceId = props.licenceId;
@@ -57,7 +59,7 @@ export class LicenceArticle {
       licenceId: input.licenceId,
       articleId: input.articleId,
       volumeAutorise: input.volumeAutorise,
-      volumeConsomme: input.volumeConsomme ?? 0,
+      volumeConsomme: input.volumeConsomme ?? null,
     });
   }
 
@@ -84,11 +86,13 @@ export class LicenceArticle {
     };
   }
 
-  static validateVolume(v: number): void {
+  /** NULL ou entier >= 0. NULL = volume non défini / illimité métier. */
+  static validateVolume(v: number | null): void {
+    if (v === null) return;
     if (!Number.isInteger(v) || v < 0) {
       throw new ValidationError({
         code: "SPX-LIC-753",
-        message: `Volume invalide : ${String(v)} (entier >= 0 attendu)`,
+        message: `Volume invalide : ${String(v)} (entier >= 0 ou null attendu)`,
       });
     }
   }
@@ -111,7 +115,7 @@ export class PersistedLicenceArticle extends LicenceArticle {
     this.modifiePar = modifiePar;
   }
 
-  withVolumeAutorise(v: number): PersistedLicenceArticle {
+  withVolumeAutorise(v: number | null): PersistedLicenceArticle {
     LicenceArticle.validateVolume(v);
     return new PersistedLicenceArticle(
       {

@@ -14,8 +14,8 @@ export interface LicenceArticleDTO {
   readonly id: string;
   readonly licenceId: string;
   readonly articleId: number;
-  readonly volumeAutorise: number;
-  readonly volumeConsomme: number;
+  readonly volumeAutorise: number | null;
+  readonly volumeConsomme: number | null;
   readonly creePar: string | null;
   readonly modifiePar: string | null;
 }

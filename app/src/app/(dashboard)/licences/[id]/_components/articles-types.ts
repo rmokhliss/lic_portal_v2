@@ -33,8 +33,9 @@ export interface LicenceArticleClientDTO {
   readonly id: string;
   readonly licenceId: string;
   readonly articleId: number;
-  readonly volumeAutorise: number;
-  readonly volumeConsomme: number;
+  /** null = volume non défini (équivalent illimité métier — Phase 23). */
+  readonly volumeAutorise: number | null;
+  readonly volumeConsomme: number | null;
 }
 
 export interface ProduitWithLiaisonDTO {

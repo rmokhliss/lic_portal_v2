@@ -355,12 +355,18 @@ export function NewLicenceDialog({
             const art = articles.find((a) => a.id === id);
             if (art === undefined) continue;
             const sel = articleSelection[id];
-            const volume = art.controleVolume && sel !== undefined ? Number(sel.volume) : 0;
+            // Phase 23 — null si article non-volumétrique OU si l'utilisateur a
+            // laissé le champ vide (volume non encore défini = illimité métier).
+            let volumeAutorise: number | null = null;
+            if (art.controleVolume && sel !== undefined && sel.volume.trim().length > 0) {
+              const v = Number(sel.volume);
+              volumeAutorise = Number.isFinite(v) && v >= 0 ? v : null;
+            }
             try {
               const addRes = await addArticleAfterCreateAction({
                 licenceId: created.id,
                 articleId: id,
-                volumeAutorise: Number.isFinite(volume) && volume >= 0 ? volume : 0,
+                volumeAutorise,
               });
               if (!addRes.success) {
                 failures.push(`${art.code} (${addRes.error})`);

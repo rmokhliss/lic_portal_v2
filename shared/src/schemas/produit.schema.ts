@@ -87,12 +87,15 @@ export const RemoveLiaisonSchema = z.object({ id: z.uuid() }).strict();
 
 export type RemoveLiaisonInput = z.infer<typeof RemoveLiaisonSchema>;
 
+// Phase 23 — volumes nullable : NULL = volume non défini (équivalent illimité
+// métier). UI envoie null quand le champ est laissé vide ou pour les articles
+// fonctionnalité (controle_volume=false).
 export const AddArticleToLicenceSchema = z
   .object({
     licenceId: z.uuid(),
     articleId: z.number().int().positive(),
-    volumeAutorise: z.number().int().nonnegative(),
-    volumeConsomme: z.number().int().nonnegative().optional(),
+    volumeAutorise: z.number().int().nonnegative().nullable(),
+    volumeConsomme: z.number().int().nonnegative().nullable().optional(),
   })
   .strict();
 
@@ -101,8 +104,8 @@ export type AddArticleToLicenceInput = z.infer<typeof AddArticleToLicenceSchema>
 export const UpdateArticleVolumeSchema = z
   .object({
     id: z.uuid(),
-    volumeAutorise: z.number().int().nonnegative().optional(),
-    volumeConsomme: z.number().int().nonnegative().optional(),
+    volumeAutorise: z.number().int().nonnegative().nullable().optional(),
+    volumeConsomme: z.number().int().nonnegative().nullable().optional(),
   })
   .strict();
 

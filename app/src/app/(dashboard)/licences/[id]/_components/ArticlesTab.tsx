@@ -68,8 +68,8 @@ type Dialog =
   | {
       kind: "editVolume";
       liaisonId: string;
-      currentAutorise: number;
-      currentConsomme: number;
+      currentAutorise: number | null;
+      currentConsomme: number | null;
       articleNom: string;
       controleVolume: boolean;
     };
@@ -346,8 +346,8 @@ function ArticleRow({
   const isVolumetrique = article?.controleVolume === true;
   const volAutorise = liaison.liaison.volumeAutorise;
   const volConsomme = liaison.liaison.volumeConsomme;
-  const hasVolumeDefini = isVolumetrique && volAutorise > 0;
-  const ratio = hasVolumeDefini ? (volConsomme / volAutorise) * 100 : 0;
+  const hasVolumeDefini = isVolumetrique && volAutorise !== null && volAutorise > 0;
+  const ratio = hasVolumeDefini && volConsomme !== null ? (volConsomme / volAutorise) * 100 : 0;
   const ratioClass =
     ratio >= 100 ? "text-destructive" : ratio >= 80 ? "text-warning" : "text-success";
 
@@ -356,7 +356,7 @@ function ArticleRow({
       <TableCell className="font-mono text-xs">{article?.code ?? "-"}</TableCell>
       <TableCell className="text-sm">{article?.nom ?? "-"}</TableCell>
       <TableCell className="text-right tabular-nums">
-        {!isVolumetrique ? "—" : volConsomme.toLocaleString("fr-FR")}
+        {!isVolumetrique || volConsomme === null ? "—" : volConsomme.toLocaleString("fr-FR")}
       </TableCell>
       <TableCell className="text-right tabular-nums">
         {hasVolumeDefini ? volAutorise.toLocaleString("fr-FR") : "—"}
@@ -512,10 +512,16 @@ function AddArticleDialog({
     const articleIdStr = fd.get("articleId");
     if (typeof articleIdStr !== "string") return;
     const articleId = Number(articleIdStr);
-    // Phase 19 R-13 — pour un article fonctionnalité (controleVolume=false),
-    // on persiste volumeAutorise=0 ; le rendu UI affiche "Illimité" via le
-    // flag article.controleVolume (cf. ArticleRow ci-dessus).
-    const volumeAutorise = isUnlimited ? 0 : Number(fd.get("volumeAutorise"));
+    // Phase 23 — null pour les articles fonctionnalité (controleVolume=false)
+    // ou si l'utilisateur a laissé le champ vide sur un article volumétrique.
+    let volumeAutorise: number | null = null;
+    if (!isUnlimited) {
+      const raw = fd.get("volumeAutorise");
+      if (typeof raw === "string" && raw.length > 0) {
+        const v = Number(raw);
+        volumeAutorise = Number.isFinite(v) && v >= 0 ? v : null;
+      }
+    }
     startTransition(() => {
       void (async () => {
         try {
@@ -572,14 +578,10 @@ function AddArticleDialog({
           ) : (
             <div className="space-y-1">
               <Label htmlFor="volumeAutorise">{t("volumeLabel")}</Label>
-              <Input
-                id="volumeAutorise"
-                name="volumeAutorise"
-                type="number"
-                min={0}
-                step={1}
-                required
-              />
+              <Input id="volumeAutorise" name="volumeAutorise" type="number" min={0} step={1} />
+              <p className="text-muted-foreground text-xs">
+                Laisser vide si volume non défini (équivalent illimité métier).
+              </p>
             </div>
           )}
           {error && <p className="text-destructive text-sm">{error}</p>}
@@ -620,20 +622,21 @@ function EditVolumeDialog({
   const onSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    // Phase 20 R-32 — payload partiel : on n'envoie que les champs édités
-    // (le use-case UpdateArticleVolumeUseCase accepte les 2 optionnels).
-    const payload: { id: string; volumeAutorise?: number; volumeConsomme?: number } = {
-      id: stateLiaisonId,
-    };
+    // Phase 23 — champ vide → null (volume non défini). Saisie numérique → number.
+    const payload: {
+      id: string;
+      volumeAutorise?: number | null;
+      volumeConsomme?: number | null;
+    } = { id: stateLiaisonId };
     if (stateControleVolume) {
       const volAutoStr = fd.get("volumeAutorise");
-      if (typeof volAutoStr === "string" && volAutoStr.length > 0) {
-        payload.volumeAutorise = Number(volAutoStr);
+      if (typeof volAutoStr === "string") {
+        payload.volumeAutorise = volAutoStr.length === 0 ? null : Number(volAutoStr);
       }
     }
     const volConsoStr = fd.get("volumeConsomme");
-    if (typeof volConsoStr === "string" && volConsoStr.length > 0) {
-      payload.volumeConsomme = Number(volConsoStr);
+    if (typeof volConsoStr === "string") {
+      payload.volumeConsomme = volConsoStr.length === 0 ? null : Number(volConsoStr);
     }
     startTransition(() => {
       void (async () => {
@@ -680,10 +683,10 @@ function EditVolumeDialog({
                   type="number"
                   min={0}
                   step={1}
-                  defaultValue={state.currentAutorise}
+                  defaultValue={state.currentAutorise ?? ""}
                 />
                 <p className="text-muted-foreground text-xs">
-                  Laisser vide ou saisir 0 si volume non encore défini.
+                  Laisser vide si volume non défini (équivalent illimité métier).
                 </p>
               </div>
               <div className="space-y-1">
@@ -694,7 +697,7 @@ function EditVolumeDialog({
                   type="number"
                   min={0}
                   step={1}
-                  defaultValue={state.currentConsomme}
+                  defaultValue={state.currentConsomme ?? ""}
                 />
                 <p className="text-muted-foreground text-xs">
                   Valeur normalement recalculée par le job batch snapshot. Édition manuelle utile
