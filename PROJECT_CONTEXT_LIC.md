@@ -43,7 +43,61 @@ LIC v2 est le **premier projet** à appliquer le Référentiel S2M v2.1. Conséq
 
 ## 2. État d'avancement
 
-**Phase actuelle** : **Phases 1 → 22 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée + module email + audit Master + Phase 17 (refonte seed v1 + 4 stubs débloqués + theme toggle + demo tab) + Phase 18 (corrections post-tests utilisateur R-01→R-23, R-13 différé) + Phase 19 (R-13 controleVolume + Chromium Docker) + Phase 20 (R-24→R-35, R-30 wizard 3 étapes différé Phase 21 + 4 fixes critiques bloquants prod : typeName minif, dark mode, logout, code regex) + Phase 21 (R-29 complet Région+SansLicence + R-30 wizard licence 3 étapes) + Phase 22 (R-36 reload-demo réordonné + R-37 logo light figé slate + R-38 ISO Date notifications + R-39/40 sandbox templates F2 enrichis). **MVP livré, prêt pour push origin/main**.
+**Phase actuelle** : **Phases 1 → 22 v2 closes (Mai 2026)** — back-office complet livré + durcissement sécurité prod + brique PKI bouclée + module email + audit Master + Phase 17 (refonte seed v1 + 4 stubs débloqués + theme toggle + demo tab) + Phase 18 (corrections post-tests utilisateur R-01→R-23, R-13 différé) + Phase 19 (R-13 controleVolume + Chromium Docker) + Phase 20 (R-24→R-35, R-30 wizard 3 étapes différé Phase 21 + 4 fixes critiques bloquants prod : typeName minif, dark mode, logout, code regex) + Phase 21 (R-29 complet Région+SansLicence + R-30 wizard licence 3 étapes) + Phase 22 v1 (R-36 reload-demo réordonné + R-37 logo light figé slate + R-38 ISO Date notifications + R-39/40 sandbox templates F2 enrichis) + Phase 22 v2 (R-41 purge UI clarté + R-44 cache referentiels Next 16 updateTag + R-46/48 wizard depuis fiche client + articles robustes + R-49/50 .lic disabled sans articles + backfill description + R-51 controleVolume 15 articles non volumétriques). **MVP livré, prêt pour push origin/main**.
+
+**Phase 22 v2 close (Mai 2026) — Cache referentiels + wizard fiche client + articles robustes + UX .lic** : 6 retours résiduels (R-41/44/46/47/48/49/50/51) fermés. R-36/38/42/43 audités (déjà couverts Phase 22 v1 + seed bootstrap). R-45 deferred (refacto retour structuré `{success,error}` non scopé ici).
+
+R-41 — Purge démo : message UI explicite (CA PKI préservée)
+
+- `DemoToolsPanel.tsx` : description Dialog confirmation enrichie. Distinction « données métier » (purgées : clients, licences, contacts, entités, renouvellements, notifications, alertes, fichiers, volumes, audit) vs « configuration système » (préservée : CA PKI, settings, référentiels pays/régions/devises/langues/équipe/catalogue, utilisateurs).
+
+R-44 — Cache 60s référentiels (pays, régions, devises, langues, team-members)
+
+- `lib/cached-referentials.ts` : nouveau helper avec wrappers `unstable_cache` TTL 60s + tags par scope (`referentials:pays/regions/devises/langues/team-members`). Variantes par rôle (SALES/AM/DM) pour team-members via clé incluant le rôle.
+- `clients/page.tsx` : 5 calls référentiels remplacés par les wrappers cachés. Gain : suppression de 5 round-trips BD à chaque render.
+- `settings/_actions.ts` : 12 mutations (create×6 + update×6 + toggle×6 sauf type-contact) ajoutent `updateTag(REFERENTIALS_TAG_<scope>)` après le `revalidatePath` existant. **Note Next 16** : l'API a changé — `revalidateTag(tag)` exige désormais 2 args, on utilise `updateTag(tag)` (read-your-own-writes en Server Action) qui flush le cache + le déclencheur de revalidation côté client.
+- Conflit Stop validate utilisateur évité : invalidation explicite à chaque mutation, pas de divergence > 60s.
+
+R-46 — Wizard depuis fiche client (`/clients/[id]/licences`)
+
+- `NewLicenceDialog.tsx` étendu : props `lockedClientId?: string` + `triggerLabel?: string`. Quand `lockedClientId` est fourni, l'étape 1 affiche un input read-only au lieu du combobox SearchableSelect (le client est figé sur le client courant).
+- `clients/[id]/licences/page.tsx` : Server Component fetch désormais le catalogue (`listProduitsUseCase` + `listArticlesUseCase` actifs) en parallèle avec entités + licences ; passe les props au LicencesTab.
+- `LicencesTab.tsx` : refacto — l'ancien Dialog inline (Phase 5) est retiré au profit du wizard 3 étapes (Phase 21 R-30) avec `lockedClientId={props.clientId}`. Un seul flux de création licence dans toute l'app.
+
+R-47 — Audit revalidatePath + tri licences
+
+- Audit `revalidatePath` complet sur `clients/_actions.ts`, `clients/[id]/_actions.ts`, `licences/_actions.ts`, `licences/[id]/_actions.ts` : tous les Server Actions mutateurs (création, update, toggle, status, articles) ont leur `revalidatePath`. La création licence depuis la fiche client est gérée via `router.refresh()` côté wizard (Phase 21).
+- Tri colonnes date début/fin sur `/licences` : reporté — nécessite extension du port `LicenceRepository.findPaginated` (param `sortBy`/`sortOrder`) + adapter SQL ORDER BY conditionnel + UI headers cliquables. Hors scope sprint courant.
+
+R-48 — Wizard articles robustes (try/catch par article)
+
+- `NewLicenceDialog.tsx` : la boucle d'ajout articles wrappe désormais chaque `addArticleAfterCreateAction` dans son propre try/catch. Les échecs sont collectés dans `articleErrors[]` (state) et affichés en alerte rose à l'étape 3 : « Licence créée — N article(s) non attaché(s) : <code> (<message>) ». L'utilisateur garde la licence créée et peut compléter via `/licences/[id]/articles`.
+
+R-49 — Bouton « Générer .lic » disabled sans articles
+
+- `licences/[id]/resume/page.tsx` : Server Component ajoute `listArticlesByLicenceUseCase.execute(id)` au Promise.all → comptage articles côté serveur.
+- `LicenceResumeTab.tsx` + `GenerateLicFileButton` : prop `articlesCount`. Si 0 → bouton `disabled` avec tooltip « Aucun article attaché à cette licence ». Les messages PKI/CA sont déjà gérés par le `humanizeError` Phase 20 R-31 (SPX-LIC-411/412/413).
+
+R-50 — Description backfill enrichie
+
+- `CASection.tsx` section Backfill : description complétée (« Le backfill génère un certificat PKI X.509 pour chaque client qui n'en a pas encore. Ce certificat est nécessaire pour signer les fichiers .lic envoyés aux clients (format F2). La clé privée est chiffrée AES-256-GCM avec APP_MASTER_KEY et stockée de manière sécurisée. Durée estimée : ~2s par client. »).
+
+R-51 — controleVolume `false` pour articles non volumétriques
+
+- `phase6-catalogue.seed.ts` : `applyControleVolumeOverrides` étendu de 3 articles (Phase 19 R-13) à **15 articles non volumétriques** : `HSM`, `SMTP-GW`, `OPEN-API`, `REPORTING`, `ALERTS`, `ARCHIVING`, `SWITCH-ISO`, `SWITCH-INST`, `ATM-ADV`, `POS-ADV`, `SSV6-FRAUD`, `SOFTPOS-APP`, `WALLET-CORE`, `TOKEN-CORE`, `SSV6-KERNEL`. UPDATE inverse `controle_volume = true` pour les 15 articles volumétriques (KERNEL, SMS-GW, ATM-STD/POS-STD, ECOM, ISS-_, SSV6-_ hors KERNEL/FRAUD) — garantit la convergence d'état même si un override précédent les avait passés à false.
+- AddArticleDialog (existant) : déjà conditionnel sur `article.controleVolume` côté UI Phase 19 R-13 — pas de modif nécessaire.
+
+R-36/R-38/R-42/R-43 — audit (déjà couvert pré-Phase 22 v2)
+
+- R-36 reload-demo : ordre seeds aligné Phase 22 v1. Toutes les phases requises (4/5/6/8-alerts/8-notifications/10) présentes. Idempotence : chaque seed a son propre garde-fou (early-return COUNT >0 ou tag DEMO_SEED).
+- R-38 fix Date : appliqué Phase 22 v1 dans `phase8-notifications.seed.ts` (`.toISOString()` sur `createdAt`/`readAt`). Pas d'autre seed à risque (les Date sont passées via Drizzle/repos hors SQL tagged).
+- R-42 settings par défaut : `seedSettings` (`db/seed.ts:384`) insère déjà 10 valeurs ON CONFLICT DO NOTHING, dont les 5 demandées (`seuil_alerte_defaut`, `tolerance_volume_pct`, `tolerance_date_jours`, `warning_volume_pct`, `warning_date_jours`). `lic_settings` n'est pas purgée par F2 — pas de re-insert nécessaire au reload.
+- R-43 snapshots volumes 3 mois : déjà inséré par `seedPhase6Catalogue` (`seedVolumeSnapshots` lignes 308-345) — ratio 30%→80% progressif sur 3 mois, 1 article/licence pour les 20 licences seed.
+
+R-45 — deferred (refacto retour structuré non scopé)
+
+- Pattern actuel : Server Actions throw → composant client try/catch → `<p className="text-destructive">`. Fonctionnel et déjà en place sur tous les dialogs critiques (createLicence, createUser, createClient, createEntite, createContact, etc.).
+- Refacto vers `{ success: false, error: msg }` = changement contract massif sur ~25 Server Actions + leurs callers. Sprint dédié à prévoir.
 
 **Phase 22 close (Mai 2026) — Reload-demo + logo + sandbox F2** : 5 retours post-tests utilisateur fermés.
 
