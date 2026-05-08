@@ -57,7 +57,11 @@ const STATUS_STYLES: Record<RenewStatusClient, string> = {
 export interface RenouvellementsTabProps {
   readonly licenceId: string;
   readonly renouvellements: readonly RenouvellementDTO[];
+  /** ADMIN/SADMIN — peut créer / éditer / annuler un renouvellement. */
   readonly canEdit: boolean;
+  /** SADMIN seulement — peut valider un renouvellement (engage la mise à
+   *  jour des dates licence). ADMIN initie, SADMIN valide. */
+  readonly canValidate: boolean;
 }
 
 type DrawerState =
@@ -114,6 +118,7 @@ export function RenouvellementsTab(props: RenouvellementsTabProps) {
                 key={r.id}
                 renouv={r}
                 canEdit={props.canEdit}
+                canValidate={props.canValidate}
                 onEdit={() => {
                   setDrawer({ kind: "edit", renouv: r });
                 }}
@@ -159,12 +164,14 @@ export function RenouvellementsTab(props: RenouvellementsTabProps) {
 function RenouvRow({
   renouv,
   canEdit,
+  canValidate,
   onEdit,
   onValider,
   onAnnuler,
 }: {
   readonly renouv: RenouvellementDTO;
   readonly canEdit: boolean;
+  readonly canValidate: boolean;
   readonly onEdit: () => void;
   readonly onValider: () => void;
   readonly onAnnuler: () => void;
@@ -192,9 +199,11 @@ function RenouvRow({
             <Button type="button" variant="outline" size="sm" onClick={onEdit}>
               {t("edit")}
             </Button>
-            <Button type="button" variant="default" size="sm" onClick={onValider}>
-              {t("valider")}
-            </Button>
+            {canValidate && (
+              <Button type="button" variant="default" size="sm" onClick={onValider}>
+                {t("valider")}
+              </Button>
+            )}
             <Button type="button" variant="destructive" size="sm" onClick={onAnnuler}>
               {t("annuler")}
             </Button>

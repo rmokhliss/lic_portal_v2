@@ -74,6 +74,7 @@ beforeAll(() => {
     articleRepo,
     userRepo,
     auditRepo,
+    produitRepo,
   );
   listByEntity = new ListAuditByEntityUseCase(aqRepo);
   listByClientScope = new ListAuditByClientScopeUseCase(aqRepo);

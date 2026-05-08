@@ -18,6 +18,8 @@ import Link from "next/link";
 import { requireAuthPage } from "@/server/infrastructure/auth";
 import {
   getClientUseCase,
+  getEntiteUseCase,
+  getLicFileStaleStatusUseCase,
   listAllLicencesUseCase,
   listArticlesUseCase,
   listClientsUseCase,
@@ -86,18 +88,46 @@ export default async function LicencesPage({
     listArticlesUseCase.execute({ actif: true }),
   ]);
 
-  // Résolution clients en parallèle pour la colonne Client de la table.
+  // Résolution clients + entités + statut stale en parallèle pour la table.
   const uniqueClientIds = Array.from(new Set(result.items.map((l) => l.clientId)));
-  const clientsArr = await Promise.all(
-    uniqueClientIds.map(async (id) => {
-      try {
-        return await getClientUseCase.execute(id);
-      } catch {
-        return null;
-      }
-    }),
-  );
+  const uniqueEntiteIds = Array.from(new Set(result.items.map((l) => l.entiteId)));
+  const [clientsArr, entitesArr, staleArr] = await Promise.all([
+    Promise.all(
+      uniqueClientIds.map(async (id) => {
+        try {
+          return await getClientUseCase.execute(id);
+        } catch {
+          return null;
+        }
+      }),
+    ),
+    Promise.all(
+      uniqueEntiteIds.map(async (id) => {
+        try {
+          return await getEntiteUseCase.execute(id);
+        } catch {
+          return null;
+        }
+      }),
+    ),
+    // Phase 24 — statut stale par licence (recalcule le hash contenu vs hash
+    // stocké à la dernière génération). 25 hashs en parallèle = OK pour la
+    // page (10-50 licences). À optimiser en 1 batch SQL si volume grossit.
+    Promise.all(
+      result.items.map(async (l) => {
+        try {
+          const s = await getLicFileStaleStatusUseCase.execute(l.id);
+          return { id: l.id, status: s.status };
+        } catch {
+          return { id: l.id, status: "never" as const };
+        }
+      }),
+    ),
+  ]);
   const clientsById = new Map(clientsArr.flatMap((c) => (c === null ? [] : [[c.id, c] as const])));
+  const entitesById = new Map(entitesArr.flatMap((e) => (e === null ? [] : [[e.id, e] as const])));
+  const staleById = new Map(staleArr.map((s) => [s.id, s.status] as const));
+  const staleCount = staleArr.filter((s) => s.status === "stale").length;
 
   // Phase 18 R-12 — clients pour le combobox du wizard de création.
   const dialogClients = clientsList.items.map((c) => ({
@@ -151,6 +181,24 @@ export default async function LicencesPage({
           />
         )}
       </header>
+
+      {/* Phase 24 — bannière stale globale : compte les licences dont le
+           contenu (produits/articles/volumes) a été modifié depuis la dernière
+           génération .lic. */}
+      {staleCount > 0 && (
+        <div
+          role="alert"
+          className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+        >
+          <p className="font-medium">
+            ⚠ {staleCount} licence(s) avec fichier .lic obsolète sur cette page
+          </p>
+          <p className="mt-1 text-xs">
+            Articles ou volumes modifiés depuis la dernière génération. Les .lic correspondants
+            doivent être régénérés.
+          </p>
+        </div>
+      )}
 
       <form
         method="GET"
@@ -231,7 +279,9 @@ export default async function LicencesPage({
             <tr>
               <th className="px-4 py-2 text-left font-medium">Référence</th>
               <th className="px-4 py-2 text-left font-medium">Client</th>
+              <th className="px-4 py-2 text-left font-medium">Entité</th>
               <th className="px-4 py-2 text-left font-medium">Statut</th>
+              <th className="px-4 py-2 text-left font-medium">.lic</th>
               <th className="px-4 py-2 text-left font-medium">Date début</th>
               <th className="px-4 py-2 text-left font-medium">Date fin</th>
               <th className="px-4 py-2"></th>
@@ -240,6 +290,8 @@ export default async function LicencesPage({
           <tbody>
             {result.items.map((l) => {
               const c = clientsById.get(l.clientId);
+              const e = entitesById.get(l.entiteId);
+              const staleStatus = staleById.get(l.id) ?? "never";
               return (
                 <tr key={l.id} className="border-border border-t">
                   <td className="px-4 py-2 font-mono">{l.reference}</td>
@@ -256,9 +308,19 @@ export default async function LicencesPage({
                     )}
                   </td>
                   <td className="px-4 py-2">
+                    {e === undefined ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      <span className="text-foreground">{e.nom}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2">
                     <span className={`rounded px-2 py-0.5 text-xs ${STATUS_BADGE[l.status] ?? ""}`}>
                       {STATUS_LABEL[l.status] ?? l.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-2">
+                    <LicFileBadge status={staleStatus} />
                   </td>
                   <td className="px-4 py-2">{new Date(l.dateDebut).toLocaleDateString("fr-FR")}</td>
                   <td className="px-4 py-2">{new Date(l.dateFin).toLocaleDateString("fr-FR")}</td>
@@ -275,7 +337,7 @@ export default async function LicencesPage({
             })}
             {result.items.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-muted-foreground px-4 py-6 text-center">
+                <td colSpan={8} className="text-muted-foreground px-4 py-6 text-center">
                   Aucune licence.
                 </td>
               </tr>
@@ -303,5 +365,40 @@ export default async function LicencesPage({
         )}
       </nav>
     </div>
+  );
+}
+
+function LicFileBadge({
+  status,
+}: {
+  readonly status: "never" | "fresh" | "stale";
+}): React.JSX.Element {
+  if (status === "stale") {
+    return (
+      <span
+        title="Articles ou volumes modifiés depuis la dernière génération — fichier .lic à régénérer."
+        className="rounded bg-amber-500/15 px-2 py-0.5 text-xs text-amber-300"
+      >
+        Obsolète
+      </span>
+    );
+  }
+  if (status === "fresh") {
+    return (
+      <span
+        title="Le fichier .lic généré reflète l'état courant de la licence."
+        className="rounded bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-300"
+      >
+        À jour
+      </span>
+    );
+  }
+  return (
+    <span
+      title="Aucun fichier .lic n'a encore été généré pour cette licence."
+      className="text-muted-foreground rounded bg-zinc-500/10 px-2 py-0.5 text-xs"
+    >
+      Jamais
+    </span>
   );
 }

@@ -118,7 +118,9 @@ export async function validerRenouvellementAction(
   ctx: unknown,
 ): Promise<ActionResult<Awaited<ReturnType<typeof validerRenouvellementUseCase.execute>>>> {
   return runAction(async () => {
-    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    // SADMIN-only : validation engage le renouvellement et bumpe les dates de
+    // la licence. ADMIN initie (create/edit), SADMIN valide.
+    const actor = await requireRole(["SADMIN"]);
     const parsed = ValiderRenouvellementSchema.parse(input);
     const { licenceId } = LicenceIdSchema.parse(ctx);
     const result = await validerRenouvellementUseCase.execute(parsed, actor.id);
@@ -180,7 +182,9 @@ export async function generateLicenceFichierAction(input: unknown): Promise<
   }>
 > {
   return runAction(async () => {
-    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    // SADMIN-only : émission d'un fichier .lic = workflow PKI signé. ADMIN
+    // gère la création/édition de la licence mais pas l'émission du fichier.
+    const actor = await requireRole(["SADMIN"]);
     const parsed = LicenceIdSchema.parse(input);
     const result = await generateLicenceFichierUseCase.execute(
       { licenceId: parsed.licenceId },
@@ -209,10 +213,15 @@ export async function importHealthcheckAction(input: unknown): Promise<
     updated: number;
     errors: number;
     errorDetails: readonly string[];
+    articlesSkipped: readonly string[];
+    articlesOutOfContract: readonly string[];
+    articlesNotInCatalog: readonly string[];
+    referenceMatch: boolean | null;
   }>
 > {
   return runAction(async () => {
-    const actor = await requireRole(["ADMIN", "SADMIN"]);
+    // SADMIN-only : import .hc = ingestion d'un fichier signé client (PKI).
+    const actor = await requireRole(["SADMIN"]);
     const parsed = ImportHealthcheckSchema.parse(input);
     const result = await importHealthcheckUseCase.execute(parsed, actor.id);
     revalidatePath(pathFor(parsed.licenceId, "resume"));
@@ -221,6 +230,10 @@ export async function importHealthcheckAction(input: unknown): Promise<
       updated: result.updated,
       errors: result.errors,
       errorDetails: result.errorDetails,
+      articlesSkipped: result.articlesSkipped,
+      articlesOutOfContract: result.articlesOutOfContract,
+      articlesNotInCatalog: result.articlesNotInCatalog,
+      referenceMatch: result.referenceMatch,
     };
   });
 }

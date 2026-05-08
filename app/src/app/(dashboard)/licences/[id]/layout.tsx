@@ -10,6 +10,7 @@ import { notFound } from "next/navigation";
 
 import { getTranslations } from "next-intl/server";
 
+import { requireAuthPage } from "@/server/infrastructure/auth";
 import { isAppError } from "@/server/modules/error";
 import {
   getClientUseCase,
@@ -30,6 +31,7 @@ interface PageProps {
 export default async function LicenceDetailLayout({ children, params }: PageProps) {
   const { id } = await params;
   const t = await getTranslations("licences");
+  const user = await requireAuthPage();
 
   let licence;
   try {
@@ -86,7 +88,7 @@ export default async function LicenceDetailLayout({ children, params }: PageProp
         </div>
       )}
 
-      <LicenceDetailTabsNav licenceId={id} />
+      <LicenceDetailTabsNav licenceId={id} userRole={user.role} />
 
       <div className="mt-8">{children}</div>
     </div>

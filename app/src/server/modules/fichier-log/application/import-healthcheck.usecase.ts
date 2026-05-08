@@ -10,21 +10,36 @@
 //   `<iv_b64>:<tag_b64>:<ciphertext_b64>`. Le plaintext déchiffré est ensuite
 //   parsé comme JSON ou CSV (fallback compat ascendante).
 //
-// Format JSON attendu (après déchiffrement) :
-//   { "licenceReference": "LIC-2026-001",
-//     "articles": [{ "code": "USERS", "volConsomme": 250 }, ...] }
+// Format JSON aligné sur `.lic` (Phase 24 — unifié) :
+//   {
+//     "version": 1,
+//     "reference": "LIC-2026-001",
+//     "clientCode": "BAMIS",
+//     "clientRaisonSociale": "...",
+//     "entiteNom": "BAMIS MR",
+//     "dateDebut": "2026-05-08T00:00:00.000Z",
+//     "dateFin": "2028-05-08T00:00:00.000Z",
+//     "articles": [
+//       { "code": "KERNEL", "nom": "...", "volume": 0 },
+//       { "code": "HSM", "nom": "...", "volume": null }   // article non-vol.
+//     ],
+//     "generatedAt": "..."
+//   }
+// `volume: null` = volume non rapporté (article non-volumétrique ou non
+// instrumenté côté client) → l'entrée est tracée mais le volume consommé
+// n'est pas mis à jour pour la liaison.
 //
-// Format CSV attendu (après déchiffrement) :
-//   article_code,vol_consomme
-//   USERS,250
+// Formats legacy tolérés :
+//   - JSON `{ "licenceReference": "...", "articles": [{ "code": "X",
+//     "volConsomme": 250 }] }` — Phase 10.D pré-Phase-24.
+//   - CSV `article_code,vol_consomme` (alias `volume`).
 //
-// Mode AES (Phase 14, settingRepository injecté) :
-//   - Lecture lic_settings.healthcheck_shared_aes_key — throw 411 si absente
-//   - decryptAes256Gcm(uploadedContent, sharedKey) — throw 402 si tag mismatch
-//   - parse du plaintext JSON/CSV
-//
-// Mode legacy (tests d'intégration sans settingRepository) :
-//   - parse direct du contenu uploadé (pre-Phase 14)
+// Rapport d'intégration retourné + métadonnées fichier-log :
+//   - articlesUpdated      : liaisons effectivement mises à jour (count)
+//   - articlesSkipped      : articles dans .hc avec volume null (count + codes)
+//   - articlesOutOfContract: articles dans .hc absents de la licence (codes)
+//   - articlesNotInCatalog : articles dans .hc absents du catalogue (codes)
+//   - errorDetails         : autres erreurs unitaires (parsing par article)
 // ==============================================================================
 
 import { createHash } from "node:crypto";
@@ -56,11 +71,31 @@ export interface ImportHealthcheckOutput {
   readonly updated: number;
   readonly errors: number;
   readonly errorDetails: readonly string[];
+  /** Phase 24 — articles dans .hc avec volume null (non instrumenté côté
+   *  client). Pas une erreur, juste tracé. */
+  readonly articlesSkipped: readonly string[];
+  /** Phase 24 — articles présents dans .hc mais NON attachés à la licence
+   *  (utilisation hors-contrat à ajouter au contrat ou désinstaller). */
+  readonly articlesOutOfContract: readonly string[];
+  /** Phase 24 — articles présents dans .hc mais introuvables dans le
+   *  catalogue (référentiel article incomplet ou code inconnu). */
+  readonly articlesNotInCatalog: readonly string[];
+  /** Phase 24 — sanity-check : la `reference` du .hc matche-t-elle la
+   *  licence ciblée ? null = champ absent du .hc (legacy). false = mismatch. */
+  readonly referenceMatch: boolean | null;
+}
+
+interface ParsedHealthcheckPayload {
+  /** null si format legacy sans champ reference. */
+  readonly reference: string | null;
+  readonly entries: readonly ParsedArticleEntry[];
 }
 
 interface ParsedArticleEntry {
   readonly code: string;
-  readonly volConsomme: number;
+  /** Phase 24 — null = volume non rapporté (champ `volume: null` dans .hc).
+   *  L'import note l'article mais ne met pas à jour le volume consommé. */
+  readonly volConsomme: number | null;
 }
 
 export class ImportHealthcheckUseCase {
@@ -103,9 +138,9 @@ export class ImportHealthcheckUseCase {
       }
     }
 
-    let entries: readonly ParsedArticleEntry[];
+    let payload: ParsedHealthcheckPayload;
     try {
-      entries = parseHealthcheck(plaintext);
+      payload = parseHealthcheck(plaintext);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Format invalide";
       const fichierLog = await this.logHealthcheckImporteUseCase.execute({
@@ -123,18 +158,24 @@ export class ImportHealthcheckUseCase {
       });
     }
 
+    const referenceMatch =
+      payload.reference === null ? null : payload.reference === licence.reference;
+
     let updated = 0;
     const errorDetails: string[] = [];
+    const articlesSkipped: string[] = [];
+    const articlesOutOfContract: string[] = [];
+    const articlesNotInCatalog: string[] = [];
 
-    for (const entry of entries) {
+    // Lookup catalogue + liaisons une fois (au lieu de N+1 dans la boucle).
+    const allArticles = await this.articleRepository.findAll({ actif: true });
+    const articleByCode = new Map(allArticles.map((a) => [a.code, a] as const));
+
+    for (const entry of payload.entries) {
       try {
-        // Lookup article par code (code unique mais on prend le 1er — un même
-        // code peut exister sur plusieurs produits ; pour le healthcheck on
-        // suppose unicité côté business, à raffiner Phase 13 si besoin).
-        const articles = await this.articleRepository.findAll({ actif: true });
-        const article = articles.find((a) => a.code === entry.code);
+        const article = articleByCode.get(entry.code);
         if (article === undefined) {
-          errorDetails.push(`Article "${entry.code}" introuvable dans le catalogue`);
+          articlesNotInCatalog.push(entry.code);
           continue;
         }
 
@@ -143,7 +184,14 @@ export class ImportHealthcheckUseCase {
           article.id,
         );
         if (liaison === null) {
-          errorDetails.push(`Article "${entry.code}" non attaché à la licence`);
+          articlesOutOfContract.push(entry.code);
+          continue;
+        }
+
+        // Phase 24 — volume:null = pas de mise à jour (article non-vol. côté
+        // client ou volume non instrumenté). On note dans le rapport.
+        if (entry.volConsomme === null) {
+          articlesSkipped.push(entry.code);
           continue;
         }
 
@@ -158,24 +206,51 @@ export class ImportHealthcheckUseCase {
       }
     }
 
-    const errors = errorDetails.length;
+    // Préfixe les listes catégorisées dans errorDetails pour rétrocompat UI
+    // (les anciens consommateurs lisent juste `errorDetails`).
+    const fullErrorDetails = [
+      ...articlesOutOfContract.map((c) => `Article "${c}" non attaché à la licence (hors contrat)`),
+      ...articlesNotInCatalog.map((c) => `Article "${c}" introuvable dans le catalogue`),
+      ...errorDetails,
+    ];
+    const errors = fullErrorDetails.length;
+
     const fichierLog = await this.logHealthcheckImporteUseCase.execute({
       licenceId: licence.id,
       path,
       hash,
-      statut: errors > 0 && updated === 0 ? "ERREUR" : "IMPORTED",
+      // Phase 24 — un import avec uniquement des "out-of-contract" reste OK
+      // (statut IMPORTED) si au moins une mise à jour a réussi OU si tout
+      // était simplement hors-contrat (pas d'erreur de format). On ne bascule
+      // en ERREUR que si zéro update ET au moins une erreur structurelle
+      // (entry parsing, etc.).
+      statut: errors > 0 && updated === 0 && articlesSkipped.length === 0 ? "ERREUR" : "IMPORTED",
       metadata: {
         filename: input.filename,
-        totalEntries: entries.length,
+        reference: payload.reference,
+        referenceMatch,
+        totalEntries: payload.entries.length,
         updated,
         errors,
-        errorDetails,
+        errorDetails: fullErrorDetails,
+        articlesSkipped,
+        articlesOutOfContract,
+        articlesNotInCatalog,
       },
       ...(errors > 0 ? { errorMessage: `${String(errors)} erreur(s) — voir metadata` } : {}),
       creePar: actorId,
     });
 
-    return { fichierLog, updated, errors, errorDetails };
+    return {
+      fichierLog,
+      updated,
+      errors,
+      errorDetails: fullErrorDetails,
+      articlesSkipped,
+      articlesOutOfContract,
+      articlesNotInCatalog,
+      referenceMatch,
+    };
   }
 }
 
@@ -232,7 +307,7 @@ async function decryptHealthcheckContent(
 // '['), sinon CSV.
 // ----------------------------------------------------------------------------
 
-function parseHealthcheck(content: string): readonly ParsedArticleEntry[] {
+function parseHealthcheck(content: string): ParsedHealthcheckPayload {
   const trimmed = content.trim();
   if (trimmed.length === 0) {
     throw new TypeError("Contenu vide");
@@ -240,10 +315,10 @@ function parseHealthcheck(content: string): readonly ParsedArticleEntry[] {
   if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
     return parseJsonHealthcheck(trimmed);
   }
-  return parseCsvHealthcheck(trimmed);
+  return { reference: null, entries: parseCsvHealthcheck(trimmed) };
 }
 
-function parseJsonHealthcheck(content: string): readonly ParsedArticleEntry[] {
+function parseJsonHealthcheck(content: string): ParsedHealthcheckPayload {
   let parsed: unknown;
   try {
     parsed = JSON.parse(content);
@@ -257,26 +332,65 @@ function parseJsonHealthcheck(content: string): readonly ParsedArticleEntry[] {
   if (!Array.isArray(articlesRaw)) {
     throw new TypeError("Champ 'articles' manquant ou non-tableau");
   }
-  return articlesRaw.map((entry: unknown, idx) => {
+
+  // Phase 24 — extraction de la référence (alignement format .lic).
+  // Accepte aussi `licenceReference` (legacy Phase 10.D).
+  let reference: string | null = null;
+  if (!Array.isArray(parsed)) {
+    const obj = parsed as { reference?: unknown; licenceReference?: unknown };
+    if (typeof obj.reference === "string" && obj.reference.length > 0) {
+      reference = obj.reference;
+    } else if (typeof obj.licenceReference === "string" && obj.licenceReference.length > 0) {
+      reference = obj.licenceReference;
+    }
+  }
+
+  const entries = articlesRaw.map((entry: unknown, idx): ParsedArticleEntry => {
     if (typeof entry !== "object" || entry === null) {
       throw new TypeError(`Article #${String(idx)} non-objet`);
     }
-    // Phase 23 — alias `volume` (champ unifie .lic/.hc) accepte en plus de
-    // volConsomme/vol_consomme pour retrocompat.
+    // Phase 24 — alias `volume` (champ unifié .lic/.hc) accepté + alias
+    // legacy `volConsomme` / `vol_consomme`.
     const e = entry as {
       code?: unknown;
       volume?: unknown;
       volConsomme?: unknown;
       vol_consomme?: unknown;
     };
-    const code = typeof e.code === "string" ? e.code : null;
-    const volRaw = e.volume ?? e.volConsomme ?? e.vol_consomme;
-    const vol = typeof volRaw === "number" ? volRaw : null;
-    if (code === null || vol === null) {
-      throw new TypeError(`Article #${String(idx)} : code ou volume manquant`);
+    const code = typeof e.code === "string" && e.code.length > 0 ? e.code : null;
+    if (code === null) {
+      throw new TypeError(`Article #${String(idx)} : code manquant`);
     }
-    return { code, volConsomme: vol };
+    // On distingue "absence de champ" (undefined) de "valeur null explicite".
+    // - Tous undefined  → erreur (champ volume absent)
+    // - null explicite  → volConsomme=null (article non-volumétrique côté .hc)
+    // - number          → utilisé tel quel
+    // - autre type      → erreur typage
+    const hasVolume =
+      e.volume !== undefined || e.volConsomme !== undefined || e.vol_consomme !== undefined;
+    if (!hasVolume) {
+      throw new TypeError(`Article #${String(idx)} : champ volume absent`);
+    }
+    const volRaw =
+      e.volume !== undefined
+        ? e.volume
+        : e.volConsomme !== undefined
+          ? e.volConsomme
+          : e.vol_consomme;
+    let volConsomme: number | null;
+    if (volRaw === null) {
+      volConsomme = null;
+    } else if (typeof volRaw === "number" && Number.isFinite(volRaw)) {
+      volConsomme = volRaw;
+    } else {
+      throw new TypeError(
+        `Article #${String(idx)} : volume non numérique (${typeof volRaw === "object" ? "object" : typeof volRaw})`,
+      );
+    }
+    return { code, volConsomme };
   });
+
+  return { reference, entries };
 }
 
 function parseCsvHealthcheck(content: string): readonly ParsedArticleEntry[] {
@@ -291,7 +405,7 @@ function parseCsvHealthcheck(content: string): readonly ParsedArticleEntry[] {
   if (header === undefined) throw new TypeError("CSV header absent");
   const cols = header.split(",").map((c) => c.trim().toLowerCase());
   const codeIdx = cols.indexOf("article_code");
-  // Phase 23 — header `volume` (unifie .lic/.hc) ou `vol_consomme` (legacy).
+  // Phase 23 — header `volume` (unifié .lic/.hc) ou `vol_consomme` (legacy).
   const volIdx = cols.includes("volume") ? cols.indexOf("volume") : cols.indexOf("vol_consomme");
   if (codeIdx === -1 || volIdx === -1) {
     throw new TypeError("CSV header doit contenir 'article_code' et 'volume' (ou 'vol_consomme')");
@@ -303,7 +417,13 @@ function parseCsvHealthcheck(content: string): readonly ParsedArticleEntry[] {
     const cells = line.split(",").map((c) => c.trim());
     const code = cells[codeIdx];
     const volStr = cells[volIdx];
-    if (code === undefined || volStr === undefined) continue;
+    if (code === undefined || code.length === 0) continue;
+    // Phase 24 — cellule volume vide = volume non rapporté (équivalent
+    // `null` JSON). Permet d'envoyer un .hc partiel sans casser le parser.
+    if (volStr === undefined || volStr.length === 0) {
+      out.push({ code, volConsomme: null });
+      continue;
+    }
     const vol = Number(volStr);
     if (!Number.isFinite(vol)) {
       throw new TypeError(`Ligne ${String(i + 1)} : vol_consomme "${volStr}" non numérique`);

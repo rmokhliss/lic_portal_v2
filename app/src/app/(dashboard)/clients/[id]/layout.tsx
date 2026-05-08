@@ -18,17 +18,14 @@ import { notFound } from "next/navigation";
 
 import { getTranslations } from "next-intl/server";
 
+import { requireAuthPage } from "@/server/infrastructure/auth";
 import { isAppError } from "@/server/modules/error";
-import { getClientUseCase, listLicencesByClientUseCase } from "@/server/composition-root";
+import { getClientUseCase } from "@/server/composition-root";
 
 import { EntityNameSetter } from "@/components/layout/EntityNameContext";
 
 import { ClientStatusBadge } from "../_components/ClientStatusBadge";
 import { ClientDetailTabsNav } from "./_components/ClientDetailTabsNav";
-import {
-  ImportHealthcheckClientButton,
-  type LicenceOption,
-} from "./_components/ImportHealthcheckClientButton";
 
 interface ClientDetailLayoutProps {
   readonly children: ReactNode;
@@ -38,6 +35,7 @@ interface ClientDetailLayoutProps {
 export default async function ClientDetailLayout({ children, params }: ClientDetailLayoutProps) {
   const { id } = await params;
   const t = await getTranslations("clients.detail");
+  const user = await requireAuthPage();
 
   let client;
   try {
@@ -48,14 +46,6 @@ export default async function ClientDetailLayout({ children, params }: ClientDet
     }
     throw err;
   }
-
-  // Phase 10.D : licences du client (pour le sélecteur du Dialog).
-  const licencesPage = await listLicencesByClientUseCase.execute({ clientId: id, limit: 200 });
-  const licenceOptions: LicenceOption[] = licencesPage.items.map((l) => ({
-    id: l.id,
-    reference: l.reference,
-    status: l.status,
-  }));
 
   return (
     <div className="p-8">
@@ -76,10 +66,9 @@ export default async function ClientDetailLayout({ children, params }: ClientDet
             <ClientStatusBadge statut={client.statutClient} />
           </div>
         </div>
-        <ImportHealthcheckClientButton clientId={id} licences={licenceOptions} />
       </header>
 
-      <ClientDetailTabsNav clientId={id} />
+      <ClientDetailTabsNav clientId={id} userRole={user.role} />
 
       <div className="mt-8">{children}</div>
     </div>

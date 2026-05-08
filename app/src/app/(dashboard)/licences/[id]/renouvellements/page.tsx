@@ -32,6 +32,7 @@ export default async function LicenceRenouvellementsPage({ params }: PageProps) 
       licenceId={id}
       renouvellements={renouvellements}
       canEdit={user.role === "ADMIN" || user.role === "SADMIN"}
+      canValidate={user.role === "SADMIN"}
     />
   );
 }

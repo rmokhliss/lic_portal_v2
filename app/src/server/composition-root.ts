@@ -363,6 +363,7 @@ export const addArticleToLicenceUseCase = new AddArticleToLicenceUseCase(
   articleRepository,
   userRepository,
   auditRepository,
+  produitRepository,
 );
 export const updateArticleVolumeUseCase = new UpdateArticleVolumeUseCase(
   licenceArticleRepository,
@@ -541,7 +542,11 @@ export {
 import { ExportLicencesCsvUseCase } from "@/server/modules/dashboard/application/export-licences-csv.usecase";
 import { ExportRenouvellementsCsvUseCase } from "@/server/modules/dashboard/application/export-renouvellements-csv.usecase";
 
-export const exportLicencesCsvUseCase = new ExportLicencesCsvUseCase(licenceRepository);
+export const exportLicencesCsvUseCase = new ExportLicencesCsvUseCase(
+  licenceRepository,
+  clientRepository,
+  entiteRepository,
+);
 export const exportRenouvellementsCsvUseCase = new ExportRenouvellementsCsvUseCase(
   renouvellementRepository,
 );

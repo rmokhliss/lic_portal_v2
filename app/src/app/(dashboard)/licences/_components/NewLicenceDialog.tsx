@@ -153,14 +153,16 @@ export function NewLicenceDialog({
     };
   }, [clientId]);
 
-  // Au passage à l'étape 3 : interroge le backend pour les doublons.
+  // Au passage à l'étape 3 : interroge le backend pour les doublons sur le
+  // couple (client, entité). Sans entité, pas de check (le bouton "Suivant" de
+  // l'étape 1 a déjà refusé un entiteId vide).
   useEffect(() => {
-    if (step !== 3 || clientId === "") return;
+    if (step !== 3 || clientId === "" || entiteId === "") return;
     const state: { cancelled: boolean } = { cancelled: false };
     setDoublonChecking(true);
     void (async () => {
       try {
-        const list = await checkLicenceDoublonAction({ clientId, dateDebut, dateFin });
+        const list = await checkLicenceDoublonAction({ clientId, entiteId, dateDebut, dateFin });
         if (state.cancelled) return;
         setDoublons(list);
       } catch (err) {
@@ -174,7 +176,7 @@ export function NewLicenceDialog({
     return () => {
       state.cancelled = true;
     };
-  }, [step, clientId, dateDebut, dateFin]);
+  }, [step, clientId, entiteId, dateDebut, dateFin]);
 
   const resetAll = (): void => {
     setStep(1);

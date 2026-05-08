@@ -73,6 +73,7 @@ export async function listEntitesForClientAction(
 const CheckDoublonSchema = z
   .object({
     clientId: z.uuid(),
+    entiteId: z.uuid(),
     dateDebut: z.coerce.date(),
     dateFin: z.coerce.date(),
   })
@@ -86,15 +87,18 @@ export interface DoublonInfo {
 }
 
 /** Phase 21 R-30 — étape 3 du wizard. Vérifie qu'aucune licence ACTIF du
- *  client ne chevauche les dates demandées. Chevauchement = `[A.debut, A.fin]
- *  intersecte [B.debut, B.fin]` ⇔ `A.debut <= B.fin AND A.fin >= B.debut`.
- *  Retourne la liste des licences en conflit (vide = pas de doublon). */
+ *  couple (client, entité) ne chevauche les dates demandées. Chevauchement =
+ *  `[A.debut, A.fin]` intersecte `[B.debut, B.fin]` ⇔
+ *  `A.debut <= B.fin AND A.fin >= B.debut`. Le scope (client + entité) reflète
+ *  la réalité métier : un client multi-entités peut avoir des licences
+ *  parallèles tant qu'elles ne couvrent pas la même entité. */
 export async function checkLicenceDoublonAction(input: unknown): Promise<readonly DoublonInfo[]> {
   await requireRole(["USER", "ADMIN", "SADMIN"]);
   const parsed = CheckDoublonSchema.parse(input);
 
   const page = await listLicencesByClientUseCase.execute({
     clientId: parsed.clientId,
+    entiteId: parsed.entiteId,
     status: "ACTIF",
     limit: 200,
   });
@@ -139,6 +143,12 @@ export async function addArticleAfterCreateAction(
     const user = await requireRole(["ADMIN", "SADMIN"]);
     const parsed = AddArticleAfterCreateSchema.parse(input);
     const result = await addArticleToLicenceUseCase.execute(parsed, user.id);
+    // Revalide la liste licences ici : le wizard appelle cette action en
+    // dernier (après createLicenceAction). Sans revalidate sur la dernière
+    // action, Next.js auto-refresh côté client ne réinjecte pas la nouvelle
+    // ligne dans la table /licences (cf. pattern createClientAction qui
+    // revalide à la fin de sa propre action — ici la chaîne est répartie).
+    revalidatePath("/licences");
     return { id: result.id };
   });
 }

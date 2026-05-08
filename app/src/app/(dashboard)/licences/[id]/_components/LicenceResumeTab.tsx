@@ -49,16 +49,32 @@ export type LicFileStatus =
       readonly generatedAt: string;
     };
 
+/** Phase 24 — métadonnées du dernier import healthcheck (fichier-log entry). */
+export interface LastHealthcheckInfo {
+  readonly statut: "GENERATED" | "IMPORTED" | "ERREUR";
+  readonly createdAt: string;
+  readonly creePar: string | null;
+  readonly metadata: Record<string, unknown> | null;
+  readonly errorMessage: string | null;
+}
+
 export interface LicenceResumeTabProps {
   readonly licence: LicenceDTO;
   readonly clientLabel: string;
   readonly entiteLabel: string;
   readonly canEdit: boolean;
+  /** SADMIN seulement — gère la génération du fichier .lic et l'import .hc
+   *  (workflow PKI : émission de fichiers signés). ADMIN peut créer/éditer
+   *  la licence mais pas émettre les fichiers. */
+  readonly canGenerateFile: boolean;
   /** Phase 22 R-49 — nombre d'articles attachés. 0 = bouton .lic disabled
    *  + tooltip "Aucun article attaché à cette licence". */
   readonly articlesCount: number;
   /** Phase 23 — affiche une bannière "fichier .lic obsolète" si stale. */
   readonly licFileStatus: LicFileStatus | null;
+  /** Phase 24 — dernier import .hc effectué (rapport d'intégration). null
+   *  si aucun import jamais lancé. */
+  readonly lastHealthcheck: LastHealthcheckInfo | null;
 }
 
 type DialogState = { kind: "none" } | { kind: "edit" } | { kind: "status" };
@@ -68,8 +84,10 @@ export function LicenceResumeTab({
   clientLabel,
   entiteLabel,
   canEdit,
+  canGenerateFile,
   articlesCount,
   licFileStatus,
+  lastHealthcheck,
 }: LicenceResumeTabProps) {
   const t = useTranslations("licences.detail.resume");
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
@@ -105,8 +123,12 @@ export function LicenceResumeTab({
             >
               {t("changeStatus")}
             </Button>
-            <GenerateLicFileButton licenceId={licence.id} articlesCount={articlesCount} />
-            <ImportHealthcheckButton licenceId={licence.id} />
+            {canGenerateFile && (
+              <>
+                <GenerateLicFileButton licenceId={licence.id} articlesCount={articlesCount} />
+                <ImportHealthcheckButton licenceId={licence.id} />
+              </>
+            )}
           </div>
         )}
       </div>
@@ -130,6 +152,8 @@ export function LicenceResumeTab({
         <Row label={t("fields.dateCreation")} value={licence.dateCreation.slice(0, 10)} />
         <Row label={t("fields.version")} value={String(licence.version)} />
       </dl>
+
+      {lastHealthcheck !== null && <LastHealthcheckPanel info={lastHealthcheck} />}
 
       <EditDialog
         open={dialog.kind === "edit"}
@@ -495,7 +519,21 @@ function ImportHealthcheckButton({ licenceId }: { readonly licenceId: string }) 
             setError(r.error);
             return;
           }
-          setInfo(t("doneSummary", { updated: r.data.updated, errors: r.data.errors }));
+          // Phase 24 — résumé enrichi (les détails complets apparaissent dans
+          // le panneau "Dernier import healthcheck" rendu par le parent).
+          const parts: string[] = [
+            t("doneSummary", { updated: r.data.updated, errors: r.data.errors }),
+          ];
+          if (r.data.articlesOutOfContract.length > 0) {
+            parts.push(`${String(r.data.articlesOutOfContract.length)} hors contrat`);
+          }
+          if (r.data.articlesSkipped.length > 0) {
+            parts.push(`${String(r.data.articlesSkipped.length)} sans volume`);
+          }
+          if (r.data.referenceMatch === false) {
+            parts.push("⚠ référence ≠ licence");
+          }
+          setInfo(parts.join(" · "));
           // reset file input
           e.target.value = "";
         } catch (err) {
@@ -522,5 +560,179 @@ function ImportHealthcheckButton({ licenceId }: { readonly licenceId: string }) 
       {info !== "" && <span className="text-success ml-2 text-xs">{info}</span>}
       {error !== "" && <span className="text-destructive ml-2 text-xs">{error}</span>}
     </>
+  );
+}
+
+// ============================================================================
+// Phase 24 — Panneau "Dernier import healthcheck"
+//
+// Lit les métadonnées du dernier fichier-log type HEALTHCHECK_IMPORTED
+// (chargées côté Server Component) et restitue : timestamp, total entrées,
+// updated, skipped (volume null), out-of-contract, not-in-catalog, mismatch
+// référence licence. Persistant entre les sessions — l'utilisateur peut
+// consulter le rapport du dernier import sans relancer.
+// ============================================================================
+
+function LastHealthcheckPanel({ info }: { readonly info: LastHealthcheckInfo }) {
+  const meta: Record<string, unknown> = info.metadata ?? {};
+  const num = (k: string): number | null => {
+    const v = meta[k];
+    return typeof v === "number" ? v : null;
+  };
+  const arr = (k: string): readonly string[] => {
+    const v = meta[k];
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  };
+  const str = (k: string): string | null => {
+    const v = meta[k];
+    return typeof v === "string" && v.length > 0 ? v : null;
+  };
+  const bool = (k: string): boolean | null => {
+    const v = meta[k];
+    return typeof v === "boolean" ? v : null;
+  };
+
+  const filename = str("filename");
+  const reference = str("reference");
+  const referenceMatch = bool("referenceMatch");
+  const totalEntries = num("totalEntries");
+  const updated = num("updated") ?? 0;
+  const errors = num("errors") ?? 0;
+  const skipped = arr("articlesSkipped");
+  const outOfContract = arr("articlesOutOfContract");
+  const notInCatalog = arr("articlesNotInCatalog");
+
+  const isError = info.statut === "ERREUR";
+  const date = new Date(info.createdAt).toLocaleString("fr-FR");
+
+  return (
+    <section className="border-border bg-card mt-6 rounded-md border p-4">
+      <header className="mb-3 flex items-center justify-between">
+        <h3 className="font-display text-foreground text-sm">Dernier import healthcheck</h3>
+        <span
+          className={
+            isError
+              ? "rounded-full bg-rose-500/15 px-2 py-0.5 text-xs text-rose-300"
+              : "rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-300"
+          }
+        >
+          {isError ? "Erreur" : "OK"}
+        </span>
+      </header>
+
+      <dl className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+        <div>
+          <dt className="text-muted-foreground">Date</dt>
+          <dd className="text-foreground font-mono">{date}</dd>
+        </div>
+        {filename !== null && (
+          <div>
+            <dt className="text-muted-foreground">Fichier</dt>
+            <dd className="text-foreground break-all">{filename}</dd>
+          </div>
+        )}
+        {info.creePar !== null && (
+          <div>
+            <dt className="text-muted-foreground">Importé par</dt>
+            <dd className="text-foreground">{info.creePar}</dd>
+          </div>
+        )}
+        {totalEntries !== null && (
+          <div>
+            <dt className="text-muted-foreground">Articles dans le .hc</dt>
+            <dd className="text-foreground">{totalEntries}</dd>
+          </div>
+        )}
+        <div>
+          <dt className="text-muted-foreground">Volumes mis à jour</dt>
+          <dd className="text-success">{updated}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Erreurs</dt>
+          <dd className={errors > 0 ? "text-destructive" : "text-foreground"}>{errors}</dd>
+        </div>
+        {reference !== null && (
+          <div className="sm:col-span-2">
+            <dt className="text-muted-foreground">Référence dans le .hc</dt>
+            <dd
+              className={
+                referenceMatch === false
+                  ? "text-destructive font-mono"
+                  : "text-foreground font-mono"
+              }
+            >
+              {reference}
+              {referenceMatch === false && " — ⚠ ne correspond pas à cette licence"}
+              {referenceMatch === true && " — ✓"}
+            </dd>
+          </div>
+        )}
+      </dl>
+
+      {outOfContract.length > 0 && (
+        <Detail
+          title={`Articles hors contrat (${String(outOfContract.length)})`}
+          subtitle="Présents dans le .hc mais non attachés à cette licence — à ajouter au contrat ou désinstaller côté client."
+          items={outOfContract}
+          tone="warning"
+        />
+      )}
+      {notInCatalog.length > 0 && (
+        <Detail
+          title={`Articles hors catalogue (${String(notInCatalog.length)})`}
+          subtitle="Codes inconnus du référentiel SELECT-PX."
+          items={notInCatalog}
+          tone="error"
+        />
+      )}
+      {skipped.length > 0 && (
+        <Detail
+          title={`Articles non instrumentés (${String(skipped.length)})`}
+          subtitle="Volume null dans le .hc — entrée tracée, mise à jour ignorée."
+          items={skipped}
+          tone="info"
+        />
+      )}
+      {info.errorMessage !== null && (
+        <p className="text-destructive mt-3 whitespace-pre-wrap text-xs">
+          <strong>Détail erreur :</strong> {info.errorMessage}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function Detail({
+  title,
+  subtitle,
+  items,
+  tone,
+}: {
+  readonly title: string;
+  readonly subtitle: string;
+  readonly items: readonly string[];
+  readonly tone: "info" | "warning" | "error";
+}) {
+  const toneClass =
+    tone === "error"
+      ? "border-rose-500/40 bg-rose-500/10 text-rose-300"
+      : tone === "warning"
+        ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
+        : "border-info/40 bg-info/10 text-info";
+  return (
+    <div className={`mt-3 rounded-md border p-2 ${toneClass}`}>
+      <p className="text-xs font-medium">{title}</p>
+      <p className="text-foreground/70 mt-0.5 text-[11px]">{subtitle}</p>
+      <ul className="mt-1 flex flex-wrap gap-1 text-[11px]">
+        {items.map((c) => (
+          <li
+            key={c}
+            className="bg-background/40 border-border rounded border px-1.5 py-0.5 font-mono"
+          >
+            {c}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

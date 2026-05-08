@@ -44,13 +44,28 @@ export const NAV_ROUTES: readonly NavRoute[] = [
   { href: "/", labelKey: "dashboard", icon: LayoutDashboard, group: "management" },
   { href: "/clients", labelKey: "clients", icon: Building2, group: "management" },
   { href: "/licences", labelKey: "licences", icon: FileText, group: "management" },
-  { href: "/renewals", labelKey: "renewals", icon: RefreshCw, group: "management" },
+  // Renewals : page réservée ADMIN/SADMIN (mutations renouvellement). Cacher
+  // pour USER pour éviter le 404 — leur visibilité côté licence reste OK
+  // via l'onglet renouvellements de la fiche licence.
+  {
+    href: "/renewals",
+    labelKey: "renewals",
+    icon: RefreshCw,
+    group: "management",
+    minRole: "ADMIN",
+  },
   { href: "/volumes", labelKey: "volumes", icon: BarChart3, group: "management" },
   // Surveillance
   { href: "/notifications", labelKey: "notifications", icon: BellRing, group: "monitoring" },
   { href: "/alerts", labelKey: "alerts", icon: Bell, group: "monitoring", minRole: "ADMIN" },
-  // Rapports
-  { href: "/reports", labelKey: "reportsList", icon: BarChart3, group: "reports" },
+  // Rapports : exports CSV/XLSX/PDF gardés ADMIN+ côté Server Action.
+  {
+    href: "/reports",
+    labelKey: "reportsList",
+    icon: BarChart3,
+    group: "reports",
+    minRole: "ADMIN",
+  },
   { href: "/files", labelKey: "files", icon: FileText, group: "reports", minRole: "ADMIN" },
   // Système
   // Phase 17 S1 — /history fusionné avec /audit (redirect serveur). On garde

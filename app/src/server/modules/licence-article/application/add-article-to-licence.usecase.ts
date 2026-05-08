@@ -11,6 +11,7 @@ import type { AuditRepository } from "@/server/modules/audit/ports/audit.reposit
 import { InternalError } from "@/server/modules/error";
 import { licenceNotFoundById } from "@/server/modules/licence/domain/licence.errors";
 import type { LicenceRepository } from "@/server/modules/licence/ports/licence.repository";
+import type { ProduitRepository } from "@/server/modules/produit/ports/produit.repository";
 import type { UserRepository } from "@/server/modules/user/ports/user.repository";
 
 import { toDTO, type LicenceArticleDTO } from "../adapters/postgres/licence-article.mapper";
@@ -33,6 +34,7 @@ export class AddArticleToLicenceUseCase {
     private readonly articleRepository: ArticleRepository,
     private readonly userRepository: UserRepository,
     private readonly auditRepository: AuditRepository,
+    private readonly produitRepository: ProduitRepository,
   ) {}
 
   async execute(input: AddArticleToLicenceInput, actorId: string): Promise<LicenceArticleDTO> {
@@ -66,11 +68,21 @@ export class AddArticleToLicenceUseCase {
         });
       }
 
+      // Enrichit le snapshot audit avec code/désignation article + produit
+      // pour que la fiche historique soit lisible sans drill-down BD.
+      const produit = await this.produitRepository.findById(article.produitId, tx);
       const entry = AuditEntry.create({
         entity: "licence-article",
         entityId: saved.id,
         action: "LICENCE_ARTICLE_ADDED",
-        afterData: saved.toAuditSnapshot(),
+        afterData: {
+          ...saved.toAuditSnapshot(),
+          articleCode: article.code,
+          articleNom: article.nom,
+          produitId: article.produitId,
+          produitCode: produit?.code ?? null,
+          produitNom: produit?.nom ?? null,
+        },
         userId: actor.id,
         userDisplay: actor.toDisplay(),
         mode: "MANUEL",

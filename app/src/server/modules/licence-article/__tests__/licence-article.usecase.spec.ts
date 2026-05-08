@@ -65,6 +65,7 @@ beforeAll(() => {
     articleRepo,
     userRepo,
     auditRepo,
+    produitRepo,
   );
   updateVolume = new UpdateArticleVolumeUseCase(laRepo, userRepo, auditRepo);
   removeArticle = new RemoveArticleFromLicenceUseCase(laRepo, userRepo, auditRepo);

@@ -31,10 +31,12 @@ export default async function RenewalsPage() {
   }));
 
   return (
-    <RenewalsList
-      initialItems={initialPage.items}
-      initialCursor={initialPage.nextCursor}
-      clients={clients}
-    />
+    <div className="p-8">
+      <RenewalsList
+        initialItems={initialPage.items}
+        initialCursor={initialPage.nextCursor}
+        clients={clients}
+      />
+    </div>
   );
 }

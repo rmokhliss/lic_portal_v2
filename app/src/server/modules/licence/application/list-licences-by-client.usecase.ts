@@ -8,6 +8,7 @@ import type { FindLicencesPaginatedInput, LicenceRepository } from "../ports/lic
 
 export interface ListLicencesByClientUseCaseInput {
   readonly clientId: string;
+  readonly entiteId?: string;
   readonly status?: LicenceStatus | readonly LicenceStatus[];
   readonly cursor?: string;
   readonly limit?: number;
@@ -27,6 +28,7 @@ export class ListLicencesByClientUseCase {
   ): Promise<ListLicencesByClientUseCaseOutput> {
     const opts: FindLicencesPaginatedInput = {
       clientId: input.clientId,
+      ...(input.entiteId !== undefined ? { entiteId: input.entiteId } : {}),
       ...(input.status !== undefined ? { status: input.status } : {}),
       ...(input.cursor !== undefined ? { cursor: input.cursor } : {}),
       ...(input.limit !== undefined ? { limit: input.limit } : {}),
