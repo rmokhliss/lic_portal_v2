@@ -71,11 +71,13 @@ const nextConfig: NextConfig = {
   // soient effectivement honorés sur les listes (sinon le client garde les
   // segments en cache et affiche des données obsolètes après mutation, cas
   // observé sur /licences post création/génération .lic).
+  // Note : Next.js 16 impose `static >= 30` (sinon warning + valeur ignorée).
+  // On garde `dynamic: 0` pour la fraîcheur des Server Components dynamiques.
   // Référence : https://nextjs.org/docs/app/api-reference/config/next-config-js/staleTimes
   experimental: {
     staleTimes: {
       dynamic: 0,
-      static: 0,
+      static: 30,
     },
   },
   async headers() {
