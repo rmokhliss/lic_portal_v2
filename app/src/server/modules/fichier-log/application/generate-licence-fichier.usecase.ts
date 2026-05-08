@@ -19,7 +19,7 @@
 
 import { createHash } from "node:crypto";
 
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { db } from "@/server/infrastructure/db/client";
 import type { ArticleRepository } from "@/server/modules/article/ports/article.repository";
@@ -28,6 +28,7 @@ import { decryptAes256Gcm } from "@/server/modules/crypto/domain/aes";
 import { signPayload } from "@/server/modules/crypto/domain/rsa";
 import { caAbsentOrInvalid } from "@/server/modules/crypto/domain/x509.errors";
 import type { EntiteRepository } from "@/server/modules/entite/ports/entite.repository";
+import { licences } from "@/server/modules/licence/adapters/postgres/schema";
 import { licenceNotFoundById } from "@/server/modules/licence/domain/licence.errors";
 import type { LicenceRepository } from "@/server/modules/licence/ports/licence.repository";
 import type { LicenceArticleRepository } from "@/server/modules/licence-article/ports/licence-article.repository";
@@ -190,16 +191,17 @@ export class GenerateLicenceFichierUseCase {
     // Phase 23 — empreinte du contenu produit/article/volume (independant du
     // .lic signe) pour detecter les modifications post-generation. Stocke
     // hash + timestamp dans lic_licences pour comparaison ulterieure cote UI.
-    // Phase 24 — cast explicite ::uuid (pattern codebase) : sans cela PG
-    // refuse la comparaison uuid = text et matche 0 lignes silencieusement,
-    // d ou le badge .lic qui restait sur "Jamais".
+    // Phase 24 — switch sur Drizzle typed update (raw sql template avait un
+    // bug de binding UUID silencieux qui faisait que l UPDATE matchait 0 ligne
+    // → badge .lic restait sur "Jamais" indéfiniment).
     const contentHash = await computeLicenceContentHash(licence.id);
-    await db.execute(sql`
-      UPDATE lic_licences
-      SET last_lic_file_hash = ${contentHash},
-          last_lic_file_generated_at = NOW()
-      WHERE id = ${licence.id}::uuid
-    `);
+    await db
+      .update(licences)
+      .set({
+        lastLicFileHash: contentHash,
+        lastLicFileGeneratedAt: sql`NOW()`,
+      })
+      .where(eq(licences.id, licence.id));
 
     return { content, contentJson, signedPayload, signatureBase64, hash, fichierLog };
   }

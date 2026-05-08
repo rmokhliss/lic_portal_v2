@@ -1,5 +1,5 @@
 // ==============================================================================
-// LIC v2 — GetLicFileStaleStatusUseCase (Phase 23)
+// LIC v2 — GetLicFileStaleStatusUseCase (Phase 23 + Phase 24)
 //
 // Read-only. Compare le hash courant du contenu produit/article/volume d'une
 // licence avec le hash stocké au moment de la dernière génération .lic. Retourne
@@ -9,12 +9,16 @@
 //   - stale  : .lic généré MAIS contenu modifié depuis (re-génération nécessaire)
 //
 // Pas de side-effect, pas de tx, pas d'audit. Appelé en lecture par les Server
-// Components fiche licence (resume + articles).
+// Components fiche licence (resume + articles) + cross-list /licences.
+//
+// Phase 24 — switch sur Drizzle typed query builder pour le binding UUID
+// (cf. compute-licence-content-hash) — raw sql template binding incohérent.
 // ==============================================================================
 
-import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { db } from "@/server/infrastructure/db/client";
+import { licences } from "@/server/modules/licence/adapters/postgres/schema";
 
 import { computeLicenceContentHash } from "./__shared/compute-licence-content-hash";
 
@@ -33,27 +37,22 @@ export type LicFileStaleStatus =
       readonly generatedAt: string;
     };
 
-interface LicenceHashRow extends Record<string, unknown> {
-  readonly last_lic_file_hash: string | null;
-  readonly last_lic_file_generated_at: Date | null;
-}
-
 export class GetLicFileStaleStatusUseCase {
   async execute(licenceId: string): Promise<LicFileStaleStatus> {
-    // Phase 24 — cast explicite ::uuid (cf. pattern codebase). Sans le cast,
-    // 0 rows retournés silencieusement → row=undefined → status="never"
-    // peu importe la valeur en BD, d'où le badge bloqué sur "Jamais".
-    const rowsRes = await db.execute<LicenceHashRow>(sql`
-      SELECT last_lic_file_hash, last_lic_file_generated_at
-      FROM lic_licences WHERE id = ${licenceId}::uuid
-    `);
-    const rows = rowsRes as unknown as readonly LicenceHashRow[];
-    const row = rows[0];
+    const rows = await db
+      .select({
+        lastLicFileHash: licences.lastLicFileHash,
+        lastLicFileGeneratedAt: licences.lastLicFileGeneratedAt,
+      })
+      .from(licences)
+      .where(eq(licences.id, licenceId))
+      .limit(1);
 
     const currentHash = await computeLicenceContentHash(licenceId);
 
-    const storedHash = row?.last_lic_file_hash ?? null;
-    const generatedAtDate = row?.last_lic_file_generated_at ?? null;
+    const row = rows[0];
+    const storedHash = row?.lastLicFileHash ?? null;
+    const generatedAtDate = row?.lastLicFileGeneratedAt ?? null;
     if (storedHash === null || generatedAtDate === null) {
       return { status: "never", currentHash };
     }

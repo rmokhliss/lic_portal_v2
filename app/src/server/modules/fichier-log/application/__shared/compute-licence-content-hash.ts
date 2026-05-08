@@ -17,54 +17,47 @@
 //   métadonnées techniques. Une licence dont les volumes restent identiques
 //   après un re-attach produit sans changement matériel ne déclenche pas un
 //   "obsolète" intempestif.
+//
+// Phase 24 — switch sur Drizzle typed query builder pour le binding UUID
+// (raw sql template avait un problème de cast text→uuid silencieux selon
+// la version PG / postgres-js, retournant 0 rows de manière inconsistante).
 // ==============================================================================
 
 import { createHash } from "node:crypto";
 
-import { sql } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 import { db as defaultDb } from "@/server/infrastructure/db/client";
+import { licenceArticles } from "@/server/modules/licence-article/adapters/postgres/schema";
+import { licenceProduits } from "@/server/modules/licence-produit/adapters/postgres/schema";
 
 type DbClient = typeof defaultDb;
-
-interface ProduitRow extends Record<string, unknown> {
-  readonly produit_id: number;
-}
-
-interface ArticleRow extends Record<string, unknown> {
-  readonly article_id: number;
-  readonly volume_autorise: number | null;
-  readonly volume_consomme: number | null;
-}
 
 export async function computeLicenceContentHash(
   licenceId: string,
   db: DbClient = defaultDb,
 ): Promise<string> {
-  // Phase 24 — cast explicite ::uuid (cf. pattern codebase). Sans le cast,
-  // l auto-cast text→uuid de PG ne s applique pas pour les parameters bound
-  // via postgres-js → 0 rows retournés silencieusement → hash canonical
-  // toujours "#" → comparaison stale toujours faussée.
-  const produitsRes = await db.execute<ProduitRow>(sql`
-    SELECT produit_id FROM lic_licence_produits
-    WHERE licence_id = ${licenceId}::uuid
-    ORDER BY produit_id ASC
-  `);
-  const articlesRes = await db.execute<ArticleRow>(sql`
-    SELECT article_id, volume_autorise, volume_consomme
-    FROM lic_licence_articles
-    WHERE licence_id = ${licenceId}::uuid
-    ORDER BY article_id ASC
-  `);
+  const produits = await db
+    .select({ produitId: licenceProduits.produitId })
+    .from(licenceProduits)
+    .where(eq(licenceProduits.licenceId, licenceId))
+    .orderBy(asc(licenceProduits.produitId));
 
-  const produits = produitsRes as unknown as readonly ProduitRow[];
-  const articles = articlesRes as unknown as readonly ArticleRow[];
+  const articles = await db
+    .select({
+      articleId: licenceArticles.articleId,
+      volumeAutorise: licenceArticles.volumeAutorise,
+      volumeConsomme: licenceArticles.volumeConsomme,
+    })
+    .from(licenceArticles)
+    .where(eq(licenceArticles.licenceId, licenceId))
+    .orderBy(asc(licenceArticles.articleId));
 
-  const produitsPart = produits.map((p) => `P|${String(p.produit_id)}`).join(";");
+  const produitsPart = produits.map((p) => `P|${String(p.produitId)}`).join(";");
   const articlesPart = articles
     .map(
       (a) =>
-        `A|${String(a.article_id)}:${a.volume_autorise === null ? "null" : String(a.volume_autorise)}:${a.volume_consomme === null ? "null" : String(a.volume_consomme)}`,
+        `A|${String(a.articleId)}:${a.volumeAutorise === null ? "null" : String(a.volumeAutorise)}:${a.volumeConsomme === null ? "null" : String(a.volumeConsomme)}`,
     )
     .join(";");
 
