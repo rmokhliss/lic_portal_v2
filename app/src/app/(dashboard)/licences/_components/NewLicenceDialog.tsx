@@ -19,7 +19,6 @@
 
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -35,12 +34,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 
-import { addProduitToLicenceAction } from "../[id]/_actions";
-
 import {
-  addArticleAfterCreateAction,
   checkLicenceDoublonAction,
-  createLicenceAction,
+  createLicenceFullAction,
   listEntitesForClientAction,
   type DoublonInfo,
   type EntiteOption,
@@ -98,7 +94,6 @@ export function NewLicenceDialog({
   readonly lockedClientId?: string;
   readonly triggerLabel?: string;
 }): React.JSX.Element {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
@@ -303,104 +298,55 @@ export function NewLicenceDialog({
       return;
     }
 
+    // Phase 24 — UNE SEULE Server Action composite (createLicenceFullAction)
+    // au lieu d'enchaîner createLicence + addProduit×N + addArticle×N.
+    // Aligne le flow sur ClientDialog (1 action → auto-refresh Next.js fiable).
+    const ids = selectedArticleIds();
+    const articlesPayload = ids
+      .map((id) => {
+        const art = articles.find((a) => a.id === id);
+        if (art === undefined) return null;
+        const sel = articleSelection[id];
+        let volumeAutorise: number | null = null;
+        if (art.controleVolume && sel !== undefined && sel.volume.trim().length > 0) {
+          const v = Number(sel.volume);
+          volumeAutorise = Number.isFinite(v) && v >= 0 ? v : null;
+        }
+        return { articleId: id, produitId: art.produitId, volumeAutorise };
+      })
+      .filter(
+        (x): x is { articleId: number; produitId: number; volumeAutorise: number | null } =>
+          x !== null,
+      );
+
     startTransition(() => {
       void (async () => {
-        // Phase 23 R-45 — Result tagué : la Server Action ne throw plus pour
-        // les erreurs métier (Next.js sanitiserait le message). On lit
-        // result.success / result.error pour propager le message AppError.
         try {
-          const createRes = await createLicenceAction({
+          const res = await createLicenceFullAction({
             clientId,
             entiteId,
             dateDebut,
             dateFin,
             renouvellementAuto,
+            articles: articlesPayload,
           });
-          if (!createRes.success) {
-            setError(createRes.error);
+          if (!res.success) {
+            setError(res.error);
             return;
           }
-          const created = createRes.data;
-          // Phase 23 — attache les produits parents avant les articles. Sans
-          // cette étape, lic_licence_articles est peuplée mais lic_licence_produits
-          // reste vide et /licences/[id]/articles affiche "Aucun produit attaché"
-          // (les articles sont rendus groupés par produit). Les conflits "produit
-          // déjà attaché" sont silencieusement ignorés.
-          const ids = selectedArticleIds();
-          const produitIds = new Set<number>();
-          for (const id of ids) {
-            const art = articles.find((a) => a.id === id);
-            if (art !== undefined) produitIds.add(art.produitId);
-          }
-          for (const produitId of produitIds) {
-            try {
-              const addProd = await addProduitToLicenceAction({
-                licenceId: created.id,
-                produitId,
-              });
-              // SPX-LIC-750 = produit déjà attaché → tolérance silencieuse.
-              if (!addProd.success && addProd.code !== "SPX-LIC-750") {
-                // Erreur autre que "déjà attaché" — log mais on continue
-                // pour permettre l'ajout des articles indépendants.
-
-                console.warn("Échec attache produit", produitId, addProd.error);
-              }
-            } catch {
-              // Silencieux — on continue sur les articles.
-            }
-          }
-          // Phase 22 R-48 — boucle robuste : chaque ajout retourne un Result
-          // indépendant. On collecte les échecs pour les afficher en résumé
-          // (l'utilisateur peut compléter via /licences/[id]/articles).
-          const failures: string[] = [];
-          for (const id of ids) {
-            const art = articles.find((a) => a.id === id);
-            if (art === undefined) continue;
-            const sel = articleSelection[id];
-            // Phase 23 — null si article non-volumétrique OU si l'utilisateur a
-            // laissé le champ vide (volume non encore défini = illimité métier).
-            let volumeAutorise: number | null = null;
-            if (art.controleVolume && sel !== undefined && sel.volume.trim().length > 0) {
-              const v = Number(sel.volume);
-              volumeAutorise = Number.isFinite(v) && v >= 0 ? v : null;
-            }
-            try {
-              const addRes = await addArticleAfterCreateAction({
-                licenceId: created.id,
-                articleId: id,
-                volumeAutorise,
-              });
-              if (!addRes.success) {
-                failures.push(`${art.code} (${addRes.error})`);
-              }
-            } catch (artErr) {
-              const msg = artErr instanceof Error ? artErr.message : "erreur inconnue";
-              failures.push(`${art.code} (${msg})`);
-            }
-          }
-          if (failures.length > 0) {
-            // Échecs partiels — on garde le wizard ouvert avec un résumé.
-            // L'utilisateur peut soit fermer + compléter sur la fiche
-            // licence, soit retenter (mais la licence est déjà créée).
-            setArticleErrors(failures);
-            router.refresh();
+          if (res.data.articleFailures.length > 0) {
+            // Échecs partiels — la licence est créée, mais certains articles
+            // n'ont pas pu être attachés. On garde le wizard ouvert pour info.
+            // L'utilisateur peut fermer + compléter via /licences/[id]/articles.
+            setArticleErrors(res.data.articleFailures);
             return;
           }
-          // Phase 23 — fermeture wizard + double refresh pour garantir que
-          // les Server Components consommateurs (table licences fiche client
-          // /clients/[id]/licences ET liste globale /licences) prennent en
-          // compte la nouvelle ligne. router.refresh() seul a montré des cas
-          // où le re-fetch est court-circuite par le re-render parent post-
-          // setOpen(false). On ajoute un setTimeout(0) pour replanifier le
-          // refresh apres la fin du tick React courant.
+          // Tout OK : ferme le wizard. L'auto-refresh Next.js (déclenché par
+          // la Server Action) re-fetch /licences avec la nouvelle ligne, comme
+          // pour le pattern createClientAction.
           setArticleErrors([]);
           onOpenChange(false);
-          router.refresh();
-          setTimeout(() => {
-            router.refresh();
-          }, 50);
         } catch (err) {
-          // Erreur système (réseau, BD down) — pas un AppError métier.
           setError(err instanceof Error ? err.message : "Erreur inconnue");
         }
       })();

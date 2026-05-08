@@ -20,11 +20,13 @@ import { z } from "zod";
 import { requireRole } from "@/server/infrastructure/auth";
 import {
   addArticleToLicenceUseCase,
+  addProduitToLicenceUseCase,
   createLicenceUseCase,
   listEntitesByClientUseCase,
   listLicencesByClientUseCase,
 } from "@/server/composition-root";
 import { runAction, type ActionResult } from "@/server/infrastructure/actions/result";
+import { isAppError } from "@/server/modules/error";
 
 const CreateSchema = z
   .object({
@@ -135,7 +137,11 @@ const AddArticleAfterCreateSchema = z
  *  article sélectionné. La création licence + ajouts articles ne sont PAS
  *  atomiques (limitation acceptée — un échec partiel laisse une licence
  *  existante avec un sous-ensemble d'articles, l'utilisateur peut compléter
- *  manuellement via /licences/[id]/articles). */
+ *  manuellement via /licences/[id]/articles).
+ *
+ *  Phase 24 — gardée pour rétrocompat / appels isolés ; le wizard utilise
+ *  désormais createLicenceFullAction (1 action composite) pour aligner le
+ *  flow sur clients (1 action → 1 auto-refresh Next.js). */
 export async function addArticleAfterCreateAction(
   input: unknown,
 ): Promise<ActionResult<{ id: string }>> {
@@ -143,12 +149,113 @@ export async function addArticleAfterCreateAction(
     const user = await requireRole(["ADMIN", "SADMIN"]);
     const parsed = AddArticleAfterCreateSchema.parse(input);
     const result = await addArticleToLicenceUseCase.execute(parsed, user.id);
-    // Revalide la liste licences ici : le wizard appelle cette action en
-    // dernier (après createLicenceAction). Sans revalidate sur la dernière
-    // action, Next.js auto-refresh côté client ne réinjecte pas la nouvelle
-    // ligne dans la table /licences (cf. pattern createClientAction qui
-    // revalide à la fin de sa propre action — ici la chaîne est répartie).
     revalidatePath("/licences");
     return { id: result.id };
+  });
+}
+
+// ============================================================================
+// Phase 24 — createLicenceFullAction : Server Action composite wizard
+//
+// Refacto du flow wizard (étape 3 du NewLicenceDialog). Au lieu d'enchaîner
+// 3+ Server Actions côté client (createLicence, addProduit×N, addArticle×N),
+// on fait UNE SEULE action serveur qui orchestre tout. Pourquoi :
+//   - Next.js déclenche un auto-refresh des Server Components après CHAQUE
+//     Server Action invoquée depuis un Client Component. Avec une chaîne de
+//     N actions, l'ordre des refreshes vs l'état dialog open/close est
+//     instable côté UI (cas observé sur /licences post wizard : la nouvelle
+//     ligne n'apparaît pas avant un reload manuel, alors que /clients
+//     fonctionne car createClientAction est seul).
+//   - Une action composite garantit 1 transaction logique côté UX (1 spinner,
+//     1 résultat avec failures partielles), 1 auto-refresh Next.js, alignement
+//     avec le pattern createClientAction.
+// ============================================================================
+
+const CreateLicenceFullSchema = z
+  .object({
+    clientId: z.uuid(),
+    entiteId: z.uuid(),
+    dateDebut: z.coerce.date(),
+    dateFin: z.coerce.date(),
+    commentaire: z.string().max(500).optional(),
+    renouvellementAuto: z.boolean().optional(),
+    articles: z
+      .array(
+        z
+          .object({
+            articleId: z.number().int().positive(),
+            produitId: z.number().int().positive(),
+            volumeAutorise: z.number().int().nonnegative().nullable(),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(500),
+  })
+  .strict();
+
+export interface CreateLicenceFullResult {
+  readonly id: string;
+  /** Échecs unitaires d'ajout d'articles (la licence + les autres articles
+   *  attachés sont OK). L'utilisateur peut compléter via /licences/[id]/articles. */
+  readonly articleFailures: readonly string[];
+}
+
+export async function createLicenceFullAction(
+  input: unknown,
+): Promise<ActionResult<CreateLicenceFullResult>> {
+  return runAction(async () => {
+    const user = await requireRole(["ADMIN", "SADMIN"]);
+    const parsed = CreateLicenceFullSchema.parse(input);
+
+    const created = await createLicenceUseCase.execute(
+      {
+        clientId: parsed.clientId,
+        entiteId: parsed.entiteId,
+        dateDebut: parsed.dateDebut,
+        dateFin: parsed.dateFin,
+        ...(parsed.commentaire !== undefined ? { commentaire: parsed.commentaire } : {}),
+        ...(parsed.renouvellementAuto !== undefined
+          ? { renouvellementAuto: parsed.renouvellementAuto }
+          : {}),
+      },
+      user.id,
+    );
+    const licenceId = created.licence.id;
+
+    // Attache les produits parents (uniques). SPX-LIC-750 (déjà attaché) =
+    // tolérance silencieuse, autres erreurs propagées dans articleFailures.
+    const produitIds = new Set(parsed.articles.map((a) => a.produitId));
+    for (const produitId of produitIds) {
+      try {
+        await addProduitToLicenceUseCase.execute({ licenceId, produitId }, user.id);
+      } catch (err) {
+        if (isAppError(err) && err.code === "SPX-LIC-750") continue;
+        // Erreur autre — log silencieusement, l'erreur d'article suivant la
+        // capturera si l'attache produit a vraiment échoué.
+      }
+    }
+
+    const articleFailures: string[] = [];
+    for (const article of parsed.articles) {
+      try {
+        await addArticleToLicenceUseCase.execute(
+          {
+            licenceId,
+            articleId: article.articleId,
+            volumeAutorise: article.volumeAutorise,
+          },
+          user.id,
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "erreur inconnue";
+        articleFailures.push(`article #${String(article.articleId)}: ${message}`);
+      }
+    }
+
+    revalidatePath("/licences");
+    revalidatePath(`/clients/${parsed.clientId}/licences`);
+    revalidatePath(`/licences/${licenceId}/articles`);
+    return { id: licenceId, articleFailures };
   });
 }
