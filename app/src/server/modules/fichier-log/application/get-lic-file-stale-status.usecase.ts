@@ -40,9 +40,12 @@ interface LicenceHashRow extends Record<string, unknown> {
 
 export class GetLicFileStaleStatusUseCase {
   async execute(licenceId: string): Promise<LicFileStaleStatus> {
+    // Phase 24 — cast explicite ::uuid (cf. pattern codebase). Sans le cast,
+    // 0 rows retournés silencieusement → row=undefined → status="never"
+    // peu importe la valeur en BD, d'où le badge bloqué sur "Jamais".
     const rowsRes = await db.execute<LicenceHashRow>(sql`
       SELECT last_lic_file_hash, last_lic_file_generated_at
-      FROM lic_licences WHERE id = ${licenceId}
+      FROM lic_licences WHERE id = ${licenceId}::uuid
     `);
     const rows = rowsRes as unknown as readonly LicenceHashRow[];
     const row = rows[0];

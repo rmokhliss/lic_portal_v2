@@ -41,15 +41,19 @@ export async function computeLicenceContentHash(
   licenceId: string,
   db: DbClient = defaultDb,
 ): Promise<string> {
+  // Phase 24 — cast explicite ::uuid (cf. pattern codebase). Sans le cast,
+  // l auto-cast text→uuid de PG ne s applique pas pour les parameters bound
+  // via postgres-js → 0 rows retournés silencieusement → hash canonical
+  // toujours "#" → comparaison stale toujours faussée.
   const produitsRes = await db.execute<ProduitRow>(sql`
     SELECT produit_id FROM lic_licence_produits
-    WHERE licence_id = ${licenceId}
+    WHERE licence_id = ${licenceId}::uuid
     ORDER BY produit_id ASC
   `);
   const articlesRes = await db.execute<ArticleRow>(sql`
     SELECT article_id, volume_autorise, volume_consomme
     FROM lic_licence_articles
-    WHERE licence_id = ${licenceId}
+    WHERE licence_id = ${licenceId}::uuid
     ORDER BY article_id ASC
   `);
 
