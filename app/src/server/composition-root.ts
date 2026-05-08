@@ -550,3 +550,18 @@ export const exportLicencesCsvUseCase = new ExportLicencesCsvUseCase(
 export const exportRenouvellementsCsvUseCase = new ExportRenouvellementsCsvUseCase(
   renouvellementRepository,
 );
+
+// --- Phase 24 : forgot password self-service (cross-module : user + email)
+
+import { RequestPasswordResetUseCase } from "@/server/modules/user/application/request-password-reset.usecase";
+import {
+  renderTemplateUseCase as _renderTemplateUseCaseAlias,
+  sendEmailUseCase as _sendEmailUseCaseAlias,
+} from "@/server/modules/email/email.module";
+
+export const requestPasswordResetUseCase = new RequestPasswordResetUseCase(
+  userRepository,
+  resetUserPasswordUseCase,
+  _renderTemplateUseCaseAlias,
+  _sendEmailUseCaseAlias,
+);

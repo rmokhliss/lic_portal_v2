@@ -16,13 +16,15 @@
 // haute reste batch_executions.stats.expired qui agrège le run.
 // ==============================================================================
 
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { SYSTEM_USER_DISPLAY, SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
 
 import { db } from "@/server/infrastructure/db/client";
 import { auditRepository } from "@/server/modules/audit/audit.module";
 import { AuditEntry } from "@/server/modules/audit/domain/audit-entry.entity";
+import { createNotificationUseCase } from "@/server/modules/notification/notification.module";
+import { users } from "@/server/modules/user/adapters/postgres/schema";
 
 import { track } from "../batch-tracker";
 
@@ -66,8 +68,43 @@ export async function runExpireLicences(declencheur: "SCHEDULED" | "MANUAL" = "S
       await auditRepository.save(entry);
     }
 
+    // Phase 24 — notifications IN_APP pour chaque licence passée en EXPIRE.
+    // Cible : tous les utilisateurs actifs (alignement check-alerts handler).
+    // Permet de surfacer les expirations dans le drawer notif sans attendre
+    // que le user navigue sur /licences.
+    let notifsCreated = 0;
+    if (rows.length > 0) {
+      const adminRows = await db.select({ id: users.id }).from(users).where(eq(users.actif, true));
+      const userIds = adminRows.map((r) => r.id);
+
+      for (const row of rows) {
+        const dateFinStr =
+          row.date_fin instanceof Date
+            ? row.date_fin.toISOString().slice(0, 10)
+            : String(row.date_fin);
+        for (const userId of userIds) {
+          await createNotificationUseCase.execute({
+            userId,
+            title: `Licence ${row.reference} expirée`,
+            body: `La date de fin (${dateFinStr}) est dépassée — passée automatiquement en statut EXPIRE par le job quotidien. Initier un renouvellement si la licence doit reprendre.`,
+            href: `/licences/${row.id}/resume`,
+            priority: "WARNING",
+            source: "LICENCE_EXPIRED",
+            metadata: {
+              licenceId: row.id,
+              reference: row.reference,
+              dateFin: dateFinStr,
+              clientId: row.client_id,
+            },
+          });
+          notifsCreated++;
+        }
+      }
+    }
+
     await log.info("expire-licences done", {
       expired: rows.length,
+      notifsCreated,
       references: rows.map((r) => r.reference),
     });
 

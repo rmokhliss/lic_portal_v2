@@ -31,13 +31,12 @@
   --color-danger:  #EF4444;
   --color-info:    #3B82F6;
 
-  /* Type — fonts système (Phase 23 : next/font/google retiré, build offline-safe).
-   * Pour réactiver Montserrat/Poppins/JetBrains Mono : self-host via
-   * next/font/local (placer les WOFF2 dans public/fonts/) et redéfinir les
-   * --font-* dans layout.tsx, ou réimporter next/font/google si le réseau
-   * permet le fetch fonts.googleapis.com au build. */
-  --font-display: "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
-  --font-sans:    system-ui, "Segoe UI", "Helvetica Neue", sans-serif;
+  /* Type — Montserrat (Phase 24, chargée via CDN dans layout.tsx, runtime
+   * client). Les fallbacks système prennent le relais si fonts.googleapis.com
+   * est inaccessible côté navigateur. La famille mono reste système (pas de
+   * dépendance CDN pour le code/IDs). */
+  --font-display: "Montserrat", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+  --font-sans:    "Montserrat", system-ui, "Segoe UI", "Helvetica Neue", sans-serif;
   --font-mono:    ui-monospace, "Cascadia Code", "Consolas", "Liberation Mono", monospace;
 
   /* Radii */

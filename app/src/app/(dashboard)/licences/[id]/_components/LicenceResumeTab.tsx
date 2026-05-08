@@ -26,6 +26,7 @@ import {
   changeLicenceStatusAction,
   generateLicenceFichierAction,
   importHealthcheckAction,
+  type ImportHealthcheckResult,
   updateLicenceAction,
 } from "../_actions";
 import type { LicenceDTO, LicenceStatusClient } from "./licence-detail-types";
@@ -488,20 +489,41 @@ function GenerateLicFileButton({
 }
 
 // ============================================================================
-// Phase 10.D — Bouton "Importer healthcheck"
+// Phase 24 — Bouton "Importer healthcheck" en flux preview → apply
 //
-// Upload <input type="file"> → lit en string → envoie à la Server Action
-// importHealthcheckAction (CSV ou JSON). Réponse : nb articles updated +
-// éventuelles erreurs ligne par ligne.
+// Étape 1 : user uploade un fichier → on appelle importHealthcheckAction avec
+// dryRun=true (pas de mutation BD). On affiche le rapport d'analyse :
+// volumes qui seraient mis à jour, hors contrat, sans volume, référence
+// matche-t-elle, etc.
+// Étape 2 : user clique "Appliquer" → on rappelle l'action avec dryRun=false
+// (mêmes content/filename) pour persister. Sinon "Annuler" referme.
 // ============================================================================
+
+interface PreviewState {
+  readonly filename: string;
+  readonly content: string;
+  readonly preview: ImportHealthcheckResult;
+}
 
 function ImportHealthcheckButton({ licenceId }: { readonly licenceId: string }) {
   const t = useTranslations("licences.detail.resume.healthcheck");
+  const [open, setOpen] = useState<boolean>(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
   const [info, setInfo] = useState<string>("");
+  const [preview, setPreview] = useState<PreviewState | null>(null);
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const reset = () => {
+    setError("");
+    setPreview(null);
+  };
+
+  const onOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (!next) reset();
+  };
+
+  const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file === undefined) return;
     setError("");
@@ -514,28 +536,46 @@ function ImportHealthcheckButton({ licenceId }: { readonly licenceId: string }) 
             licenceId,
             filename: file.name,
             content,
+            dryRun: true,
           });
           if (!r.success) {
             setError(r.error);
             return;
           }
-          // Phase 24 — résumé enrichi (les détails complets apparaissent dans
-          // le panneau "Dernier import healthcheck" rendu par le parent).
-          const parts: string[] = [
-            t("doneSummary", { updated: r.data.updated, errors: r.data.errors }),
-          ];
+          setPreview({ filename: file.name, content, preview: r.data });
+          e.target.value = "";
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Erreur");
+        }
+      })();
+    });
+  };
+
+  const onApply = () => {
+    if (preview === null) return;
+    setError("");
+    startTransition(() => {
+      void (async () => {
+        try {
+          const r = await importHealthcheckAction({
+            licenceId,
+            filename: preview.filename,
+            content: preview.content,
+            dryRun: false,
+          });
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
+          const parts: string[] = [`${String(r.data.updated)} volume(s) mis à jour`];
           if (r.data.articlesOutOfContract.length > 0) {
             parts.push(`${String(r.data.articlesOutOfContract.length)} hors contrat`);
           }
           if (r.data.articlesSkipped.length > 0) {
             parts.push(`${String(r.data.articlesSkipped.length)} sans volume`);
           }
-          if (r.data.referenceMatch === false) {
-            parts.push("⚠ référence ≠ licence");
-          }
           setInfo(parts.join(" · "));
-          // reset file input
-          e.target.value = "";
+          onOpenChange(false);
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur");
         }
@@ -545,21 +585,184 @@ function ImportHealthcheckButton({ licenceId }: { readonly licenceId: string }) 
 
   return (
     <>
-      <label
-        className={`border-input bg-background hover:bg-accent inline-flex h-9 cursor-pointer items-center justify-center rounded-md border px-4 text-sm font-medium ${pending ? "opacity-50" : ""}`}
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => {
+          onOpenChange(true);
+        }}
       >
-        {pending ? t("importing") : t("import")}
-        <input
-          type="file"
-          accept=".hc,.csv,.json,application/json,text/csv,text/plain"
-          className="hidden"
-          onChange={onChange}
-          disabled={pending}
-        />
-      </label>
+        {t("import")}
+      </Button>
       {info !== "" && <span className="text-success ml-2 text-xs">{info}</span>}
-      {error !== "" && <span className="text-destructive ml-2 text-xs">{error}</span>}
+
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Importer un fichier healthcheck (.hc)</DialogTitle>
+          </DialogHeader>
+
+          {preview === null ? (
+            <div className="space-y-3">
+              <p className="text-muted-foreground text-sm">
+                Sélectionne un fichier .hc / .csv / .json. L&apos;analyse est faite côté serveur,
+                rien n&apos;est appliqué tant que tu n&apos;as pas validé l&apos;aperçu.
+              </p>
+              <label
+                className={`border-input bg-background hover:bg-accent inline-flex h-9 cursor-pointer items-center justify-center rounded-md border px-4 text-sm font-medium ${pending ? "opacity-50" : ""}`}
+              >
+                {pending ? "Analyse en cours…" : "Choisir un fichier"}
+                <input
+                  type="file"
+                  accept=".hc,.csv,.json,application/json,text/csv,text/plain"
+                  className="hidden"
+                  onChange={onFileSelect}
+                  disabled={pending}
+                />
+              </label>
+              {error !== "" && <p className="text-destructive text-sm">{error}</p>}
+            </div>
+          ) : (
+            <PreviewSummary preview={preview.preview} filename={preview.filename} />
+          )}
+
+          {error !== "" && preview !== null && <p className="text-destructive text-sm">{error}</p>}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false);
+              }}
+              disabled={pending}
+            >
+              {preview === null ? "Fermer" : "Annuler"}
+            </Button>
+            {preview !== null && (
+              <Button type="button" onClick={onApply} disabled={pending}>
+                {pending ? "Application…" : "Appliquer"}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
+  );
+}
+
+function PreviewSummary({
+  preview,
+  filename,
+}: {
+  readonly preview: ImportHealthcheckResult;
+  readonly filename: string;
+}) {
+  return (
+    <div className="space-y-3 text-sm">
+      <p className="text-muted-foreground text-xs">
+        Fichier : <span className="font-mono">{filename}</span>
+      </p>
+
+      {preview.referenceMatch === false && (
+        <div className="rounded-md border border-rose-300 bg-rose-50 p-2 text-xs text-rose-900">
+          ⚠ La référence dans le .hc ne correspond pas à cette licence — vérifier le fichier.
+        </div>
+      )}
+
+      <div className="border-border bg-muted/40 rounded-md border p-3">
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <span className="text-muted-foreground">Volumes à mettre à jour : </span>
+            <span className="text-success font-medium">{preview.updated}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Erreurs : </span>
+            <span
+              className={preview.errors > 0 ? "text-destructive font-medium" : "text-foreground"}
+            >
+              {preview.errors}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {preview.preview.length > 0 && (
+        <details className="border-border bg-card rounded-md border p-3" open>
+          <summary className="cursor-pointer text-xs font-medium">
+            Détail des mises à jour ({preview.preview.length})
+          </summary>
+          <table className="mt-2 w-full text-xs">
+            <thead className="text-muted-foreground">
+              <tr>
+                <th className="py-1 text-left">Article</th>
+                <th className="py-1 text-right">Avant</th>
+                <th className="py-1 text-right">Après</th>
+                <th className="py-1 text-right">Δ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {preview.preview.map((p) => {
+                const delta =
+                  p.volumeConsommeAvant === null
+                    ? null
+                    : p.volumeConsommeApres - p.volumeConsommeAvant;
+                return (
+                  <tr key={p.articleCode} className="border-border/50 border-t">
+                    <td className="py-1 font-mono">{p.articleCode}</td>
+                    <td className="text-muted-foreground py-1 text-right">
+                      {p.volumeConsommeAvant ?? "—"}
+                    </td>
+                    <td className="text-foreground py-1 text-right">{p.volumeConsommeApres}</td>
+                    <td
+                      className={`py-1 text-right ${delta !== null && delta > 0 ? "text-warning" : "text-muted-foreground"}`}
+                    >
+                      {delta === null ? "—" : delta > 0 ? `+${String(delta)}` : String(delta)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </details>
+      )}
+
+      {preview.articlesOutOfContract.length > 0 && (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs">
+          <p className="text-amber-300">
+            <strong>{preview.articlesOutOfContract.length}</strong> article(s) hors contrat —
+            présents dans le .hc mais non attachés à cette licence :
+          </p>
+          <p className="mt-1 font-mono text-[11px]">{preview.articlesOutOfContract.join(", ")}</p>
+        </div>
+      )}
+
+      {preview.articlesNotInCatalog.length > 0 && (
+        <div className="rounded-md border border-rose-500/40 bg-rose-500/10 p-2 text-xs">
+          <p className="text-rose-300">
+            <strong>{preview.articlesNotInCatalog.length}</strong> article(s) hors catalogue :
+          </p>
+          <p className="mt-1 font-mono text-[11px]">{preview.articlesNotInCatalog.join(", ")}</p>
+        </div>
+      )}
+
+      {preview.articlesSkipped.length > 0 && (
+        <div className="border-info/40 bg-info/10 rounded-md border p-2 text-xs">
+          <p className="text-info">
+            <strong>{preview.articlesSkipped.length}</strong> article(s) sans volume rapporté
+            (non-volumétriques, comportement normal) :
+          </p>
+          <p className="text-foreground/70 mt-1 font-mono text-[11px]">
+            {preview.articlesSkipped.join(", ")}
+          </p>
+        </div>
+      )}
+
+      <p className="text-muted-foreground border-border border-t pt-2 text-xs">
+        Vérifie l&apos;aperçu ci-dessus puis clique sur <strong>Appliquer</strong> pour valider — ou{" "}
+        <strong>Annuler</strong> si quelque chose ne va pas. Rien n&apos;est encore persisté.
+      </p>
+    </div>
   );
 }
 
@@ -687,8 +890,8 @@ function LastHealthcheckPanel({ info }: { readonly info: LastHealthcheckInfo }) 
       )}
       {skipped.length > 0 && (
         <Detail
-          title={`Articles non instrumentés (${String(skipped.length)})`}
-          subtitle="Volume null dans le .hc — entrée tracée, mise à jour ignorée."
+          title={`Articles non-volumétriques (${String(skipped.length)})`}
+          subtitle="Articles sans suivi de volume (HSM, fonctionnalités, etc.) — comportement normal."
           items={skipped}
           tone="info"
         />

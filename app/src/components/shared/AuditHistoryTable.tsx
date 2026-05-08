@@ -12,10 +12,14 @@
 
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import { useTranslations } from "next-intl";
 
+import {
+  resolveAuditIdsAction,
+  type ResolveAuditIdsResult,
+} from "@/app/(dashboard)/audit/_actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -229,6 +233,41 @@ function DrilldownDialog({
   readonly onClose: () => void;
 }) {
   const t = useTranslations("audit.history.drill");
+  const [resolved, setResolved] = useState<ResolveAuditIdsResult | null>(null);
+
+  // Phase 24 — résolution des UUIDs présents dans before/after vers libellés
+  // affichables (clientCode·raisonSociale, entiteNom, licence reference, etc.).
+  // Évite que le user lise des UUIDs bruts dans le JSON.
+  useEffect(() => {
+    if (entry === null) {
+      setResolved(null);
+      return;
+    }
+    const ids = extractAuditIds(entry);
+    if (
+      ids.clientIds.length === 0 &&
+      ids.entiteIds.length === 0 &&
+      ids.licenceIds.length === 0 &&
+      ids.userIds.length === 0 &&
+      ids.articleIds.length === 0 &&
+      ids.produitIds.length === 0
+    ) {
+      setResolved(null);
+      return;
+    }
+    const state = { cancelled: false };
+    void (async () => {
+      try {
+        const r = await resolveAuditIdsAction(ids);
+        if (!state.cancelled) setResolved(r);
+      } catch {
+        if (!state.cancelled) setResolved(null);
+      }
+    })();
+    return () => {
+      state.cancelled = true;
+    };
+  }, [entry]);
 
   if (entry === null) return null;
 
@@ -266,6 +305,9 @@ function DrilldownDialog({
               </>
             )}
           </dl>
+
+          {resolved !== null && <ResolvedIdsPanel resolved={resolved} />}
+
           {entry.beforeData !== null && (
             <section>
               <h3 className="font-display text-foreground mb-1 text-sm">{t("before")}</h3>
@@ -286,6 +328,107 @@ function DrilldownDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function ResolvedIdsPanel({ resolved }: { readonly resolved: ResolveAuditIdsResult }) {
+  const rows: { label: string; uuid: string; display: string }[] = [];
+  for (const [id, display] of Object.entries(resolved.clients)) {
+    rows.push({ label: "Client", uuid: id, display });
+  }
+  for (const [id, display] of Object.entries(resolved.entites)) {
+    rows.push({ label: "Entité", uuid: id, display });
+  }
+  for (const [id, display] of Object.entries(resolved.licences)) {
+    rows.push({ label: "Licence", uuid: id, display });
+  }
+  for (const [id, display] of Object.entries(resolved.users)) {
+    rows.push({ label: "Utilisateur", uuid: id, display });
+  }
+  for (const [id, display] of Object.entries(resolved.articles)) {
+    rows.push({ label: "Article", uuid: id, display });
+  }
+  for (const [id, display] of Object.entries(resolved.produits)) {
+    rows.push({ label: "Produit", uuid: id, display });
+  }
+  if (rows.length === 0) return null;
+  return (
+    <section className="border-border bg-muted/40 rounded-md border p-3">
+      <h3 className="text-foreground mb-2 text-xs font-medium uppercase tracking-wider">
+        Identifiants résolus
+      </h3>
+      <table className="w-full text-xs">
+        <tbody>
+          {rows.map((r) => (
+            <tr key={`${r.label}-${r.uuid}`} className="border-border/50 border-t first:border-0">
+              <td className="text-muted-foreground py-1 pr-2">{r.label}</td>
+              <td className="text-foreground py-1 pr-2">{r.display}</td>
+              <td className="text-muted-foreground/70 py-1 font-mono text-[10px]">
+                {r.uuid.length > 12 ? `${r.uuid.slice(0, 8)}…` : r.uuid}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+/** Extrait les UUIDs/IDs connus depuis le JSON before/after pour résolution. */
+function extractAuditIds(entry: AuditEntryClientDTO): {
+  clientIds: string[];
+  entiteIds: string[];
+  licenceIds: string[];
+  userIds: string[];
+  articleIds: number[];
+  produitIds: number[];
+} {
+  const out = {
+    clientIds: new Set<string>(),
+    entiteIds: new Set<string>(),
+    licenceIds: new Set<string>(),
+    userIds: new Set<string>(),
+    articleIds: new Set<number>(),
+    produitIds: new Set<number>(),
+  };
+  // Inclut le clientId du DTO entry si non null (cas où afterData ne le porte pas).
+  if (entry.clientId !== null) out.clientIds.add(entry.clientId);
+  if (entry.userId.length > 0) out.userIds.add(entry.userId);
+  // Si l'entité du log est elle-même un licence/client/etc., l'entityId est l'UUID.
+  if (entry.entity === "licence") out.licenceIds.add(entry.entityId);
+  if (entry.entity === "client") out.clientIds.add(entry.entityId);
+
+  const visit = (val: unknown): void => {
+    if (val === null || val === undefined) return;
+    if (Array.isArray(val)) {
+      for (const v of val) visit(v);
+      return;
+    }
+    if (typeof val !== "object") return;
+    for (const [key, raw] of Object.entries(val as Record<string, unknown>)) {
+      if (typeof raw === "string" && raw.length > 0) {
+        if (key === "clientId") out.clientIds.add(raw);
+        else if (key === "entiteId") out.entiteIds.add(raw);
+        else if (key === "licenceId") out.licenceIds.add(raw);
+        else if (key === "userId" || key === "actorId") out.userIds.add(raw);
+      } else if (typeof raw === "number") {
+        if (key === "articleId") out.articleIds.add(raw);
+        else if (key === "produitId") out.produitIds.add(raw);
+      } else if (raw !== null && typeof raw === "object") {
+        visit(raw);
+      }
+    }
+  };
+  visit(entry.beforeData);
+  visit(entry.afterData);
+  visit(entry.metadata);
+  return {
+    clientIds: [...out.clientIds],
+    entiteIds: [...out.entiteIds],
+    licenceIds: [...out.licenceIds],
+    userIds: [...out.userIds],
+    articleIds: [...out.articleIds],
+    produitIds: [...out.produitIds],
+  };
 }
 
 function formatDate(iso: string): string {

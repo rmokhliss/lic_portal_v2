@@ -192,6 +192,9 @@ export async function generateLicenceFichierAction(input: unknown): Promise<
       { appMasterKey: env.APP_MASTER_KEY },
     );
     revalidatePath(pathFor(parsed.licenceId, "resume"));
+    // Phase 24 — invalide aussi la liste cross-licences pour que le badge
+    // .lic stale passe à "À jour" sans nécessiter un reload manuel.
+    revalidatePath("/licences");
     return {
       contentJson: result.signedPayload,
       hash: result.hash,
@@ -205,27 +208,44 @@ const ImportHealthcheckSchema = z
     licenceId: z.uuid(),
     filename: z.string().min(1).max(200),
     content: z.string().min(1).max(5_000_000), // cap 5MB texte
+    /** Phase 24 — preview : analyse sans persister (pas d'UPDATE volume,
+     *  pas de fichier_log). Permet à l'UI d'afficher les changements avant
+     *  l'application définitive. */
+    dryRun: z.boolean().optional(),
   })
   .strict();
 
-export async function importHealthcheckAction(input: unknown): Promise<
-  ActionResult<{
-    updated: number;
-    errors: number;
-    errorDetails: readonly string[];
-    articlesSkipped: readonly string[];
-    articlesOutOfContract: readonly string[];
-    articlesNotInCatalog: readonly string[];
-    referenceMatch: boolean | null;
-  }>
-> {
+export interface ImportHealthcheckResult {
+  readonly updated: number;
+  readonly errors: number;
+  readonly errorDetails: readonly string[];
+  readonly articlesSkipped: readonly string[];
+  readonly articlesOutOfContract: readonly string[];
+  readonly articlesNotInCatalog: readonly string[];
+  readonly referenceMatch: boolean | null;
+  /** Phase 24 — preview : volumes qui seraient mis à jour (codeArticle,
+   *  ancien volumeConsomme, nouveau volume du .hc). Vide en mode apply. */
+  readonly preview: readonly {
+    readonly articleCode: string;
+    readonly volumeConsommeAvant: number | null;
+    readonly volumeConsommeApres: number;
+  }[];
+}
+
+export async function importHealthcheckAction(
+  input: unknown,
+): Promise<ActionResult<ImportHealthcheckResult>> {
   return runAction(async () => {
     // SADMIN-only : import .hc = ingestion d'un fichier signé client (PKI).
     const actor = await requireRole(["SADMIN"]);
     const parsed = ImportHealthcheckSchema.parse(input);
     const result = await importHealthcheckUseCase.execute(parsed, actor.id);
-    revalidatePath(pathFor(parsed.licenceId, "resume"));
-    revalidatePath(`/licences/${parsed.licenceId}/articles`);
+    // Pas de revalidate en mode dryRun (rien n'a changé).
+    if (parsed.dryRun !== true) {
+      revalidatePath(pathFor(parsed.licenceId, "resume"));
+      revalidatePath(`/licences/${parsed.licenceId}/articles`);
+      revalidatePath("/licences");
+    }
     return {
       updated: result.updated,
       errors: result.errors,
@@ -234,6 +254,7 @@ export async function importHealthcheckAction(input: unknown): Promise<
       articlesOutOfContract: result.articlesOutOfContract,
       articlesNotInCatalog: result.articlesNotInCatalog,
       referenceMatch: result.referenceMatch,
+      preview: result.preview,
     };
   });
 }
@@ -250,6 +271,8 @@ export async function addProduitToLicenceAction(
     const parsed = AddProduitToLicenceSchema.parse(input);
     const result = await addProduitToLicenceUseCase.execute(parsed, actor.id);
     revalidatePath(`/licences/${parsed.licenceId}/articles`);
+    revalidatePath(pathFor(parsed.licenceId, "resume"));
+    revalidatePath("/licences");
     return result;
   });
 }
@@ -264,6 +287,8 @@ export async function removeProduitFromLicenceAction(
     const { licenceId } = LicenceIdSchema.parse(ctx);
     await removeProduitFromLicenceUseCase.execute(parsed, actor.id);
     revalidatePath(`/licences/${licenceId}/articles`);
+    revalidatePath(pathFor(licenceId, "resume"));
+    revalidatePath("/licences");
   });
 }
 
@@ -275,6 +300,8 @@ export async function addArticleToLicenceAction(
     const parsed = AddArticleToLicenceSchema.parse(input);
     const result = await addArticleToLicenceUseCase.execute(parsed, actor.id);
     revalidatePath(`/licences/${parsed.licenceId}/articles`);
+    revalidatePath(pathFor(parsed.licenceId, "resume"));
+    revalidatePath("/licences");
     return result;
   });
 }
@@ -289,6 +316,8 @@ export async function updateArticleVolumeAction(
     const { licenceId } = LicenceIdSchema.parse(ctx);
     const result = await updateArticleVolumeUseCase.execute(parsed, actor.id);
     revalidatePath(`/licences/${licenceId}/articles`);
+    revalidatePath(pathFor(licenceId, "resume"));
+    revalidatePath("/licences");
     return result;
   });
 }
@@ -303,6 +332,8 @@ export async function removeArticleFromLicenceAction(
     const { licenceId } = LicenceIdSchema.parse(ctx);
     await removeArticleFromLicenceUseCase.execute(parsed, actor.id);
     revalidatePath(`/licences/${licenceId}/articles`);
+    revalidatePath(pathFor(licenceId, "resume"));
+    revalidatePath("/licences");
   });
 }
 

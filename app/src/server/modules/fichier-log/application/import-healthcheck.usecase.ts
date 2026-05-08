@@ -64,10 +64,15 @@ export interface ImportHealthcheckInput {
   readonly licenceId: string;
   readonly filename: string;
   readonly content: string;
+  /** Phase 24 — preview : parse + analyse sans persister (pas d'UPDATE volume,
+   *  pas de fichier_log). Permet à l'UI d'afficher ce qui sera fait avant que
+   *  le user accepte l'apply. */
+  readonly dryRun?: boolean;
 }
 
 export interface ImportHealthcheckOutput {
-  readonly fichierLog: FichierLogDTO;
+  /** null en mode dryRun (pas d'écriture fichier-log). */
+  readonly fichierLog: FichierLogDTO | null;
   readonly updated: number;
   readonly errors: number;
   readonly errorDetails: readonly string[];
@@ -83,6 +88,14 @@ export interface ImportHealthcheckOutput {
   /** Phase 24 — sanity-check : la `reference` du .hc matche-t-elle la
    *  licence ciblée ? null = champ absent du .hc (legacy). false = mismatch. */
   readonly referenceMatch: boolean | null;
+  /** Phase 24 — preview : volumes qui SERAIENT mis à jour (codeArticle,
+   *  ancien volumeConsomme, nouveau volume du .hc). Empty si dryRun=false
+   *  (le détail est dans le fichier-log persisté). */
+  readonly preview: readonly {
+    readonly articleCode: string;
+    readonly volumeConsommeAvant: number | null;
+    readonly volumeConsommeApres: number;
+  }[];
 }
 
 interface ParsedHealthcheckPayload {
@@ -112,6 +125,7 @@ export class ImportHealthcheckUseCase {
   ) {}
 
   async execute(input: ImportHealthcheckInput, actorId: string): Promise<ImportHealthcheckOutput> {
+    const dryRun = input.dryRun ?? false;
     const licence = await this.licenceRepository.findById(input.licenceId);
     if (licence === null) throw licenceNotFoundById(input.licenceId);
 
@@ -126,14 +140,18 @@ export class ImportHealthcheckUseCase {
         plaintext = await decryptHealthcheckContent(input.content, this.settingRepository);
       } catch (err) {
         const message = err instanceof Error ? err.message : "déchiffrement échoué";
-        await this.logHealthcheckImporteUseCase.execute({
-          licenceId: licence.id,
-          path,
-          hash,
-          statut: "ERREUR",
-          errorMessage: `AES decrypt: ${message}`,
-          creePar: actorId,
-        });
+        // En dryRun on ne logue pas les erreurs AES (pas de pollution
+        // fichier-log par des prévisualisations).
+        if (!dryRun) {
+          await this.logHealthcheckImporteUseCase.execute({
+            licenceId: licence.id,
+            path,
+            hash,
+            statut: "ERREUR",
+            errorMessage: `AES decrypt: ${message}`,
+            creePar: actorId,
+          });
+        }
         throw err;
       }
     }
@@ -143,6 +161,14 @@ export class ImportHealthcheckUseCase {
       payload = parseHealthcheck(plaintext);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Format invalide";
+      if (dryRun) {
+        // Pas de fichier-log persisté en dryRun — on throw direct pour que
+        // l'UI affiche l'erreur de parsing sans pollution.
+        throw new ValidationError({
+          code: "SPX-LIC-901",
+          message: `Healthcheck illisible : ${message}`,
+        });
+      }
       const fichierLog = await this.logHealthcheckImporteUseCase.execute({
         licenceId: licence.id,
         path,
@@ -166,6 +192,11 @@ export class ImportHealthcheckUseCase {
     const articlesSkipped: string[] = [];
     const articlesOutOfContract: string[] = [];
     const articlesNotInCatalog: string[] = [];
+    const preview: {
+      articleCode: string;
+      volumeConsommeAvant: number | null;
+      volumeConsommeApres: number;
+    }[] = [];
 
     // Lookup catalogue + liaisons une fois (au lieu de N+1 dans la boucle).
     const allArticles = await this.articleRepository.findAll({ actif: true });
@@ -195,10 +226,19 @@ export class ImportHealthcheckUseCase {
           continue;
         }
 
-        await this.updateArticleVolumeUseCase.execute(
-          { id: liaison.id, volumeConsomme: entry.volConsomme },
-          actorId,
-        );
+        // Capture l'état avant pour le preview (utile dans les 2 modes).
+        preview.push({
+          articleCode: entry.code,
+          volumeConsommeAvant: liaison.volumeConsomme,
+          volumeConsommeApres: entry.volConsomme,
+        });
+
+        if (!dryRun) {
+          await this.updateArticleVolumeUseCase.execute(
+            { id: liaison.id, volumeConsomme: entry.volConsomme },
+            actorId,
+          );
+        }
         updated++;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -214,6 +254,21 @@ export class ImportHealthcheckUseCase {
       ...errorDetails,
     ];
     const errors = fullErrorDetails.length;
+
+    if (dryRun) {
+      // Preview pure : pas d'écriture fichier-log, pas de mutations BD.
+      return {
+        fichierLog: null,
+        updated,
+        errors,
+        errorDetails: fullErrorDetails,
+        articlesSkipped,
+        articlesOutOfContract,
+        articlesNotInCatalog,
+        referenceMatch,
+        preview,
+      };
+    }
 
     const fichierLog = await this.logHealthcheckImporteUseCase.execute({
       licenceId: licence.id,
@@ -250,6 +305,7 @@ export class ImportHealthcheckUseCase {
       articlesOutOfContract,
       articlesNotInCatalog,
       referenceMatch,
+      preview: [],
     };
   }
 }

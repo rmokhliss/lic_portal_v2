@@ -201,7 +201,7 @@ describe("ImportHealthcheck (Phase 10.D)", () => {
 
     expect(result.updated).toBe(1);
     expect(result.errors).toBe(0);
-    expect(result.fichierLog.statut).toBe("IMPORTED");
+    expect(result.fichierLog?.statut).toBe("IMPORTED");
 
     // Vérifie que le volume_consomme a été appliqué.
     const liaisons = await sql<{ volume_consomme: number }[]>`
@@ -245,7 +245,7 @@ describe("ImportHealthcheck (Phase 10.D)", () => {
     expect(result.updated).toBe(1);
     expect(result.errors).toBe(1);
     expect(result.errorDetails[0]).toContain("UNKNOWN");
-    expect(result.fichierLog.statut).toBe("IMPORTED");
+    expect(result.fichierLog?.statut).toBe("IMPORTED");
   });
 
   it("contenu vide → throw + log statut ERREUR", async () => {

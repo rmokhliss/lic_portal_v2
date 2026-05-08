@@ -6,6 +6,8 @@
 // (cf. globals.css F-09). Mode dark uniquement (className="dark" sur <html>).
 // ==============================================================================
 
+import Link from "next/link";
+
 import { BrandLockup } from "@/components/brand/BrandLockup";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 import { Input } from "@/components/ui/input";
@@ -90,6 +92,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <SubmitButton className="font-display mt-2 font-extrabold uppercase tracking-wider">
               Se connecter
             </SubmitButton>
+
+            <p className="text-muted-foreground mt-2 text-center text-xs">
+              <Link
+                href="/forgot-password"
+                className="hover:text-foreground underline-offset-2 hover:underline"
+              >
+                Mot de passe oublié ?
+              </Link>
+            </p>
           </form>
         </div>
       </div>

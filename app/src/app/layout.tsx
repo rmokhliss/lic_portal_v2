@@ -7,14 +7,12 @@ import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { OtelProvider } from "@/components/shared/OtelProvider";
 
-// Phase 23 — `next/font/google` retiré : le build offline (proxy/firewall
-// bloquant fonts.googleapis.com avec CRYPT_E_REVOCATION_OFFLINE) ne peut pas
-// fetch Montserrat/Poppins/JetBrains Mono au moment du build prod. Les
-// fallbacks CSS dans globals.css (Helvetica Neue / system-ui / ui-monospace)
-// prennent le relais. Pour réactiver les fonts SELECT-PX :
-//   - soit re-importer next/font/google quand le réseau permet le fetch
-//   - soit télécharger les WOFF2 dans public/fonts/ et utiliser
-//     next/font/local (recommandé pour la robustesse offline).
+// Phase 24 — Réactivation Montserrat via Google Fonts CSS (link runtime client).
+// `next/font/google` bloqué au build (CRYPT_E_REVOCATION_OFFLINE sur build
+// server proxy) → on charge la stylesheet côté navigateur uniquement (pas de
+// fetch au build). Si le navigateur user bloque fonts.googleapis.com, fallback
+// sur les fonts système définies dans globals.css. Pour offline strict, passer
+// à next/font/local avec WOFF2 dans public/fonts/.
 
 export const metadata: Metadata = {
   title: "Licence Manager",
@@ -38,6 +36,16 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   return (
     <html lang={locale} className={theme}>
+      <head>
+        {/* Phase 24 — Montserrat via CDN runtime (cf. note plus haut).
+             preconnect pour réduire le RTT du fetch CSS + woff2. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
+        />
+      </head>
       <body className="font-sans antialiased">
         <OtelProvider>
           <NextIntlClientProvider locale={locale} messages={messages}>
