@@ -190,12 +190,15 @@ export class GenerateLicenceFichierUseCase {
     // Phase 23 — empreinte du contenu produit/article/volume (independant du
     // .lic signe) pour detecter les modifications post-generation. Stocke
     // hash + timestamp dans lic_licences pour comparaison ulterieure cote UI.
+    // Phase 24 — cast explicite ::uuid (pattern codebase) : sans cela PG
+    // refuse la comparaison uuid = text et matche 0 lignes silencieusement,
+    // d ou le badge .lic qui restait sur "Jamais".
     const contentHash = await computeLicenceContentHash(licence.id);
     await db.execute(sql`
       UPDATE lic_licences
       SET last_lic_file_hash = ${contentHash},
-          last_lic_file_generated_at = ${new Date().toISOString()}
-      WHERE id = ${licence.id}
+          last_lic_file_generated_at = NOW()
+      WHERE id = ${licence.id}::uuid
     `);
 
     return { content, contentJson, signedPayload, signatureBase64, hash, fichierLog };
