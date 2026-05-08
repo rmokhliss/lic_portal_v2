@@ -1,28 +1,18 @@
 // ==============================================================================
-// LIC v2 — /licences (T-03 + Phase 18 R-11/R-12)
+// LIC v2 — /licences (T-03 + Phase 18 R-11/R-12 + Phase 24 refacto)
 //
 // Server Component. Filtres GET (statut + q recherche reference) + cursor
 // pagination. Le client (raisonSociale) est résolu en post-fetch via N appels
 // getClientUseCase parallèles (max 50 par page).
 //
-// Phase 18 R-11 — palette migrée sur les vars DS (`bg-card` / `bg-surface-2` /
-// `text-foreground` / `border-border`) au lieu de `bg-white text-spx-ink`.
-// L'ancienne palette legacy donnait du blanc sur blanc en mode dark.
-//
-// Phase 18 R-12 — bouton « + Nouvelle licence » (ADMIN/SADMIN). La création
-// est gardée côté Server Action createLicenceAction (cf. _actions.ts).
+// Phase 24 — refacto Client Component wrapping (cf. ClientsTable). La table
+// + filtres + dialog wizard sont encapsulés dans <LicencesTable> (Client
+// Component) qui reçoit toutes les data en props. Permet à l'auto-refresh
+// post Server Action de re-render avec les nouveaux items sans router.refresh
+// hack — pattern aligné sur /clients qui fonctionne nativement.
 // ==============================================================================
 
-import Link from "next/link";
-
 import { requireAuthPage } from "@/server/infrastructure/auth";
-
-// Phase 24 — Force dynamic rendering. La page utilise déjà cookies() via
-// requireAuthPage donc elle devrait être dynamique par défaut, mais on
-// l'explicite pour bloquer toute optimisation static qui pourrait servir
-// des données obsolètes après mutation.
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 import {
   getClientUseCase,
   getEntiteUseCase,
@@ -33,7 +23,14 @@ import {
   listProduitsUseCase,
 } from "@/server/composition-root";
 
-import { NewLicenceDialog } from "./_components/NewLicenceDialog";
+import { LicencesTable } from "./_components/LicencesTable";
+
+// Phase 24 — Force dynamic rendering. La page utilise déjà cookies() via
+// requireAuthPage donc elle devrait être dynamique par défaut, mais on
+// l'explicite pour bloquer toute optimisation static qui pourrait servir
+// des données obsolètes après mutation.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 interface LicencesPageProps {
   readonly searchParams: Promise<{
@@ -43,20 +40,6 @@ interface LicencesPageProps {
     readonly clientId?: string;
   }>;
 }
-
-const STATUS_LABEL: Record<string, string> = {
-  ACTIF: "Active",
-  INACTIF: "Inactive",
-  SUSPENDU: "Suspendue",
-  EXPIRE: "Expirée",
-};
-
-const STATUS_BADGE: Record<string, string> = {
-  ACTIF: "bg-emerald-500/15 text-emerald-300",
-  INACTIF: "bg-zinc-500/15 text-zinc-400",
-  SUSPENDU: "bg-amber-500/15 text-amber-300",
-  EXPIRE: "bg-rose-500/15 text-rose-300",
-};
 
 const VALID_STATUSES = new Set(["ACTIF", "INACTIF", "SUSPENDU", "EXPIRE"]);
 
@@ -117,9 +100,6 @@ export default async function LicencesPage({
         }
       }),
     ),
-    // Phase 24 — statut stale par licence (recalcule le hash contenu vs hash
-    // stocké à la dernière génération). 25 hashs en parallèle = OK pour la
-    // page (10-50 licences). À optimiser en 1 batch SQL si volume grossit.
     Promise.all(
       result.items.map(async (l) => {
         try {
@@ -131,20 +111,28 @@ export default async function LicencesPage({
       }),
     ),
   ]);
-  const clientsById = new Map(clientsArr.flatMap((c) => (c === null ? [] : [[c.id, c] as const])));
-  const entitesById = new Map(entitesArr.flatMap((e) => (e === null ? [] : [[e.id, e] as const])));
-  const staleById = new Map(staleArr.map((s) => [s.id, s.status] as const));
+
+  const clientsById: Record<string, { id: string; codeClient: string; raisonSociale: string }> = {};
+  for (const c of clientsArr) {
+    if (c !== null)
+      clientsById[c.id] = { id: c.id, codeClient: c.codeClient, raisonSociale: c.raisonSociale };
+  }
+  const entitesById: Record<string, { id: string; nom: string }> = {};
+  for (const e of entitesArr) {
+    if (e !== null) entitesById[e.id] = { id: e.id, nom: e.nom };
+  }
+  const staleById: Record<string, "never" | "fresh" | "stale"> = {};
+  for (const s of staleArr) {
+    staleById[s.id] = s.status;
+  }
   const staleCount = staleArr.filter((s) => s.status === "stale").length;
 
-  // Phase 18 R-12 — clients pour le combobox du wizard de création.
   const dialogClients = clientsList.items.map((c) => ({
     id: c.id,
     codeClient: c.codeClient,
     raisonSociale: c.raisonSociale,
   }));
 
-  // Phase 21 R-30 — catalogue pour l'étape 2 du wizard (produits + articles
-  // actifs uniquement, structure plate aplatissable côté client).
   const dialogProduits = produitsAll.map((p) => ({
     id: p.id,
     code: p.code,
@@ -161,251 +149,32 @@ export default async function LicencesPage({
 
   const canCreate = user.role === "ADMIN" || user.role === "SADMIN";
 
-  const buildHref = (cursor: string | null): string => {
-    const sp = new URLSearchParams();
-    if (cursor !== null) sp.set("cursor", cursor);
-    if (statusFilter !== undefined) sp.set("statut", statusFilter);
-    if (qFilter.length > 0) sp.set("q", qFilter);
-    if (clientIdFilter !== undefined) sp.set("clientId", clientIdFilter);
-    const qs = sp.toString();
-    return qs.length === 0 ? "/licences" : `/licences?${qs}`;
-  };
+  const rows = result.items.map((l) => ({
+    id: l.id,
+    reference: l.reference,
+    clientId: l.clientId,
+    entiteId: l.entiteId,
+    status: l.status,
+    dateDebut: l.dateDebut,
+    dateFin: l.dateFin,
+  }));
 
   return (
-    <div className="space-y-4 p-6">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-display text-foreground text-2xl">Licences</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Vue cross-clients. {result.items.length} licence(s) sur la page courante.
-          </p>
-        </div>
-        {canCreate && (
-          <NewLicenceDialog
-            clients={dialogClients}
-            produits={dialogProduits}
-            articles={dialogArticles}
-          />
-        )}
-      </header>
-
-      {/* Phase 24 — bannière stale globale : compte les licences dont le
-           contenu (produits/articles/volumes) a été modifié depuis la dernière
-           génération .lic. */}
-      {staleCount > 0 && (
-        <div
-          role="alert"
-          className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
-        >
-          <p className="font-medium">
-            ⚠ {staleCount} licence(s) avec fichier .lic obsolète sur cette page
-          </p>
-          <p className="mt-1 text-xs">
-            Articles ou volumes modifiés depuis la dernière génération. Les .lic correspondants
-            doivent être régénérés.
-          </p>
-        </div>
-      )}
-
-      <form
-        method="GET"
-        action="/licences"
-        className="border-border bg-card flex flex-wrap items-end gap-3 rounded-md border p-3"
-      >
-        <div className="flex min-w-[260px] flex-1 flex-col gap-1">
-          <label htmlFor="q" className="text-muted-foreground text-xs uppercase tracking-wider">
-            Référence
-          </label>
-          <input
-            id="q"
-            name="q"
-            type="search"
-            placeholder="LIC-2026-..."
-            defaultValue={qFilter}
-            className="border-input bg-background text-foreground h-9 rounded-md border px-3 text-sm"
-          />
-        </div>
-        <div className="flex min-w-[200px] flex-col gap-1">
-          <label
-            htmlFor="clientId"
-            className="text-muted-foreground text-xs uppercase tracking-wider"
-          >
-            Client
-          </label>
-          <select
-            id="clientId"
-            name="clientId"
-            defaultValue={clientIdFilter ?? ""}
-            className="border-input bg-background text-foreground h-9 rounded-md border px-3 text-sm"
-          >
-            <option value="">Tous</option>
-            {dialogClients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.codeClient} · {c.raisonSociale}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor="statut"
-            className="text-muted-foreground text-xs uppercase tracking-wider"
-          >
-            Statut
-          </label>
-          <select
-            id="statut"
-            name="statut"
-            defaultValue={statusFilter ?? ""}
-            className="border-input bg-background text-foreground h-9 rounded-md border px-3 text-sm"
-          >
-            <option value="">Tous</option>
-            <option value="ACTIF">Active</option>
-            <option value="INACTIF">Inactive</option>
-            <option value="SUSPENDU">Suspendue</option>
-            <option value="EXPIRE">Expirée</option>
-          </select>
-        </div>
-        <button
-          type="submit"
-          className="bg-primary text-primary-foreground h-9 rounded-md px-3 text-sm"
-        >
-          Filtrer
-        </button>
-        <Link
-          href="/licences"
-          className="border-input text-foreground h-9 rounded-md border px-3 text-sm leading-9"
-        >
-          Réinitialiser
-        </Link>
-      </form>
-
-      <div className="border-border bg-card overflow-x-auto rounded-lg border">
-        <table className="w-full text-sm">
-          <thead className="bg-surface-2 text-muted-foreground">
-            <tr>
-              <th className="px-4 py-2 text-left font-medium">Référence</th>
-              <th className="px-4 py-2 text-left font-medium">Client</th>
-              <th className="px-4 py-2 text-left font-medium">Entité</th>
-              <th className="px-4 py-2 text-left font-medium">Statut</th>
-              <th className="px-4 py-2 text-left font-medium">.lic</th>
-              <th className="px-4 py-2 text-left font-medium">Date début</th>
-              <th className="px-4 py-2 text-left font-medium">Date fin</th>
-              <th className="px-4 py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {result.items.map((l) => {
-              const c = clientsById.get(l.clientId);
-              const e = entitesById.get(l.entiteId);
-              const staleStatus = staleById.get(l.id) ?? "never";
-              return (
-                <tr key={l.id} className="border-border border-t">
-                  <td className="px-4 py-2 font-mono">{l.reference}</td>
-                  <td className="px-4 py-2">
-                    {c === undefined ? (
-                      <span className="text-muted-foreground">—</span>
-                    ) : (
-                      <Link
-                        href={`/clients/${c.id}/info`}
-                        className="text-spx-cyan-500 underline-offset-2 hover:underline"
-                      >
-                        {c.codeClient} · {c.raisonSociale}
-                      </Link>
-                    )}
-                  </td>
-                  <td className="px-4 py-2">
-                    {e === undefined ? (
-                      <span className="text-muted-foreground">—</span>
-                    ) : (
-                      <span className="text-foreground">{e.nom}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2">
-                    <span className={`rounded px-2 py-0.5 text-xs ${STATUS_BADGE[l.status] ?? ""}`}>
-                      {STATUS_LABEL[l.status] ?? l.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    <LicFileBadge status={staleStatus} />
-                  </td>
-                  <td className="px-4 py-2">{new Date(l.dateDebut).toLocaleDateString("fr-FR")}</td>
-                  <td className="px-4 py-2">{new Date(l.dateFin).toLocaleDateString("fr-FR")}</td>
-                  <td className="px-4 py-2 text-right">
-                    <Link
-                      href={`/licences/${l.id}/resume`}
-                      className="text-spx-cyan-500 underline-offset-2 hover:underline"
-                    >
-                      Détail
-                    </Link>
-                  </td>
-                </tr>
-              );
-            })}
-            {result.items.length === 0 && (
-              <tr>
-                <td colSpan={8} className="text-muted-foreground px-4 py-6 text-center">
-                  Aucune licence.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <nav className="flex items-center justify-end gap-2">
-        {params.cursor !== undefined && (
-          <Link
-            href={buildHref(null)}
-            className="border-border hover:bg-surface-2 rounded border px-3 py-1 text-sm"
-          >
-            ← Première page
-          </Link>
-        )}
-        {result.nextCursor !== null && (
-          <Link
-            href={buildHref(result.nextCursor)}
-            className="border-border hover:bg-surface-2 rounded border px-3 py-1 text-sm"
-          >
-            Suivant →
-          </Link>
-        )}
-      </nav>
-    </div>
-  );
-}
-
-function LicFileBadge({
-  status,
-}: {
-  readonly status: "never" | "fresh" | "stale";
-}): React.JSX.Element {
-  if (status === "stale") {
-    return (
-      <span
-        title="Articles ou volumes modifiés depuis la dernière génération — fichier .lic à régénérer."
-        className="rounded bg-amber-500/15 px-2 py-0.5 text-xs text-amber-300"
-      >
-        Obsolète
-      </span>
-    );
-  }
-  if (status === "fresh") {
-    return (
-      <span
-        title="Le fichier .lic généré reflète l'état courant de la licence."
-        className="rounded bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-300"
-      >
-        À jour
-      </span>
-    );
-  }
-  return (
-    <span
-      title="Aucun fichier .lic n'a encore été généré pour cette licence."
-      className="text-muted-foreground rounded bg-zinc-500/10 px-2 py-0.5 text-xs"
-    >
-      Jamais
-    </span>
+    <LicencesTable
+      rows={rows}
+      nextCursor={result.nextCursor}
+      currentCursor={params.cursor ?? null}
+      currentQuery={qFilter}
+      currentStatut={statusFilter ?? null}
+      currentClientId={clientIdFilter ?? null}
+      clientsById={clientsById}
+      entitesById={entitesById}
+      staleById={staleById}
+      staleCount={staleCount}
+      canCreate={canCreate}
+      dialogClients={dialogClients}
+      dialogProduits={dialogProduits}
+      dialogArticles={dialogArticles}
+    />
   );
 }

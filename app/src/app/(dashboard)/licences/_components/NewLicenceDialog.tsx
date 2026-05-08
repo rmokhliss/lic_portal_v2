@@ -19,7 +19,6 @@
 
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -95,7 +94,6 @@ export function NewLicenceDialog({
   readonly lockedClientId?: string;
   readonly triggerLabel?: string;
 }): React.JSX.Element {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
@@ -341,24 +339,14 @@ export function NewLicenceDialog({
             // n'ont pas pu être attachés. On garde le wizard ouvert pour info.
             // L'utilisateur peut fermer + compléter via /licences/[id]/articles.
             setArticleErrors(res.data.articleFailures);
-            router.refresh();
             return;
           }
-          // Phase 24 — refresh + close. Sequence robuste pour forcer le
-          // re-fetch du Server Component parent malgre le router cache et
-          // le timing dialog/portal Radix :
-          //   1. close le dialog (demonte le portail)
-          //   2. setTimeout(0) pour laisser React commit le démontage
-          //   3. router.refresh() puis 2e refresh à 250ms (anti-race avec
-          //      auto-refresh Next.js post Server Action).
+          // Phase 24 — refacto LicencesTable Client Component : la table est
+          // désormais wrappée comme ClientsTable, donc l'auto-refresh post
+          // Server Action re-render le Client Component avec les nouvelles
+          // props. Plus besoin de router.refresh hack ; alignement /clients.
           setArticleErrors([]);
           onOpenChange(false);
-          setTimeout(() => {
-            router.refresh();
-          }, 0);
-          setTimeout(() => {
-            router.refresh();
-          }, 250);
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur inconnue");
         }
