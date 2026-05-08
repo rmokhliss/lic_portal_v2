@@ -155,7 +155,7 @@ export function CASection({
 
   return (
     <section className="border-border bg-card rounded-lg border p-6 shadow-sm">
-      <h2 className="text-foregroundtext-lg font-semibold">{t("ca.title")}</h2>
+      <h2 className="text-foreground text-lg font-semibold">{t("ca.title")}</h2>
       <p className="text-muted-foreground mt-1 text-sm">{t("ca.description")}</p>
 
       {status.exists ? (
@@ -209,7 +209,7 @@ export function CASection({
       {/* Phase 3.G — Toggle endpoint public CA */}
       {status.exists && (
         <div className="border-border mt-8 border-t pt-6">
-          <h3 className="text-foregroundtext-base font-semibold">{t("expose.title")}</h3>
+          <h3 className="text-foreground text-base font-semibold">{t("expose.title")}</h3>
           <p className="text-muted-foreground mt-1 text-sm">{t("expose.description")}</p>
           <label className="mt-3 inline-flex items-center gap-2">
             <input
@@ -219,7 +219,7 @@ export function CASection({
               disabled={isPending}
               className="border-border h-4 w-4 rounded"
             />
-            <span className="text-foregroundtext-sm">
+            <span className="text-foreground text-sm">
               {exposeCaPublic ? t("expose.toggleActive") : t("expose.toggleInactive")}
             </span>
           </label>
@@ -229,7 +229,7 @@ export function CASection({
       {/* Phase 3.E + Phase 22 R-50 — Backfill clients sans certificat */}
       {status.exists && (
         <div className="border-border mt-8 border-t pt-6">
-          <h3 className="text-foregroundtext-base font-semibold">{t("backfill.title")}</h3>
+          <h3 className="text-foreground text-base font-semibold">{t("backfill.title")}</h3>
           <p className="text-muted-foreground mt-1 text-sm">
             Le backfill génère un certificat PKI X.509 pour chaque client qui n&apos;en a pas
             encore. Ce certificat est nécessaire pour signer les fichiers <code>.lic</code> envoyés
@@ -266,7 +266,7 @@ export function CASection({
            pour chiffrer les .hc avant envoi). Affichage masqué par défaut,
            bouton "Afficher" pour révéler à la demande SADMIN. */}
       <div className="border-border mt-8 border-t pt-6">
-        <h3 className="text-foregroundtext-base font-semibold">Clé AES-256 healthcheck</h3>
+        <h3 className="text-foreground text-base font-semibold">Clé AES-256 healthcheck</h3>
         <p className="text-muted-foreground mt-1 text-sm">
           Clé symétrique partagée entre S2M et la banque cliente pour chiffrer les fichiers
           <code className="mx-1">.hc</code>

@@ -17,7 +17,7 @@ export default async function SettingsSandboxPage(): Promise<React.JSX.Element> 
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-foregroundtext-2xl font-bold">{t("title")}</h1>
+        <h1 className="text-foreground text-2xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
