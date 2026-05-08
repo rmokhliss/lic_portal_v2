@@ -344,15 +344,21 @@ export function NewLicenceDialog({
             router.refresh();
             return;
           }
-          // Phase 24 — refresh + close. Next.js auto-refresh devrait suffire
-          // (cas /clients) mais en pratique sur /licences avec wizard multi-
-          // étapes le auto-refresh ne re-render pas systématiquement le
-          // Server Component parent. router.refresh() explicite garantit le
-          // re-fetch côté client. Ordre : refresh AVANT close pour que la
-          // requete soit en vol avant le démontage du dialog.
+          // Phase 24 — refresh + close. Sequence robuste pour forcer le
+          // re-fetch du Server Component parent malgre le router cache et
+          // le timing dialog/portal Radix :
+          //   1. close le dialog (demonte le portail)
+          //   2. setTimeout(0) pour laisser React commit le démontage
+          //   3. router.refresh() puis 2e refresh à 250ms (anti-race avec
+          //      auto-refresh Next.js post Server Action).
           setArticleErrors([]);
-          router.refresh();
           onOpenChange(false);
+          setTimeout(() => {
+            router.refresh();
+          }, 0);
+          setTimeout(() => {
+            router.refresh();
+          }, 250);
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur inconnue");
         }

@@ -16,6 +16,13 @@
 import Link from "next/link";
 
 import { requireAuthPage } from "@/server/infrastructure/auth";
+
+// Phase 24 — Force dynamic rendering. La page utilise déjà cookies() via
+// requireAuthPage donc elle devrait être dynamique par défaut, mais on
+// l'explicite pour bloquer toute optimisation static qui pourrait servir
+// des données obsolètes après mutation.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import {
   getClientUseCase,
   getEntiteUseCase,
