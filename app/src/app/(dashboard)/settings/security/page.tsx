@@ -28,8 +28,8 @@ export default async function SettingsSecurityPage(): Promise<React.JSX.Element>
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-spx-ink text-2xl font-bold">{t("title")}</h1>
-        <p className="text-spx-ink/70 text-sm">{t("subtitle")}</p>
+        <h1 className="text-foregroundtext-2xl font-bold">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </header>
 
       <CASection

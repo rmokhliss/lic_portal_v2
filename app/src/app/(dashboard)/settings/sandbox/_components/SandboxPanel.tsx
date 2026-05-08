@@ -76,9 +76,9 @@ export function SandboxPanel(): React.JSX.Element {
   return (
     <div className="space-y-8">
       {/* ===== Section 1 — Générer paire RSA ===== */}
-      <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
+      <section className="border-border bg-card rounded-lg border p-6 shadow-sm">
         <h2 className="text-lg font-semibold">{t("section1.title")}</h2>
-        <p className="text-spx-ink/70 mt-1 text-sm">{t("section1.description")}</p>
+        <p className="text-muted-foreground mt-1 text-sm">{t("section1.description")}</p>
         <Button
           className="mt-3"
           disabled={isPending}
@@ -94,23 +94,23 @@ export function SandboxPanel(): React.JSX.Element {
         {rsaPair !== null && (
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div>
-              <label className="text-spx-ink/60 text-xs font-medium">
+              <label className="text-muted-foreground text-xs font-medium">
                 {t("section1.labelPrivate")}
               </label>
               <textarea
                 readOnly
                 value={rsaPair.privateKeyPem}
-                className="border-spx-ink/20 mt-1 h-40 w-full rounded border bg-gray-50 p-2 font-mono text-xs"
+                className="border-border bg-muted mt-1 h-40 w-full rounded border p-2 font-mono text-xs"
               />
             </div>
             <div>
-              <label className="text-spx-ink/60 text-xs font-medium">
+              <label className="text-muted-foreground text-xs font-medium">
                 {t("section1.labelPublic")}
               </label>
               <textarea
                 readOnly
                 value={rsaPair.publicKeyPem}
-                className="border-spx-ink/20 mt-1 h-40 w-full rounded border bg-gray-50 p-2 font-mono text-xs"
+                className="border-border bg-muted mt-1 h-40 w-full rounded border p-2 font-mono text-xs"
               />
             </div>
           </div>
@@ -118,9 +118,9 @@ export function SandboxPanel(): React.JSX.Element {
       </section>
 
       {/* ===== Section 2 — Signer .lic ===== */}
-      <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
+      <section className="border-border bg-card rounded-lg border p-6 shadow-sm">
         <h2 className="text-lg font-semibold">{t("section2.title")}</h2>
-        <p className="text-spx-ink/70 mt-1 text-sm">{t("section2.description")}</p>
+        <p className="text-muted-foreground mt-1 text-sm">{t("section2.description")}</p>
         <div className="mt-3 space-y-2">
           <label className="text-xs font-medium">{t("section2.labelPayload")}</label>
           <textarea
@@ -128,7 +128,7 @@ export function SandboxPanel(): React.JSX.Element {
             onChange={(e) => {
               setSignPayloadIn(e.target.value);
             }}
-            className="border-spx-ink/20 h-24 w-full rounded border p-2 font-mono text-xs"
+            className="border-border h-24 w-full rounded border p-2 font-mono text-xs"
           />
           <label className="text-xs font-medium">{t("section2.labelPrivateKey")}</label>
           <textarea
@@ -137,7 +137,7 @@ export function SandboxPanel(): React.JSX.Element {
               setSignPrivateKey(e.target.value);
             }}
             placeholder="-----BEGIN PRIVATE KEY-----..."
-            className="border-spx-ink/20 h-32 w-full rounded border p-2 font-mono text-xs"
+            className="border-border h-32 w-full rounded border p-2 font-mono text-xs"
           />
         </div>
         <Button
@@ -157,13 +157,13 @@ export function SandboxPanel(): React.JSX.Element {
         </Button>
         {signResult !== "" && (
           <>
-            <label className="text-spx-ink/60 mt-3 block text-xs font-medium">
+            <label className="text-muted-foreground mt-3 block text-xs font-medium">
               {t("section2.labelResult")}
             </label>
             <textarea
               readOnly
               value={signResult}
-              className="border-spx-ink/20 mt-1 h-32 w-full rounded border bg-gray-50 p-2 font-mono text-xs"
+              className="border-border bg-muted mt-1 h-32 w-full rounded border p-2 font-mono text-xs"
             />
             <Button
               variant="outline"
@@ -179,9 +179,9 @@ export function SandboxPanel(): React.JSX.Element {
       </section>
 
       {/* ===== Section 3 — Vérifier signature ===== */}
-      <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
+      <section className="border-border bg-card rounded-lg border p-6 shadow-sm">
         <h2 className="text-lg font-semibold">{t("section3.title")}</h2>
-        <p className="text-spx-ink/70 mt-1 text-sm">{t("section3.description")}</p>
+        <p className="text-muted-foreground mt-1 text-sm">{t("section3.description")}</p>
         <div className="mt-3 space-y-2">
           <label className="text-xs font-medium">{t("section3.labelLic")}</label>
           <textarea
@@ -189,7 +189,7 @@ export function SandboxPanel(): React.JSX.Element {
             onChange={(e) => {
               setVerifyLic(e.target.value);
             }}
-            className="border-spx-ink/20 h-32 w-full rounded border p-2 font-mono text-xs"
+            className="border-border h-32 w-full rounded border p-2 font-mono text-xs"
           />
           <label className="text-xs font-medium">{t("section3.labelPublicKey")}</label>
           <textarea
@@ -198,7 +198,7 @@ export function SandboxPanel(): React.JSX.Element {
               setVerifyPublicKey(e.target.value);
             }}
             placeholder="-----BEGIN PUBLIC KEY-----..."
-            className="border-spx-ink/20 h-24 w-full rounded border p-2 font-mono text-xs"
+            className="border-border h-24 w-full rounded border p-2 font-mono text-xs"
           />
         </div>
         <Button
@@ -231,9 +231,9 @@ export function SandboxPanel(): React.JSX.Element {
       </section>
 
       {/* ===== Section 4 — Chiffrer .hc ===== */}
-      <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
+      <section className="border-border bg-card rounded-lg border p-6 shadow-sm">
         <h2 className="text-lg font-semibold">{t("section4.title")}</h2>
-        <p className="text-spx-ink/70 mt-1 text-sm">{t("section4.description")}</p>
+        <p className="text-muted-foreground mt-1 text-sm">{t("section4.description")}</p>
         <div className="mt-3 space-y-2">
           <label className="text-xs font-medium">{t("section4.labelAesKey")}</label>
           <div className="flex gap-2">
@@ -243,7 +243,7 @@ export function SandboxPanel(): React.JSX.Element {
                 setAesKey(e.target.value);
               }}
               placeholder="base64 32 bytes"
-              className="border-spx-ink/20 flex-1 rounded border p-2 font-mono text-xs"
+              className="border-border flex-1 rounded border p-2 font-mono text-xs"
             />
             <Button
               variant="outline"
@@ -264,7 +264,7 @@ export function SandboxPanel(): React.JSX.Element {
             onChange={(e) => {
               setHcPayload(e.target.value);
             }}
-            className="border-spx-ink/20 h-24 w-full rounded border p-2 font-mono text-xs"
+            className="border-border h-24 w-full rounded border p-2 font-mono text-xs"
           />
         </div>
         <Button
@@ -284,13 +284,13 @@ export function SandboxPanel(): React.JSX.Element {
         </Button>
         {encryptedHc !== "" && (
           <>
-            <label className="text-spx-ink/60 mt-3 block text-xs font-medium">
+            <label className="text-muted-foreground mt-3 block text-xs font-medium">
               {t("section4.labelEncrypted")}
             </label>
             <textarea
               readOnly
               value={encryptedHc}
-              className="border-spx-ink/20 mt-1 h-32 w-full rounded border bg-gray-50 p-2 font-mono text-xs"
+              className="border-border bg-muted mt-1 h-32 w-full rounded border p-2 font-mono text-xs"
             />
             <Button
               variant="outline"
@@ -306,9 +306,9 @@ export function SandboxPanel(): React.JSX.Element {
       </section>
 
       {/* ===== Section 5 — Déchiffrer .hc ===== */}
-      <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
+      <section className="border-border bg-card rounded-lg border p-6 shadow-sm">
         <h2 className="text-lg font-semibold">{t("section5.title")}</h2>
-        <p className="text-spx-ink/70 mt-1 text-sm">{t("section5.description")}</p>
+        <p className="text-muted-foreground mt-1 text-sm">{t("section5.description")}</p>
         <div className="mt-3 space-y-2">
           <label className="text-xs font-medium">{t("section5.labelEncrypted")}</label>
           <textarea
@@ -316,7 +316,7 @@ export function SandboxPanel(): React.JSX.Element {
             onChange={(e) => {
               setDecryptHcInput(e.target.value);
             }}
-            className="border-spx-ink/20 h-32 w-full rounded border p-2 font-mono text-xs"
+            className="border-border h-32 w-full rounded border p-2 font-mono text-xs"
           />
           <label className="text-xs font-medium">{t("section5.labelKey")}</label>
           <input
@@ -324,7 +324,7 @@ export function SandboxPanel(): React.JSX.Element {
             onChange={(e) => {
               setDecryptKeyInput(e.target.value);
             }}
-            className="border-spx-ink/20 w-full rounded border p-2 font-mono text-xs"
+            className="border-border w-full rounded border p-2 font-mono text-xs"
           />
         </div>
         <Button
@@ -350,7 +350,7 @@ export function SandboxPanel(): React.JSX.Element {
               </p>
             ) : (
               <>
-                <label className="text-spx-ink/60 block text-xs font-medium">
+                <label className="text-muted-foreground block text-xs font-medium">
                   {t("section5.labelPayload")}
                 </label>
                 <textarea
@@ -365,9 +365,9 @@ export function SandboxPanel(): React.JSX.Element {
       </section>
 
       {/* ===== Phase 22 R-39 — Templates .lic / .hc enrichis ===== */}
-      <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
+      <section className="border-border bg-card rounded-lg border p-6 shadow-sm">
         <h2 className="text-lg font-semibold">Templates fichiers</h2>
-        <p className="text-spx-ink/70 mt-1 text-sm">
+        <p className="text-muted-foreground mt-1 text-sm">
           Modèles JSON documentés (structure F2 complète : produits → articles, volumes
           conditionnels, signature RSA-SHA256 et certificat client). À compléter et signer via la
           section 2 (.lic) ou chiffrer via la section 4 (.hc) ci-dessus.
@@ -397,14 +397,14 @@ export function SandboxPanel(): React.JSX.Element {
       </section>
 
       {/* ===== Phase 22 R-40 — Scénario F2 documenté ===== */}
-      <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
+      <section className="border-border bg-card rounded-lg border p-6 shadow-sm">
         <h2 className="text-lg font-semibold">Scénario F2 — Test end-to-end</h2>
-        <p className="text-spx-ink/70 mt-1 text-sm">
+        <p className="text-muted-foreground mt-1 text-sm">
           Cet outil permet de tester le flux cryptographique S2M (RSA + AES) avant déploiement. Les
           clés générées ici sont éphémères et indépendantes de la CA de production (cf.{" "}
           <code className="font-mono text-xs">/settings/security</code>).
         </p>
-        <ol className="text-spx-ink/80 mt-3 list-decimal space-y-2 pl-5 text-sm">
+        <ol className="text-foreground/80 mt-3 list-decimal space-y-2 pl-5 text-sm">
           <li>
             <strong>Générer une paire RSA de test</strong> — clé privée + publique éphémères
             (section 1).
@@ -427,7 +427,7 @@ export function SandboxPanel(): React.JSX.Element {
             5).
           </li>
         </ol>
-        <p className="text-spx-ink/60 mt-3 text-xs italic">
+        <p className="text-muted-foreground mt-3 text-xs italic">
           Aucun appel BD — règle L16, sandbox SADMIN sans persistance. Les artefacts produits ne
           sont JAMAIS acceptés par les imports `.lic` / `.hc` réels (signés par la CA prod
           uniquement).

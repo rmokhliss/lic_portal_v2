@@ -47,9 +47,11 @@ export function proxy(request: NextRequest): NextResponse {
   const cspDirectives = [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
-    "style-src 'self' 'unsafe-inline'",
+    // Phase 24 — fonts.googleapis.com whitelisté (Montserrat DS SELECT-PX).
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob:",
-    "font-src 'self' data:",
+    // Phase 24 — fonts.gstatic.com (woff2 Montserrat).
+    "font-src 'self' data: https://fonts.gstatic.com",
     "connect-src 'self'",
     "frame-ancestors 'none'",
     "base-uri 'self'",

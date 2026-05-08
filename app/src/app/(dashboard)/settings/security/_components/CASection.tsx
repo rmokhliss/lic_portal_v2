@@ -154,22 +154,22 @@ export function CASection({
   }
 
   return (
-    <section className="border-spx-ink/10 rounded-lg border bg-white p-6 shadow-sm">
-      <h2 className="text-spx-ink text-lg font-semibold">{t("ca.title")}</h2>
-      <p className="text-spx-ink/70 mt-1 text-sm">{t("ca.description")}</p>
+    <section className="border-border bg-card rounded-lg border p-6 shadow-sm">
+      <h2 className="text-foregroundtext-lg font-semibold">{t("ca.title")}</h2>
+      <p className="text-muted-foreground mt-1 text-sm">{t("ca.description")}</p>
 
       {status.exists ? (
         <dl className="mt-4 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-spx-ink/60 font-medium">{t("ca.statusLabel")}</dt>
+            <dt className="text-muted-foreground font-medium">{t("ca.statusLabel")}</dt>
             <dd className="text-green-700">{t("ca.statusActive")}</dd>
           </div>
           <div>
-            <dt className="text-spx-ink/60 font-medium">{t("ca.subjectLabel")}</dt>
+            <dt className="text-muted-foreground font-medium">{t("ca.subjectLabel")}</dt>
             <dd>{status.subjectCN}</dd>
           </div>
           <div>
-            <dt className="text-spx-ink/60 font-medium">{t("ca.generatedAtLabel")}</dt>
+            <dt className="text-muted-foreground font-medium">{t("ca.generatedAtLabel")}</dt>
             <dd>
               {status.generatedAt !== null
                 ? new Date(status.generatedAt).toLocaleString("fr-FR")
@@ -177,7 +177,7 @@ export function CASection({
             </dd>
           </div>
           <div>
-            <dt className="text-spx-ink/60 font-medium">{t("ca.expiresAtLabel")}</dt>
+            <dt className="text-muted-foreground font-medium">{t("ca.expiresAtLabel")}</dt>
             <dd>
               {status.expiresAt !== null ? new Date(status.expiresAt).toLocaleString("fr-FR") : "—"}
             </dd>
@@ -196,7 +196,9 @@ export function CASection({
         </Button>
       </div>
 
-      {status.exists && <p className="text-spx-ink/60 mt-4 text-xs">{t("ca.regenWarning")}</p>}
+      {status.exists && (
+        <p className="text-muted-foreground mt-4 text-xs">{t("ca.regenWarning")}</p>
+      )}
 
       {error !== null && (
         <p className="mt-3 rounded border border-red-300 bg-red-50 p-2 text-sm text-red-700">
@@ -206,18 +208,18 @@ export function CASection({
 
       {/* Phase 3.G — Toggle endpoint public CA */}
       {status.exists && (
-        <div className="border-spx-ink/10 mt-8 border-t pt-6">
-          <h3 className="text-spx-ink text-base font-semibold">{t("expose.title")}</h3>
-          <p className="text-spx-ink/70 mt-1 text-sm">{t("expose.description")}</p>
+        <div className="border-border mt-8 border-t pt-6">
+          <h3 className="text-foregroundtext-base font-semibold">{t("expose.title")}</h3>
+          <p className="text-muted-foreground mt-1 text-sm">{t("expose.description")}</p>
           <label className="mt-3 inline-flex items-center gap-2">
             <input
               type="checkbox"
               checked={exposeCaPublic}
               onChange={handleToggleExposePublic}
               disabled={isPending}
-              className="border-spx-ink/30 h-4 w-4 rounded"
+              className="border-border h-4 w-4 rounded"
             />
-            <span className="text-spx-ink text-sm">
+            <span className="text-foregroundtext-sm">
               {exposeCaPublic ? t("expose.toggleActive") : t("expose.toggleInactive")}
             </span>
           </label>
@@ -226,16 +228,16 @@ export function CASection({
 
       {/* Phase 3.E + Phase 22 R-50 — Backfill clients sans certificat */}
       {status.exists && (
-        <div className="border-spx-ink/10 mt-8 border-t pt-6">
-          <h3 className="text-spx-ink text-base font-semibold">{t("backfill.title")}</h3>
-          <p className="text-spx-ink/70 mt-1 text-sm">
+        <div className="border-border mt-8 border-t pt-6">
+          <h3 className="text-foregroundtext-base font-semibold">{t("backfill.title")}</h3>
+          <p className="text-muted-foreground mt-1 text-sm">
             Le backfill génère un certificat PKI X.509 pour chaque client qui n&apos;en a pas
             encore. Ce certificat est nécessaire pour signer les fichiers <code>.lic</code> envoyés
             aux clients (format F2). La clé privée est chiffrée AES-256-GCM avec{" "}
             <code>APP_MASTER_KEY</code> et stockée de manière sécurisée. Durée estimée : ~2s par
             client.
           </p>
-          <p className="text-spx-ink/70 mt-2 text-sm">
+          <p className="text-muted-foreground mt-2 text-sm">
             {backfillStatus.pendingCount === 0
               ? t("backfill.allOk")
               : t("backfill.pending", { count: backfillStatus.pendingCount })}
@@ -263,16 +265,16 @@ export function CASection({
       {/* Phase 23 — clé AES-256 partagée healthcheck (transmise aux banques
            pour chiffrer les .hc avant envoi). Affichage masqué par défaut,
            bouton "Afficher" pour révéler à la demande SADMIN. */}
-      <div className="border-spx-ink/10 mt-8 border-t pt-6">
-        <h3 className="text-spx-ink text-base font-semibold">Clé AES-256 healthcheck</h3>
-        <p className="text-spx-ink/70 mt-1 text-sm">
+      <div className="border-border mt-8 border-t pt-6">
+        <h3 className="text-foregroundtext-base font-semibold">Clé AES-256 healthcheck</h3>
+        <p className="text-muted-foreground mt-1 text-sm">
           Clé symétrique partagée entre S2M et la banque cliente pour chiffrer les fichiers
           <code className="mx-1">.hc</code>
           (healthcheck) avant envoi. Transmettre par canal sécurisé (1 fois à l&apos;intégration).
         </p>
         {healthcheckKeyVisible && healthcheckKey !== null ? (
           <div className="mt-3 space-y-2">
-            <div className="bg-spx-ink/5 border-spx-ink/10 break-all rounded border p-2 font-mono text-xs">
+            <div className="bg-muted border-border break-all rounded border p-2 font-mono text-xs">
               {healthcheckKey.length > 0 ? healthcheckKey : "(non générée — relancer pnpm db:seed)"}
             </div>
             {healthcheckKey.length > 0 && (
