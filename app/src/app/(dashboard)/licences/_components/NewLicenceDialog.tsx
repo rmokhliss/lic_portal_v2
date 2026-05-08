@@ -19,6 +19,7 @@
 
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -94,6 +95,7 @@ export function NewLicenceDialog({
   readonly lockedClientId?: string;
   readonly triggerLabel?: string;
 }): React.JSX.Element {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
@@ -339,12 +341,17 @@ export function NewLicenceDialog({
             // n'ont pas pu être attachés. On garde le wizard ouvert pour info.
             // L'utilisateur peut fermer + compléter via /licences/[id]/articles.
             setArticleErrors(res.data.articleFailures);
+            router.refresh();
             return;
           }
-          // Tout OK : ferme le wizard. L'auto-refresh Next.js (déclenché par
-          // la Server Action) re-fetch /licences avec la nouvelle ligne, comme
-          // pour le pattern createClientAction.
+          // Phase 24 — refresh + close. Next.js auto-refresh devrait suffire
+          // (cas /clients) mais en pratique sur /licences avec wizard multi-
+          // étapes le auto-refresh ne re-render pas systématiquement le
+          // Server Component parent. router.refresh() explicite garantit le
+          // re-fetch côté client. Ordre : refresh AVANT close pour que la
+          // requete soit en vol avant le démontage du dialog.
           setArticleErrors([]);
+          router.refresh();
           onOpenChange(false);
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur inconnue");
