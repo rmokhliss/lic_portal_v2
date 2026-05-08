@@ -7,6 +7,7 @@
 
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { useTranslations } from "next-intl";
@@ -426,6 +427,7 @@ function GenerateLicFileButton({
   readonly articlesCount: number;
 }) {
   const t = useTranslations("licences.detail.resume.licFile");
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
   // Phase 22 R-49 — disable + tooltip si aucun article attaché.
@@ -465,6 +467,9 @@ function GenerateLicFileButton({
           a.download = r.data.filename;
           a.click();
           URL.revokeObjectURL(url);
+          // Phase 24 — refresh la fiche pour que la bannière stale + le badge
+          // .lic dans /licences cross-list passent à "À jour" sans reload.
+          router.refresh();
         } catch (err) {
           setError(humanizeError(err));
         }
@@ -507,6 +512,7 @@ interface PreviewState {
 
 function ImportHealthcheckButton({ licenceId }: { readonly licenceId: string }) {
   const t = useTranslations("licences.detail.resume.healthcheck");
+  const router = useRouter();
   const [open, setOpen] = useState<boolean>(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
@@ -576,6 +582,9 @@ function ImportHealthcheckButton({ licenceId }: { readonly licenceId: string }) 
           }
           setInfo(parts.join(" · "));
           onOpenChange(false);
+          // Phase 24 — refresh pour que le panneau "Dernier import healthcheck"
+          // + les volumes article dans /licences/[id]/articles s'actualisent.
+          router.refresh();
         } catch (err) {
           setError(err instanceof Error ? err.message : "Erreur");
         }

@@ -288,6 +288,7 @@ export const validerRenouvellementUseCase = new ValiderRenouvellementUseCase(
   renouvellementRepository,
   userRepository,
   auditRepository,
+  licenceRepository,
 );
 export const annulerRenouvellementUseCase = new AnnulerRenouvellementUseCase(
   renouvellementRepository,

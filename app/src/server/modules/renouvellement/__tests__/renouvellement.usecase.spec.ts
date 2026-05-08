@@ -48,7 +48,7 @@ beforeAll(() => {
   createClient = new CreateClientUseCase(clientRepo, userRepo, auditRepo);
   createLicence = new CreateLicenceUseCase(licenceRepo, userRepo, auditRepo);
   createRenouv = new CreateRenouvellementUseCase(renouvRepo, licenceRepo, userRepo, auditRepo);
-  valider = new ValiderRenouvellementUseCase(renouvRepo, userRepo, auditRepo);
+  valider = new ValiderRenouvellementUseCase(renouvRepo, userRepo, auditRepo, licenceRepo);
   annuler = new AnnulerRenouvellementUseCase(renouvRepo, userRepo, auditRepo);
 });
 

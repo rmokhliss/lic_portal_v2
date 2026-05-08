@@ -67,6 +67,17 @@ const nextConfig: NextConfig = {
   // Chromium ~200MB) à ne pas inclure dans le bundle Next. Résolus via Node
   // CommonJS au runtime quand les Server Actions /reports les importent.
   serverExternalPackages: ["mjml", "exceljs", "puppeteer"],
+  // Phase 24 — Router cache TTL réduit pour que revalidatePath/router.refresh
+  // soient effectivement honorés sur les listes (sinon le client garde les
+  // segments en cache et affiche des données obsolètes après mutation, cas
+  // observé sur /licences post création/génération .lic).
+  // Référence : https://nextjs.org/docs/app/api-reference/config/next-config-js/staleTimes
+  experimental: {
+    staleTimes: {
+      dynamic: 0,
+      static: 0,
+    },
+  },
   async headers() {
     return [
       {
