@@ -142,13 +142,16 @@ RUN addgroup -S nodejs -g 1001 && adduser -S worker -u 1001 -G nodejs
 
 WORKDIR /app
 
-COPY --from=builder --chown=worker:nodejs /repo/node_modules /node_modules
-COPY --from=builder --chown=worker:nodejs /repo/app/src ./src
-COPY --from=builder --chown=worker:nodejs /repo/app/scripts ./scripts
-COPY --from=builder --chown=worker:nodejs /repo/app/tsconfig.json ./
-COPY --from=builder --chown=worker:nodejs /repo/app/package.json ./
-COPY --from=builder --chown=worker:nodejs /repo/app/node_modules ./node_modules
-COPY --from=builder --chown=worker:nodejs /repo/shared ./shared
+COPY --from=builder --chown=nextjs:nodejs /repo/node_modules /node_modules
+COPY --from=builder --chown=nextjs:nodejs /repo/app/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /repo/app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /repo/app/package.json ./package.json
+
+COPY --from=builder --chown=nextjs:nodejs /repo/app/src ./src
+COPY --from=builder --chown=nextjs:nodejs /repo/app/scripts ./scripts
+COPY --from=builder --chown=nextjs:nodejs /repo/app/tsconfig.json ./tsconfig.json
+
+COPY --from=builder --chown=nextjs:nodejs /repo/shared ./shared
 
 USER worker
 
