@@ -1,5 +1,5 @@
 @Library('nxp_pipeline_lib') _
-sdp_frt_mbp_spx {
+sdp_frt_mbp_spx{
     projectname = 'lic-portal'
     nxpproduct = 'portal'
     globalRepo = 'http://vcs-factory.s2m.ma/infrastructure/product/portal.git'
