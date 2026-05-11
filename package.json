@@ -13,7 +13,7 @@
     "dev": "pnpm --filter app dev",
     "worker:dev": "pnpm --filter app worker:dev",
     "build": "pnpm --filter shared build && pnpm --filter app build",
-    "integration": "corepack enable && node -e \"require('fs').copyFileSync('.env','app/.env')\" && pnpm run build",
+    "integration": "node -e \"require('fs').copyFileSync('.env','app/.env')\" && npx -p pnpm@9.15.0 pnpm install --frozen-lockfile && npx -p pnpm@9.15.0 pnpm run build", 
     "start": "pnpm --filter app start",
     "lint": "pnpm -r lint && pnpm typecheck",
     "lint:fix": "pnpm -r lint:fix",
