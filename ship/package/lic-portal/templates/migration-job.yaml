@@ -1,4 +1,5 @@
-{{- if (dig "migration" "enabled" false .Values) }}
+{{- $migration := .Values.migration | default dict }}
+{{- if ($migration.enabled | default false) }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -10,7 +11,7 @@ metadata:
     "helm.sh/hook-weight": "-5"
     "helm.sh/hook-delete-policy": before-hook-creation
 spec:
-  backoffLimit: {{ dig "migration" "backoffLimit" 2 .Values }}
+  backoffLimit: {{ $migration.backoffLimit | default 2 }}
   template:
     metadata:
       labels:
@@ -40,5 +41,5 @@ spec:
                 name: {{ default (include "lic-portal.fullname" .) .Values.secret.existingSecret }}
 
           resources:
-            {{- toYaml (dig "migration" "resources" dict .Values) | nindent 12 }}
+            {{- toYaml ($migration.resources | default dict) | nindent 12 }}
 {{- end }}
