@@ -1,16 +1,16 @@
 // ==============================================================================
-// LIC v2 — Loader .env pour les scripts CLI hors Next.js (drizzle-kit, etc.)
+// LIC v2 — Loader .env pour les scripts CLI hors Next.js
 //
-// Importé en PREMIER (side-effect) dans drizzle.config.ts pour que les imports
-// suivants (notamment infrastructure/env) trouvent les variables remplies.
-//
-// Sans ce loader, drizzle-kit crashe : il n'a pas de mécanisme intégré de
-// chargement .env, contrairement à Next.js (`next dev`) qui le fait nativement.
-//
-// `process.loadEnvFile` est natif Node 21.7+ (zero dépendance). Le path est
-// relatif au CWD du script, donc `.env` car les scripts (drizzle-kit, migrate,
-// vitest) tournent depuis app/. F-07 : .env déplacé de racine repo vers app/
-// pour que Next.js dev le charge automatiquement (convention next dev).
+// En local : charge app/.env si le fichier existe.
+// En Kubernetes : ne plante pas si .env n'existe pas, car les variables viennent
+// de ConfigMap + Secret via process.env.
 // ==============================================================================
 
-process.loadEnvFile(".env");
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+const envPath = resolve(process.cwd(), ".env");
+
+if (existsSync(envPath)) {
+  process.loadEnvFile(envPath);
+}
