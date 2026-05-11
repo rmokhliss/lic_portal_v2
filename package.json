@@ -13,7 +13,6 @@
     "dev": "pnpm --filter app dev",
     "worker:dev": "pnpm --filter app worker:dev",
     "build": "pnpm --filter shared build && pnpm --filter app build",
-    "integration": "node -e \"require('fs').copyFileSync('.env','app/.env')\" && pnpm install --no-frozen-lockfile && pnpm run build",
     "start": "pnpm --filter app start",
     "lint": "pnpm -r lint && pnpm typecheck",
     "lint:fix": "pnpm -r lint:fix",
@@ -46,8 +45,7 @@
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.9",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.1",
-    "pnpm": "9.15.0"
+    "typescript-eslint": "^8.59.1"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
