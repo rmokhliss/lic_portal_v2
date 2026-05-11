@@ -117,15 +117,27 @@ WORKDIR /app
 
 RUN mkdir -p ./public
 
+# Root workspace files needed by pnpm, tsx and TypeScript aliases
+COPY --from=builder --chown=nextjs:nodejs /repo/package.json /package.json
+COPY --from=builder --chown=nextjs:nodejs /repo/pnpm-lock.yaml /pnpm-lock.yaml
+COPY --from=builder --chown=nextjs:nodejs /repo/pnpm-workspace.yaml /pnpm-workspace.yaml
+COPY --from=builder --chown=nextjs:nodejs /repo/tsconfig.base.json /tsconfig.base.json
+
+# Root node_modules is required because pnpm creates symlinks from app/node_modules
 COPY --from=builder --chown=nextjs:nodejs /repo/node_modules /node_modules
+
+# Next.js runtime files
 COPY --from=builder --chown=nextjs:nodejs /repo/app/.next ./.next
 COPY --from=builder --chown=nextjs:nodejs /repo/app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /repo/app/package.json ./package.json
 
+# Files required for db:migrate, db:seed and runtime scripts
 COPY --from=builder --chown=nextjs:nodejs /repo/app/src ./src
 COPY --from=builder --chown=nextjs:nodejs /repo/app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /repo/app/tsconfig.json ./tsconfig.json
+COPY --from=builder --chown=nextjs:nodejs /repo/app/drizzle.config.ts ./drizzle.config.ts
 
+# Shared workspace package
 COPY --from=builder --chown=nextjs:nodejs /repo/shared ./shared
 
 USER nextjs
@@ -147,12 +159,24 @@ RUN addgroup -S nodejs -g 1001 && adduser -S worker -u 1001 -G nodejs
 
 WORKDIR /app
 
+# Root workspace files needed by pnpm, tsx and TypeScript aliases
+COPY --from=builder --chown=worker:nodejs /repo/package.json /package.json
+COPY --from=builder --chown=worker:nodejs /repo/pnpm-lock.yaml /pnpm-lock.yaml
+COPY --from=builder --chown=worker:nodejs /repo/pnpm-workspace.yaml /pnpm-workspace.yaml
+COPY --from=builder --chown=worker:nodejs /repo/tsconfig.base.json /tsconfig.base.json
+
+# Root node_modules is required because pnpm creates symlinks from app/node_modules
 COPY --from=builder --chown=worker:nodejs /repo/node_modules /node_modules
+
+# Worker/runtime source files
 COPY --from=builder --chown=worker:nodejs /repo/app/src ./src
 COPY --from=builder --chown=worker:nodejs /repo/app/scripts ./scripts
 COPY --from=builder --chown=worker:nodejs /repo/app/tsconfig.json ./tsconfig.json
+COPY --from=builder --chown=worker:nodejs /repo/app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder --chown=worker:nodejs /repo/app/package.json ./package.json
 COPY --from=builder --chown=worker:nodejs /repo/app/node_modules ./node_modules
+
+# Shared workspace package
 COPY --from=builder --chown=worker:nodejs /repo/shared ./shared
 
 USER worker
