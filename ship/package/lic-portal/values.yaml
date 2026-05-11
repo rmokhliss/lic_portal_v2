@@ -1,0 +1,127 @@
+# Default values for lic-portal.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+global:
+  registry: "container-registry.dev.s2m.ma/portal"
+  imagePullSecrets:
+  - name: lic-portal-image-puller
+  dependenciesUi:
+    settings:
+      url:  "https://ui-mobile-switch-integration.app.dev.s2m.ma/mobile-switch-settings/api/v1/"
+    inquiries:
+      url: "https://ui-mobile-switch-integration.app.dev.s2m.ma/mobile-switch-inquiries/swmn/inquiries/1/0/"
+    regulation:
+      url: "https://ui-mobile-switch-integration.app.dev.s2m.ma/mobile-switch-regulation/api/v1/"
+    tracing:
+      url:  "https://ui-mobile-switch-integration.app.dev.s2m.ma/mobile-switch-tracing/api/"
+    nxpNotification:
+      url:  "https://ui-mobile-switch-integration.app.dev.s2m.ma/mobile-switch-notification/api/"
+    notificationCheckInstExist:
+      url:  "http://ui-mobile-switch-integration.app.dev.s2m.ma/mobile-switch-settings:9090/api/v1/notifications-management/institution/exist"
+    notificationCheckUsage:
+      url:  "http://ui-mobile-switch-integration.app.dev.s2m.ma/mobile-switch-settings:9090/api/v1/notifications-management/check-usage"
+    logs:
+      url: "https://ui-mobile-switch-integration.app.dev.s2m.ma/mobile-switch-logs/api/logs/"
+      urlV1: "https://ui-mobile-switch-integration.app.dev.s2m.ma/mobile-switch-logs/api/logs/"
+    eaas:
+      url: "https://ui-mobile-switch-integration.app.dev.s2m.ma/mobile-switch-vault/api/"
+    processing:
+      url: "https://ui-mobile-switch-integration.app.dev.s2m.ma/mobile-switch-processing/api/v1/" 
+    saf:
+      url: "https://ui-mobile-switch-integration.app.dev.s2m.ma/mobile-switch-saf/api/v1/"  
+i18n:
+  local: "en"
+  fallbackLocal: "fr"
+keycloak:
+  host: "https://keycloak-transvers-integration.app.dev.s2m.ma/auth"
+  realm: "Mobile-Switch"
+  resource: "user-interface"
+
+    
+replicaCount: 2
+
+image:
+  repository: lic-portal
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "develop"
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  runAsNonRoot: true
+  runAsUser: 101
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources:
+  limits:
+    cpu: 550m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 512Mi
+
+
+strategy: {}
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: "/actuator/health"
+    port: 9090
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 1
+  failureThreshold: 3
+  successThreshold: 1
+
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: "/actuator/health"
+    port: 9090
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 1
+  failureThreshold: 3
+  successThreshold: 1
+
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

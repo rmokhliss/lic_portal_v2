@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lic-portal.fullname" . }}
+  labels:
+    {{ include "lic-portal.labels" . | nindent 4 }}
+data:
+
+  # i18n standard lang
+  VUE_APP_I18N_LOCALE: "{{ .Values.i18n.local }}"
+  VUE_APP_I18N_FALLBACK_LOCALE: "{{ .Values.i18n.fallbackLocal }}"
+  # Security
+    # Keyclock    oki
+  VUE_APP_KEYCLOAK_URL: "{{ .Values.keycloak.host }}"
+  VUE_APP_KEYCLOAK_REALM: "{{ .Values.keycloak.realm }}"
+  VUE_APP_KEYCLOAK_CLIENT_ID: "{{ .Values.keycloak.resource }}"
+
+  
+  # dependencies
+  
+  VUE_APP_SETTINGS_URL: "{{ .Values.global.dependenciesUi.settings.url }}"
+  VUE_APP_WALLET_INQUIRIES_URL: "{{ .Values.global.dependenciesUi.inquiries.url }}"
+  VUE_APP_INQUIRIES_URL: "{{ .Values.global.dependenciesUi.inquiries.url }}"
+  VUE_APP_REGULATION_URL: "{{ .Values.global.dependenciesUi.regulation.url }}"
+  VUE_APP_TRACING_URL: "{{ .Values.global.dependenciesUi.tracing.url }}"
+  VUE_APP_NXP_NOTIFICATION_URL: "{{ .Values.global.dependenciesUi.nxpNotification.url }}"
+  VUE_APP_SETTINGS_NOTIFICATION_CHECK_INSTITUTION_EXISTENCE_URL: "{{ .Values.global.dependenciesUi.notificationCheckInstExist.url }}"
+  VUE_APP_SETTINGS_NOTIFICATION_CHECK_CONFIGURATION_USAGE_URL: "{{ .Values.global.dependenciesUi.notificationCheckUsage.url }}"
+  VUE_APP_LOGS_SERVICE_URL: "{{ .Values.global.dependenciesUi.logs.url }}"
+  VUE_APP_LOGS_SERVICE_URL_V1: "{{ .Values.global.dependenciesUi.logs.urlV1 }}"
+  VUE_APP_EAAS_URL: "{{ .Values.global.dependenciesUi.eaas.url }}"
+  VUE_APP_SAF_URL: "{{ .Values.global.dependenciesUi.saf.url }}"
+  VUE_APP_PROCESSING_URL: "{{ .Values.global.dependenciesUi.processing.url }}"

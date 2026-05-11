@@ -1,0 +1,33 @@
+#!/bin/sh
+
+ROOT_DIR=/usr/share/nginx/html
+
+# Replace env vars in JavaScript files
+echo "Replacing env constants in JS"
+for file in $ROOT_DIR/js/*.js* $ROOT_DIR/index.html $ROOT_DIR/precache-manifest*.js;
+do
+  echo "Processing $file ...";
+  
+  sed -i 's|VUE_APP_I18N_LOCALE_VALUE|'${VUE_APP_I18N_LOCALE}'|g' $file
+  sed -i 's|VUE_APP_I18N_FALLBACK_LOCALE_VALUE|'${VUE_APP_I18N_FALLBACK_LOCALE}'|g' $file
+  sed -i 's|VUE_APP_KEYCLOAK_URL_VALUE|'${VUE_APP_KEYCLOAK_URL}'|g' $file 
+  sed -i 's|VUE_APP_KEYCLOAK_REALM_VALUE|'${VUE_APP_KEYCLOAK_REALM}'|g' $file
+  sed -i 's|VUE_APP_KEYCLOAK_CLIENT_ID_VALUE|'${VUE_APP_KEYCLOAK_CLIENT_ID}'|g' $file
+  sed -i 's|VUE_APP_SETTINGS_URL_VALUE|'${VUE_APP_SETTINGS_URL}'|g' $file
+  sed -i 's|VUE_APP_PROCESSING_URL_VALUE|'${VUE_APP_PROCESSING_URL}'|g' $file
+  sed -i 's|VUE_APP_WALLET_INQUIRIES_URL_VALUE|'${VUE_APP_WALLET_INQUIRIES_URL}'|g' $file
+  sed -i 's|VUE_APP_INQUIRIES_URL_VALUE|'${VUE_APP_INQUIRIES_URL}'|g' $file
+  sed -i 's|VUE_APP_REGULATION_URL_VALUE|'${VUE_APP_REGULATION_URL}'|g' $file
+  sed -i 's|VUE_APP_TRACING_URL_VALUE|'${VUE_APP_TRACING_URL}'|g' $file
+  sed -i 's|VUE_APP_NXP_NOTIFICATION_URL_VALUE|'${VUE_APP_NXP_NOTIFICATION_URL}'|g' $file
+  sed -i 's|VUE_APP_SETTINGS_NOTIFICATION_CHECK_INSTITUTION_EXISTENCE_URL_VALUE|'${VUE_APP_SETTINGS_NOTIFICATION_CHECK_INSTITUTION_EXISTENCE_URL}'|g' $file
+  sed -i 's|VUE_APP_SETTINGS_NOTIFICATION_CHECK_CONFIGURATION_USAGE_URL_VALUE|'${VUE_APP_SETTINGS_NOTIFICATION_CHECK_CONFIGURATION_USAGE_URL}'|g' $file
+  sed -i 's|VUE_APP_LOGS_SERVICE_URL_VALUE|'${VUE_APP_LOGS_SERVICE_URL}'|g' $file
+  sed -i 's|VUE_APP_LOGS_SERVICE_URL_V1_VALUE|'${VUE_APP_LOGS_SERVICE_URL_V1}'|g' $file
+  sed -i 's|VUE_APP_EAAS_URL_VALUE|'${VUE_APP_EAAS_URL}'|g' $file
+  sed -i 's|VUE_APP_SAF_URL_VALUE|'${VUE_APP_SAF_URL}'|g' $file
+
+done
+
+echo "Starting Nginx"
+nginx -g 'daemon off;'
