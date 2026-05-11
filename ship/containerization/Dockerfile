@@ -115,9 +115,12 @@ RUN addgroup -S nodejs -g 1001 && adduser -S nextjs -u 1001 -G nodejs
 
 WORKDIR /app
 
-RUN mkdir -p ./public
+RUN mkdir -p ./public \
+    && touch ./.env \
+    && chown nextjs:nodejs ./.env \
+    && chmod 600 ./.env
 
-# Root workspace files needed by pnpm, tsx and TypeScript aliases
+# Root workspace files required by pnpm, tsx and TypeScript path aliases
 COPY --from=builder --chown=nextjs:nodejs /repo/package.json /package.json
 COPY --from=builder --chown=nextjs:nodejs /repo/pnpm-lock.yaml /pnpm-lock.yaml
 COPY --from=builder --chown=nextjs:nodejs /repo/pnpm-workspace.yaml /pnpm-workspace.yaml
@@ -159,7 +162,11 @@ RUN addgroup -S nodejs -g 1001 && adduser -S worker -u 1001 -G nodejs
 
 WORKDIR /app
 
-# Root workspace files needed by pnpm, tsx and TypeScript aliases
+RUN touch ./.env \
+    && chown worker:nodejs ./.env \
+    && chmod 600 ./.env
+
+# Root workspace files required by pnpm, tsx and TypeScript path aliases
 COPY --from=builder --chown=worker:nodejs /repo/package.json /package.json
 COPY --from=builder --chown=worker:nodejs /repo/pnpm-lock.yaml /pnpm-lock.yaml
 COPY --from=builder --chown=worker:nodejs /repo/pnpm-workspace.yaml /pnpm-workspace.yaml
