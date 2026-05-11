@@ -16,7 +16,7 @@
 # ==============================================================================
 
 # --- Stage 1 : base avec pnpm via corepack -----------------------------------
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 RUN corepack enable && apk add --no-cache libc6-compat
 WORKDIR /repo
 
