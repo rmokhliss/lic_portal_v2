@@ -30,10 +30,11 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
 
           command:
-            - npm
-            - run
-            - db:migrate
-
+            - /bin/sh
+            - -c
+            - |
+              npm run db:migrate
+              npm run db:seed:bootstrap
           envFrom:
             - configMapRef:
                 name: {{ include "lic-portal.fullname" . }}

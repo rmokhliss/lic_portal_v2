@@ -29,21 +29,6 @@ spec:
       serviceAccountName: {{ include "lic-portal.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      initContainers:
-        - name: migrate-seed
-          image: "{{ .Values.global.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "lic-portal.fullname" . }}
-          command: ["/bin/sh", "-c"]
-          args:
-            - |
-              echo "Running migrations..."
-              pnpm db:migrate
-              echo "Running seed..."
-              pnpm db:seed:bootstrap
-              echo "Init done."
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.global.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
