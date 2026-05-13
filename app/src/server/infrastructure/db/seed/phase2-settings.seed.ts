@@ -20,6 +20,8 @@ import { SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
 
 import { createChildLogger } from "@/server/infrastructure/logger";
 
+import { generateAes256Key } from "@/server/modules/crypto/domain/aes";
+
 const log = createChildLogger("db/seed/phase2-settings");
 
 interface SettingSeed {
@@ -33,6 +35,7 @@ const DEFAULT_SETTINGS: readonly SettingSeed[] = [
   { key: "tolerance_date_jours", value: 30 },
   { key: "warning_volume_pct", value: 80 },
   { key: "warning_date_jours", value: 60 },
+  { key: "healthcheck_shared_aes_key", value: generateAes256Key() },
 ];
 
 export async function seedDefaultSettings(sql: postgres.Sql): Promise<void> {
