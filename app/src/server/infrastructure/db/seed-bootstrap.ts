@@ -40,7 +40,8 @@ import "../../../../scripts/load-env";
 import bcryptjs from "bcryptjs";
 import postgres from "postgres";
 
-import { SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
+//import { SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
+const SYSTEM_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 import { env } from "@/server/infrastructure/env";
 import { createChildLogger } from "@/server/infrastructure/logger";
