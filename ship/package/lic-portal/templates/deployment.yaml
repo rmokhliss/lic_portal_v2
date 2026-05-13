@@ -7,7 +7,7 @@ metadata:
 spec:
   {{- with .Values.strategy }}
   strategy:
-    {{- . | toYaml | nindent 4 }}
+    {{- toYaml . | nindent 4 }}
   {{- end }}
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -46,33 +46,51 @@ spec:
               echo "Init done."
       containers:
         - name: {{ .Chart.Name }}
-          envFrom:
-          - configMapRef:
-              name: {{ include "lic-portal.fullname" . }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.global.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if .Values.readinessProbe.enabled }}
-          readinessProbe: {{- omit .Values.readinessProbe "enabled" | toYaml | nindent 12 }}
-          {{- end }}
-          {{- if .Values.livenessProbe.enabled }}
-          livenessProbe: {{- omit .Values.livenessProbe "enabled" | toYaml | nindent 12 }}
-          {{- end }}
+
+          envFrom:
+            - configMapRef:
+                name: {{ include "lic-portal.fullname" . }}
+            - secretRef:
+                name: {{ default (include "lic-portal.fullname" .) .Values.secret.existingSecret }}
+
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: {{ .Values.containerPort }}
               protocol: TCP
+
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe:
+            {{- omit .Values.startupProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            {{- omit .Values.readinessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            {{- omit .Values.livenessProbe "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
       {{- with .Values.affinity }}
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+
       {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
