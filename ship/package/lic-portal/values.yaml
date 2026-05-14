@@ -145,3 +145,14 @@ migration:
     requests:
       memory: "256Mi"
       cpu: "100m"
+worker:
+  enabled: true
+  image:
+    repository: s2m-lic-worker
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
