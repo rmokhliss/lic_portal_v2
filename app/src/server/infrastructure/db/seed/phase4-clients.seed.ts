@@ -30,7 +30,11 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import type postgres from "postgres";
 
-import { SYSTEM_USER_DISPLAY, SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
+// Phase 24 — inlined depuis @s2m-lic/shared/constants/system-user pour
+// rompre la dépendance cross-workspace dans les seeds (les images Docker
+// de migration n'embarquent pas le workspace shared).
+const SYSTEM_USER_ID = "00000000-0000-0000-0000-000000000000";
+const SYSTEM_USER_DISPLAY = "Système (SYS-000)";
 
 import { createChildLogger } from "@/server/infrastructure/logger";
 import * as schema from "@/server/infrastructure/db/schema";
