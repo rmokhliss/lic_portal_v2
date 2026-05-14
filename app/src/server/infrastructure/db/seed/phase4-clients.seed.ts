@@ -1,11 +1,16 @@
 // ==============================================================================
-// LIC v2 — Seed démo Phase 4.D — 55 clients SELECT-PX + entités + contacts
+// LIC v2 — Seed démo Phase 4.D — clients SELECT-PX + entités + contacts
 //
 // ⚠️  DEV / DÉMO UNIQUEMENT — NE PAS LANCER SUR LA BD UTILISÉE PAR LES TESTS
 // ⚠️  NE PAS LANCER EN CI (R-29).
 //
+// Phase 24 corrections :
+//   - BICICI fusionné (1 client, 2 filiales Sénégal/Côte d'Ivoire en entités)
+//   - AWASH retiré du portefeuille
+//   - applyDmOverrides supprimé (plus de liaison DM ↔ région)
+//
 // Lancé par `pnpm db:seed` après les référentiels (étape 5 Phase 2.B). Crée :
-//   - 55 clients SELECT-PX réels (data-model v1, demo-data-v1.sql Lot A5)
+//   - 53 clients SELECT-PX réels (data-model v1, demo-data-v1.sql Lot A5)
 //   - 1 entité « Siège » par client (invariant via saveWithSiegeEntite — 4.B)
 //   - Quelques entités additionnelles + contacts variés pour démo
 //
@@ -319,15 +324,18 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     salesResponsable: "Youssef BERRADA",
     accountManager: "Jamal MOUJAHID",
   },
+  // Phase 24 — BICICI fusionné : 1 seul client BICICI (siège Côte d'Ivoire),
+  // les filiales Sénégal et Côte d'Ivoire sont créées comme entités via
+  // EXTRA_ENTITES. Remplace les anciennes BICICISN + BICICICI.
   {
-    codeClient: "BICICISN",
-    raisonSociale: "BICICI Sénégal",
-    codePays: "SN",
+    codeClient: "BICICI",
+    raisonSociale: "BICICI",
+    codePays: "CI",
     v1Region: "AFRIQUE_FR",
     codeLangue: "fr",
     codeDevise: "XOF",
-    salesResponsable: "Ahmed KHALIL",
-    accountManager: "Omar HANDI",
+    salesResponsable: "Youssef BERRADA",
+    accountManager: "Houssam ELISMAILI",
   },
   {
     codeClient: "BNI_CI",
@@ -348,16 +356,6 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeDevise: "XOF",
     salesResponsable: "Mounir BOUSNIN",
     accountManager: "Hakim HOUSSNI",
-  },
-  {
-    codeClient: "BICICICI",
-    raisonSociale: "BICICI Côte d'Ivoire",
-    codePays: "CI",
-    v1Region: "AFRIQUE_FR",
-    codeLangue: "fr",
-    codeDevise: "XOF",
-    salesResponsable: "Youssef BERRADA",
-    accountManager: "Houssam ELISMAILI",
   },
   {
     codeClient: "GIE",
@@ -449,16 +447,7 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     salesResponsable: "Ahmed KHALIL",
     accountManager: "Ghassan FAHMI",
   },
-  {
-    codeClient: "AWASH",
-    raisonSociale: "Awash Bank",
-    codePays: "ET",
-    v1Region: "AFRIQUE_EN",
-    codeLangue: "en",
-    codeDevise: "ETB",
-    salesResponsable: "Issam CHAYBI",
-    accountManager: "Jamal MOUJAHID",
-  },
+  // Phase 24 — AWASH retiré du portefeuille S2M.
   {
     codeClient: "SLCB",
     raisonSociale: "SLCB",
@@ -638,13 +627,17 @@ interface ExtraEntiteSeed {
   readonly codePays?: string;
 }
 
-/** Quelques entités additionnelles (filiales) pour 5 clients pilotes. */
+/** Quelques entités additionnelles (filiales) pour les clients pilotes.
+ *  Phase 24 — BICICI fusionné, ses 2 filiales (Sénégal + Côte d'Ivoire)
+ *  sont matérialisées ici comme entités du client unique BICICI. */
 const EXTRA_ENTITES: readonly ExtraEntiteSeed[] = [
   { codeClient: "CDM", nom: "Filiale Casablanca", codePays: "MA" },
   { codeClient: "CDM", nom: "Filiale Rabat", codePays: "MA" },
   { codeClient: "BIAT", nom: "Filiale Sfax", codePays: "TN" },
   { codeClient: "ATTIJARI_TN", nom: "Filiale Sousse", codePays: "TN" },
   { codeClient: "BNI_CI", nom: "Filiale Yamoussoukro", codePays: "CI" },
+  { codeClient: "BICICI", nom: "Filiale Sénégal", codePays: "SN" },
+  { codeClient: "BICICI", nom: "Filiale Côte d'Ivoire", codePays: "CI" },
 ];
 
 interface ContactSeed {
@@ -821,9 +814,6 @@ export async function seedPhase4Clients(sql: postgres.Sql): Promise<void> {
 
   if (await alreadySeeded(sql)) {
     log.info("lic_clients déjà peuplée — seed Phase 4 INSERT skip (idempotent)");
-    // Phase 18 R-20 — l'override DM doit s'appliquer même si les clients
-    // sont déjà seedés (alignement Excel S2M sur une BD démo existante).
-    await applyDmOverrides(sql);
     return;
   }
 
@@ -853,28 +843,9 @@ export async function seedPhase4Clients(sql: postgres.Sql): Promise<void> {
   // 3. Contacts par défaut
   await seedContacts(repos, codeToId, sql);
 
-  // 4. Phase 18 R-20 — overrides DM (account_manager) par pays. Mapping
-  //    explicite issu de la spec utilisateur (DM ↔ pays). UPDATE idempotent.
-  await applyDmOverrides(sql);
+  // Phase 24 — l'override DM par pays (Phase 18 R-20) est retiré : la
+  // liaison DM ↔ région a été abandonnée du modèle, les account_manager
+  // restent ceux du CLIENT_SEEDS d'origine (varchar libre).
 
   log.info({ clientsCount: codeToId.size }, "Phase 4.D seed completed");
-}
-
-/** Phase 18 R-20 — aligne account_manager (DM responsable) sur le mapping
- *  pays → DM fourni par S2M. Les valeurs originales du seed (issues de
- *  demo-data-v1) sont écrasées. Idempotent. */
-async function applyDmOverrides(sql: postgres.Sql): Promise<void> {
-  log.info("Phase 18 R-20 — overrides DM par pays");
-  await sql`
-    UPDATE lic_clients SET account_manager = 'Houssam ELISMAILI'
-    WHERE code_pays IN ('LY', 'DZ', 'TG', 'YE', 'ET')
-  `;
-  await sql`
-    UPDATE lic_clients SET account_manager = 'Ghassan FAHMI'
-    WHERE code_pays = 'JO'
-  `;
-  await sql`
-    UPDATE lic_clients SET account_manager = 'Jamal MOUJAHID'
-    WHERE code_pays IN ('MA', 'MR')
-  `;
 }

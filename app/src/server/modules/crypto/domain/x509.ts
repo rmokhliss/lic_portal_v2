@@ -169,6 +169,57 @@ export function verifyCertChain(clientCertPem: string, caCertPem: string): boole
 }
 
 /**
+ * Phase 24 — vérifie qu'un PEM de cert CA est valide et que sa clé privée
+ * fournie correspond. Utilisé par `import-ca.usecase` avant persistance.
+ *
+ * Étapes :
+ *   1. Parse le cert (throw SPX-LIC-411 si non parsable)
+ *   2. Vérifie que le cert est bien une CA (basic constraints CA=TRUE)
+ *   3. Vérifie qu'il est self-signed (issuer === subject)
+ *   4. Vérifie qu'il n'est pas expiré
+ *   5. Vérifie la cohérence clé privée ↔ clé publique du cert (challenge-sign)
+ *
+ * Throws SPX-LIC-411 si cert/clé invalides, SPX-LIC-422 si mismatch.
+ */
+export async function assertCAImportable(opts: {
+  certPem: string;
+  privateKeyPem: string;
+}): Promise<void> {
+  let caCert: x509.X509Certificate;
+  try {
+    caCert = new x509.X509Certificate(opts.certPem);
+  } catch (err) {
+    throw caAbsentOrInvalid(`cert CA non parsable : ${errMsg(err)}`);
+  }
+
+  // CA = TRUE dans BasicConstraints (sinon ce n'est pas un cert CA valide).
+  const bc = caCert.getExtension(x509.BasicConstraintsExtension);
+  if (!bc?.ca) {
+    throw caAbsentOrInvalid("le certificat fourni n'est pas une CA (BasicConstraints.cA != true)");
+  }
+
+  // Self-signed : issuer DN == subject DN. Pour une CA root S2M c'est le cas.
+  if (caCert.issuer !== caCert.subject) {
+    throw caAbsentOrInvalid(
+      `la CA n'est pas auto-signée (issuer "${caCert.issuer}" ≠ subject "${caCert.subject}")`,
+    );
+  }
+
+  // Validité temporelle.
+  const now = Date.now();
+  if (now < caCert.notBefore.getTime() || now > caCert.notAfter.getTime()) {
+    throw caAbsentOrInvalid(
+      `cert CA hors période de validité (${caCert.notBefore.toISOString()} → ${caCert.notAfter.toISOString()})`,
+    );
+  }
+
+  // Cohérence clé privée ↔ clé publique du cert.
+  const privateKey = await importRsaPrivateKey(opts.privateKeyPem);
+  const publicKey = await caCert.publicKey.export(SIGNING_ALGORITHM, ["verify"]);
+  await assertKeyPairConsistent(privateKey, publicKey);
+}
+
+/**
  * Extrait la date d'expiration `notAfter` d'un certificat PEM.
  * Sync — `node:crypto.X509Certificate`.
  *

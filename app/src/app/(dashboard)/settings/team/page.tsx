@@ -8,6 +8,7 @@
 // ==============================================================================
 
 import {
+  listClientsRefUseCase,
   listDevisesUseCase,
   listLanguesUseCase,
   listPaysUseCase,
@@ -18,15 +19,22 @@ import {
 
 import { SettingsTeamTabs } from "../_components/SettingsTeamTabs";
 
+const CLIENTS_REF_FETCH_LIMIT = 500;
+
 export default async function SettingsTeamPage() {
-  const [regions, pays, devises, langues, typesContact, teamMembers] = await Promise.all([
-    listRegionsUseCase.execute(),
-    listPaysUseCase.execute(),
-    listDevisesUseCase.execute(),
-    listLanguesUseCase.execute(),
-    listTypesContactUseCase.execute(),
-    listTeamMembersUseCase.execute(),
-  ]);
+  const [regions, pays, devises, langues, typesContact, teamMembers, clientsRef] =
+    await Promise.all([
+      listRegionsUseCase.execute(),
+      listPaysUseCase.execute(),
+      listDevisesUseCase.execute(),
+      listLanguesUseCase.execute(),
+      listTypesContactUseCase.execute(),
+      listTeamMembersUseCase.execute(),
+      // Phase 24 — référentiel clients (lecture seule). Limite haute pour
+      // charger tout le set en une fois (la pagination est faite client-side
+      // dans l'onglet — volumétrie attendue ≤ 200 entrées).
+      listClientsRefUseCase.execute({ limit: CLIENTS_REF_FETCH_LIMIT }),
+    ]);
 
   return (
     <SettingsTeamTabs
@@ -36,6 +44,7 @@ export default async function SettingsTeamPage() {
       langues={langues}
       typesContact={typesContact}
       teamMembers={teamMembers}
+      clientsRef={clientsRef.items}
     />
   );
 }

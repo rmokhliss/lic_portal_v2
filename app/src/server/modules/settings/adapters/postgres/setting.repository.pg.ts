@@ -8,7 +8,7 @@
 // statement Postgres par batch, atomique sans transaction explicite.
 // ==============================================================================
 
-import { asc, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import type { drizzle } from "drizzle-orm/postgres-js";
 
 import { db as defaultDb } from "@/server/infrastructure/db/client";
@@ -60,5 +60,10 @@ export class SettingRepositoryPg extends SettingRepository {
           updatedAt: sql`now()`,
         },
       });
+  }
+
+  async deleteByKey(key: string, tx?: DbOrTx): Promise<void> {
+    const conn = tx ?? this.db;
+    await conn.delete(settings).where(eq(settings.key, key));
   }
 }

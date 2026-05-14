@@ -12,12 +12,22 @@ import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 import {
   backfillClientCertsAction,
+  deleteCAAction,
   downloadCACertAction,
   generateCAAction,
   getHealthcheckSharedKeyAction,
+  importCAAction,
   setExposeS2mCaPublicAction,
   type BackfillStatusOutput,
   type CAStatusActionOutput,
@@ -48,6 +58,12 @@ export function CASection({
   // par canal sécurisé pour chiffrer les .hc côté client).
   const [healthcheckKey, setHealthcheckKey] = useState<string | null>(null);
   const [healthcheckKeyVisible, setHealthcheckKeyVisible] = useState<boolean>(false);
+  // Phase 24 — dialogs import / delete CA.
+  const [importDialogOpen, setImportDialogOpen] = useState<boolean>(false);
+  const [importPrivateKey, setImportPrivateKey] = useState<string>("");
+  const [importCert, setImportCert] = useState<string>("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string>("");
 
   function handleRevealHealthcheckKey(): void {
     setError(null);
@@ -133,6 +149,56 @@ export function CASection({
     });
   }
 
+  function handleImport(): void {
+    setError(null);
+    startTransition(() => {
+      void (async () => {
+        try {
+          const r = await importCAAction({
+            privateKeyPem: importPrivateKey,
+            certificatePem: importCert,
+          });
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
+          setStatus({
+            exists: true,
+            expiresAt: r.data.expiresAt,
+            subjectCN: r.data.subjectCN,
+            generatedAt: new Date().toISOString(),
+          });
+          setImportDialogOpen(false);
+          setImportPrivateKey("");
+          setImportCert("");
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Erreur inconnue");
+        }
+      })();
+    });
+  }
+
+  function handleDelete(): void {
+    setError(null);
+    startTransition(() => {
+      void (async () => {
+        try {
+          const r = await deleteCAAction();
+          if (!r.success) {
+            setError(r.error);
+            return;
+          }
+          setStatus({ exists: false, expiresAt: null, subjectCN: null, generatedAt: null });
+          setBackfillStatus({ pendingCount: r.data.clientsAffected });
+          setDeleteDialogOpen(false);
+          setDeleteConfirm("");
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Erreur inconnue");
+        }
+      })();
+    });
+  }
+
   function handleDownload(): void {
     setError(null);
     startTransition(() => {
@@ -191,8 +257,30 @@ export function CASection({
         <Button onClick={handleGenerate} disabled={status.exists || isPending}>
           {isPending ? t("ca.generating") : t("ca.generate")}
         </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setError(null);
+            setImportDialogOpen(true);
+          }}
+          disabled={status.exists || isPending}
+        >
+          Importer CA
+        </Button>
         <Button variant="outline" onClick={handleDownload} disabled={!status.exists || isPending}>
           {t("ca.download")}
+        </Button>
+        {/* Phase 24 — suppression CA (SADMIN, garde-fou .lic côté serveur). */}
+        <Button
+          variant="destructive"
+          onClick={() => {
+            setError(null);
+            setDeleteConfirm("");
+            setDeleteDialogOpen(true);
+          }}
+          disabled={!status.exists || isPending}
+        >
+          Supprimer CA
         </Button>
       </div>
 
@@ -304,6 +392,137 @@ export function CASection({
           </Button>
         )}
       </div>
+
+      {/* Phase 24 — Dialog Import CA (2 textareas PEM). */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Importer une CA existante</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm">
+            <p className="text-muted-foreground">
+              Importe une CA existante en collant la clé privée et le certificat au format PEM. La
+              cohérence clé/cert est vérifiée serveur avant persistance ; la clé privée est chiffrée
+              AES-256-GCM avec <code>APP_MASTER_KEY</code>.
+            </p>
+            <details className="text-muted-foreground rounded border border-dashed p-2 text-xs">
+              <summary className="cursor-pointer font-medium">Fichier .p12 / PKCS#12 ?</summary>
+              <p className="mt-2">
+                Le format PKCS#12 n&apos;est pas supporté nativement par node:crypto (et les
+                dépendances crypto tierces sont interdites par ADR 0019). Convertir d&apos;abord via
+                openssl CLI :
+              </p>
+              <pre className="bg-muted mt-2 rounded p-2 font-mono text-[11px]">
+                openssl pkcs12 -in ca.p12 -nocerts -nodes -out ca-key.pem{"\n"}
+                openssl pkcs12 -in ca.p12 -clcerts -nokeys -out ca-cert.pem
+              </pre>
+            </details>
+            <div className="space-y-1">
+              <Label htmlFor="ca-import-key">Clé privée PEM</Label>
+              <textarea
+                id="ca-import-key"
+                value={importPrivateKey}
+                onChange={(e) => {
+                  setImportPrivateKey(e.target.value);
+                }}
+                placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----"
+                className="border-input bg-background h-40 w-full rounded-md border p-2 font-mono text-xs"
+                spellCheck={false}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ca-import-cert">Certificat PEM</Label>
+              <textarea
+                id="ca-import-cert"
+                value={importCert}
+                onChange={(e) => {
+                  setImportCert(e.target.value);
+                }}
+                placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
+                className="border-input bg-background h-40 w-full rounded-md border p-2 font-mono text-xs"
+                spellCheck={false}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setImportDialogOpen(false);
+              }}
+              disabled={isPending}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              onClick={handleImport}
+              disabled={
+                isPending || importPrivateKey.trim().length === 0 || importCert.trim().length === 0
+              }
+            >
+              {isPending ? "Import en cours…" : "Importer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Phase 24 — Dialog confirmation Supprimer CA. */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Supprimer la CA S2M</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p>
+              Cette action est <strong>destructive</strong> et irréversible : la CA sera supprimée
+              de <code>lic_settings</code> et les 3 colonnes PKI (
+              <code>client_private_key_enc</code>, <code>client_certificate_pem</code>,
+              <code>client_certificate_expires_at</code>) seront nullifiées sur tous les clients.
+            </p>
+            <p>
+              La suppression est <strong>bloquée côté serveur</strong> si au moins un fichier{" "}
+              <code>.lic</code> a déjà été généré (SPX-LIC-412) — la traçabilité des artefacts
+              livrés serait compromise.
+            </p>
+            <div className="space-y-1">
+              <Label htmlFor="ca-delete-confirm">
+                Saisir <span className="font-mono">SUPPRIMER</span> pour confirmer
+              </Label>
+              <input
+                id="ca-delete-confirm"
+                type="text"
+                value={deleteConfirm}
+                onChange={(e) => {
+                  setDeleteConfirm(e.target.value);
+                }}
+                className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+              }}
+              disabled={isPending}
+            >
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isPending || deleteConfirm !== "SUPPRIMER"}
+            >
+              {isPending ? "Suppression en cours…" : "Supprimer définitivement"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

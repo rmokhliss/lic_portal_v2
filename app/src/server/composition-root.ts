@@ -163,6 +163,13 @@ export {
   updateTeamMemberUseCase,
 } from "@/server/modules/team-members/team-members.module";
 
+// --- Phase 24 : référentiel clients (lecture seule UI, ADR 0017) ----------
+
+export {
+  listClientsRefUseCase,
+  searchClientsRefUseCase,
+} from "@/server/modules/clients-ref/clients-ref.module";
+
 // --- Phase 2.B 7/7 : settings (table technique, pas d'audit R-27) ----------
 
 export {
@@ -509,10 +516,14 @@ export { getDashboardStatsUseCase } from "@/server/modules/dashboard/dashboard.m
 // (CA_GENERATED, règle L3 audit transactionnel) + userRepository (résolution
 // actor L9). APP_MASTER_KEY injecté via Server Action depuis env.
 
+import { DeleteCAUseCase } from "@/server/modules/crypto/application/delete-ca.usecase";
 import { GenerateCAUseCase } from "@/server/modules/crypto/application/generate-ca.usecase";
 import { GetCACertificateUseCase } from "@/server/modules/crypto/application/get-ca-certificate.usecase";
 import { GetCAStatusUseCase } from "@/server/modules/crypto/application/get-ca-status.usecase";
+import { ImportCAUseCase } from "@/server/modules/crypto/application/import-ca.usecase";
 import { settingRepository } from "@/server/modules/settings/settings.module";
+
+// `fichierLogRepository` est déjà importé plus haut (cf. Phase 10.B/10.C bloc).
 
 export const generateCAUseCase = new GenerateCAUseCase(
   settingRepository,
@@ -521,6 +532,20 @@ export const generateCAUseCase = new GenerateCAUseCase(
 );
 export const getCAStatusUseCase = new GetCAStatusUseCase(settingRepository);
 export const getCACertificateUseCase = new GetCACertificateUseCase(settingRepository);
+
+// Phase 24 — import CA (depuis PEM) et suppression CA (avec garde-fou .lic).
+export const importCAUseCase = new ImportCAUseCase(
+  settingRepository,
+  userRepository,
+  auditRepository,
+);
+export const deleteCAUseCase = new DeleteCAUseCase(
+  settingRepository,
+  clientRepository,
+  fichierLogRepository,
+  userRepository,
+  auditRepository,
+);
 
 import { BackfillClientCertificatesUseCase } from "@/server/modules/crypto/application/backfill-client-certs.usecase";
 

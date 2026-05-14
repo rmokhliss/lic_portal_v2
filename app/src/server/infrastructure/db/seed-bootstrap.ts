@@ -20,17 +20,18 @@
 // colonne UNIQUE business. team_members (sans UNIQUE) utilise WHERE NOT EXISTS
 // sur l'email pour éviter les doublons.
 //
-// Ordre :
-//   1. lic_regions_ref (8 régions)         — base FK des pays/team_members
-//   2. lic_pays_ref (~30 pays)
+// Ordre (Phase 24) :
+//   1. lic_regions_ref (7 régions, sans liaison DM) — base FK des pays
+//   2. lic_pays_ref (~22 pays, AU rebasculé OCEANIE)
 //   3. lic_devises_ref (compléments + bootstrap)
 //   4. lic_langues_ref (ar, pt, es)
 //   5. lic_types_contact_ref (compléments)
-//   6. lic_team_members (6 membres fictifs S2M)
+//   6. lic_team_members (8 DM + 9 SALES, sans liaison région)
 //   7. lic_users (5 comptes BO)
-//   8. lic_settings (9 clés par défaut data-model.md)
-//   9. Phase 4.D — clients + entités + contacts via seedPhase4Clients
-//      (passe par les repositories, audit mode='SEED', idempotent)
+//   8. lic_settings (10 clés par défaut data-model.md)
+//   9. lic_batch_jobs (catalogue jobs batch)
+//  10. lic_clients_ref (Phase 24 — référentiel codes clients S2M)
+//  11. lic_produits_ref + lic_articles_ref (catalogue SADMIN — bootstrap)
 //
 // Connexion dédiée max=1 fermée à la fin (cf. migrate.ts).
 // ==============================================================================
@@ -45,6 +46,8 @@ const SYSTEM_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 import { env } from "@/server/infrastructure/env";
 import { createChildLogger } from "@/server/infrastructure/logger";
+import { seedPhase1ClientsRef } from "./seed/phase1-clients-ref.seed";
+import { seedPhase6CatalogueBootstrap } from "./seed/phase6-catalogue.seed";
 
 const log = createChildLogger("db/seed");
 
@@ -54,34 +57,42 @@ const DEFAULT_PASSWORD = "ChangeMe-2026!";
 const BCRYPT_COST = 10;
 
 async function seedRegions(sql: postgres.Sql): Promise<void> {
-  log.info("Seeding lic_regions_ref (Phase 17 D2 + Phase 18 R-20 — DM corrects + PASS)");
-  // 7 régions Excel v1 + PASS (Phase 18 R-20). DM responsable indicatif
-  // (relation DM ↔ région non-FK contraignante — la valeur réelle est posée
-  // librement à la création client). NORD_AFRIQUE intentionnellement NULL
-  // (multi-DM en pratique).
+  log.info("Seeding lic_regions_ref (Phase 24 — 7 régions sans liaison DM)");
+  // Phase 24 — 7 régions canoniques, indépendantes des DM/Sales (la relation
+  // DM ↔ région a été retirée du modèle — un DM peut couvrir n'importe quelle
+  // zone). `dm_responsable` reste NULL pour toutes — sera nullifié côté seed
+  // démo si déjà setté.
   await sql`
     INSERT INTO lic_regions_ref (region_code, nom, dm_responsable) VALUES
+      ('AFRIQUE_ANGLOPHONE',   'Afrique Anglophone',  NULL),
+      ('AFRIQUE_FRANCOPHONE',  'Afrique Francophone', NULL),
       ('NORD_AFRIQUE',         'Afrique du Nord',     NULL),
-      ('AFRIQUE_FRANCOPHONE',  'Afrique Francophone', 'Mounir BOUDERBA'),
-      ('AFRIQUE_ANGLOPHONE',   'Afrique Anglophone',  'David MUTUA'),
-      ('ASIE',                 'Asie',                'Hary RANDRIA'),
-      ('EUROPE',               'Europe',              NULL),
-      ('MOYEN_ORIENT',         'Moyen-Orient',        'Hakim HASSNI'),
-      ('AUSTRALIE',            'Australie / Océanie', NULL),
-      ('PASS',                 'Clients hébergés S2M','Omar HANDIR')
+      ('MOYEN_ORIENT',         'Moyen-Orient',        NULL),
+      ('OCEANIE',              'Océanie',             NULL),
+      ('ASIE',                 'Asie',                NULL),
+      ('EUROPE',               'Europe',              NULL)
     ON CONFLICT (region_code) DO UPDATE
       SET nom = EXCLUDED.nom,
-          dm_responsable = EXCLUDED.dm_responsable
+          dm_responsable = NULL
   `;
 
-  // Cleanup régions legacy hors v1 — FK-safe (skip si pays ou team_member
-  // référence encore la région). Premier passage post-migration : peut échouer
-  // si données démo n'ont pas été purgées via /settings/demo Phase 17 F2.
+  // Phase 24 — migration des pays AUSTRALIE → OCEANIE avant suppression de
+  // AUSTRALIE (sinon FK casse). Idempotent (no-op si aucun pays AUSTRALIE).
+  await sql`
+    UPDATE lic_pays_ref SET region_code = 'OCEANIE' WHERE region_code = 'AUSTRALIE'
+  `;
+  // team_members legacy avec region_code AUSTRALIE/PASS — passe à NULL.
+  await sql`
+    UPDATE lic_team_members SET region_code = NULL
+    WHERE region_code IN ('AUSTRALIE', 'PASS')
+  `;
+
+  // Cleanup régions legacy hors set Phase 24 — FK-safe.
   await sql`
     DELETE FROM lic_regions_ref
     WHERE region_code NOT IN (
-      'NORD_AFRIQUE', 'AFRIQUE_FRANCOPHONE', 'AFRIQUE_ANGLOPHONE',
-      'ASIE', 'EUROPE', 'MOYEN_ORIENT', 'AUSTRALIE', 'PASS'
+      'AFRIQUE_ANGLOPHONE', 'AFRIQUE_FRANCOPHONE', 'NORD_AFRIQUE',
+      'MOYEN_ORIENT', 'OCEANIE', 'ASIE', 'EUROPE'
     )
     AND NOT EXISTS (
       SELECT 1 FROM lic_pays_ref p WHERE p.region_code = lic_regions_ref.region_code
@@ -127,8 +138,8 @@ async function seedPays(sql: postgres.Sql): Promise<void> {
       ('AE', 'Dubaï (Émirats arabes unis)',  'MOYEN_ORIENT'),
       -- EUROPE (1)
       ('FR', 'France',                       'EUROPE'),
-      -- AUSTRALIE (1)
-      ('AU', 'Australie',                    'AUSTRALIE')
+      -- OCEANIE (1) — Phase 24 : AUSTRALIE renommé OCEANIE.
+      ('AU', 'Australie',                    'OCEANIE')
     ON CONFLICT (code_pays) DO UPDATE
     SET region_code = EXCLUDED.region_code,
         nom = EXCLUDED.nom
@@ -192,102 +203,72 @@ async function seedTypesContact(sql: postgres.Sql): Promise<void> {
 }
 
 async function seedTeamMembers(sql: postgres.Sql): Promise<void> {
-  log.info("Seeding lic_team_members (Phase 17 D2 — 10 membres réalistes)");
-  // 10 membres alignés équipe S2M v1 — 4 SALES + 3 AM + 3 DM (1 par région
-  // commerciale prioritaire). Pas de UNIQUE constraint en BD → idempotence
-  // par WHERE NOT EXISTS sur email. Les region_code des DM sont les nouvelles
-  // 7 régions D2 (Phase 17).
+  log.info("Seeding lic_team_members (Phase 24 — 8 DM + 9 SALES, sans liaison région)");
+  // Phase 24 — refonte de l'équipe : 8 DM + 9 SALES, plus de rôle AM, plus
+  // de liaison DM ↔ région. Les anciens emails fictifs (HOUSSNI/ELISMAILI/
+  // MOUJAHID en AM, ZAOUI/DIALLO/AL-FARSI en DM, et les anciens SALES avec
+  // pattern `prenom.nom@s2m.ma`) sont supprimés FK-safe (clients.account_
+  // manager / sales_responsable sont varchar libres, pas FK contraignante).
   const seeds: readonly {
     nom: string;
     prenom: string;
     email: string;
-    roleTeam: "SALES" | "AM" | "DM";
-    regionCode: string | null;
+    roleTeam: "SALES" | "DM";
   }[] = [
-    // SALES (4) — pas de région attribuée
-    {
-      nom: "BERRADA",
-      prenom: "Youssef",
-      email: "youssef.berrada@s2m.ma",
-      roleTeam: "SALES",
-      regionCode: null,
-    },
-    {
-      nom: "BOUSNIN",
-      prenom: "Mounir",
-      email: "mounir.bousnin@s2m.ma",
-      roleTeam: "SALES",
-      regionCode: null,
-    },
-    {
-      nom: "CHAYBI",
-      prenom: "Issam",
-      email: "issam.chaybi@s2m.ma",
-      roleTeam: "SALES",
-      regionCode: null,
-    },
-    {
-      nom: "KHALIL",
-      prenom: "Ahmed",
-      email: "ahmed.khalil@s2m.ma",
-      roleTeam: "SALES",
-      regionCode: null,
-    },
-    // AM Account Managers (3)
-    {
-      nom: "HOUSSNI",
-      prenom: "Hakim",
-      email: "hakim.houssni@s2m.ma",
-      roleTeam: "AM",
-      regionCode: null,
-    },
-    {
-      nom: "ELISMAILI",
-      prenom: "Houssam",
-      email: "houssam.elismaili@s2m.ma",
-      roleTeam: "AM",
-      regionCode: null,
-    },
-    {
-      nom: "MOUJAHID",
-      prenom: "Jamal",
-      email: "jamal.moujahid@s2m.ma",
-      roleTeam: "AM",
-      regionCode: null,
-    },
-    // DM Direction Managers (3) — un par région commerciale prioritaire
-    {
-      nom: "ZAOUI",
-      prenom: "Karim",
-      email: "karim.zaoui@s2m.ma",
-      roleTeam: "DM",
-      regionCode: "NORD_AFRIQUE",
-    },
-    {
-      nom: "DIALLO",
-      prenom: "Aminata",
-      email: "aminata.diallo@s2m.ma",
-      roleTeam: "DM",
-      regionCode: "AFRIQUE_FRANCOPHONE",
-    },
-    {
-      nom: "AL-FARSI",
-      prenom: "Omar",
-      email: "omar.alfarsi@s2m.ma",
-      roleTeam: "DM",
-      regionCode: "MOYEN_ORIENT",
-    },
+    // DM Direction Managers (8) — region_code = NULL pour tous
+    { nom: "BOUDERBA", prenom: "Mounir", email: "mbouderba@s2m.ma", roleTeam: "DM" },
+    { nom: "BEN NASSEF", prenom: "Noureddine", email: "nbennassef@s2m.ma", roleTeam: "DM" },
+    { nom: "FAHMI", prenom: "Ghassane", email: "gfahmi@s2m.ma", roleTeam: "DM" },
+    { nom: "EL KASMI", prenom: "Hicham", email: "helkasmi@s2m.ma", roleTeam: "DM" },
+    { nom: "MOUJAHID", prenom: "Jamal", email: "jmoujahid@s2m.ma", roleTeam: "DM" },
+    { nom: "HASNI", prenom: "Hakim", email: "hhasni@s2m.ma", roleTeam: "DM" },
+    { nom: "EL ISMAILI", prenom: "Houssam", email: "helismaili@s2m.ma", roleTeam: "DM" },
+    { nom: "HANDIR", prenom: "Omar", email: "ohandir@s2m.ma", roleTeam: "DM" },
+    // SALES (9) — region_code = NULL pour tous
+    { nom: "BERRADA", prenom: "Youssef", email: "yberrada@s2m.ma", roleTeam: "SALES" },
+    { nom: "BOUSNIN", prenom: "Mounir", email: "mbousnin@s2m.ma", roleTeam: "SALES" },
+    { nom: "CHAYBI", prenom: "Issam", email: "ichaybi@s2m.ma", roleTeam: "SALES" },
+    { nom: "KHALIL", prenom: "Ahmed", email: "akhalil@s2m.ma", roleTeam: "SALES" },
+    { nom: "CHAHMAT", prenom: "Hanane", email: "hchahmat@s2m.ma", roleTeam: "SALES" },
+    { nom: "BENNINE", prenom: "Kamilia", email: "kbennine@s2m.ma", roleTeam: "SALES" },
+    { nom: "AMARTI RIFFI", prenom: "Mohammed", email: "mamartiriffi@s2m.ma", roleTeam: "SALES" },
+    { nom: "EL BOUZIDI", prenom: "Fatima Zahra", email: "fzelbouzidi@s2m.ma", roleTeam: "SALES" },
+    { nom: "BNANA ADAN", prenom: "Mohamed", email: "abnana@s2m.ma", roleTeam: "SALES" },
   ];
 
   for (const m of seeds) {
     await sql`
       INSERT INTO lic_team_members (nom, prenom, email, role_team, region_code)
-      SELECT ${m.nom}, ${m.prenom}, ${m.email}, ${m.roleTeam}, ${m.regionCode}
+      SELECT ${m.nom}, ${m.prenom}, ${m.email}, ${m.roleTeam}, NULL
       WHERE NOT EXISTS (
         SELECT 1 FROM lic_team_members WHERE email = ${m.email}
       )
     `;
   }
+
+  // Phase 24 — cleanup des anciens emails fictifs (HOUSSNI/ELISMAILI/MOUJAHID
+  // en AM avec point ; SALES anciens avec pattern prenom.nom@s2m.ma ; DM
+  // fictifs ZAOUI/DIALLO/AL-FARSI). Liste explicite — pas de DELETE par rôle
+  // pour ne pas casser un team_member ajouté manuellement par un SADMIN.
+  const legacyEmails = [
+    "youssef.berrada@s2m.ma",
+    "mounir.bousnin@s2m.ma",
+    "issam.chaybi@s2m.ma",
+    "ahmed.khalil@s2m.ma",
+    "hakim.houssni@s2m.ma",
+    "houssam.elismaili@s2m.ma",
+    "jamal.moujahid@s2m.ma",
+    "karim.zaoui@s2m.ma",
+    "aminata.diallo@s2m.ma",
+    "omar.alfarsi@s2m.ma",
+  ];
+  await sql`
+    DELETE FROM lic_team_members WHERE email = ANY(${legacyEmails})
+  `;
+
+  // Phase 24 — région forcée à NULL sur tous les membres restants (le rôle
+  // DM n'est plus lié à une zone). Idempotent.
+  await sql`UPDATE lic_team_members SET region_code = NULL WHERE region_code IS NOT NULL`;
 }
 
 async function seedUsers(sql: postgres.Sql): Promise<void> {
@@ -424,6 +405,13 @@ async function runSeed(): Promise<void> {
     await seedSettings(seedClient);
     // Phase 8.A — catalogue jobs batch (idempotent).
     await seedBatchJobsCatalog(seedClient);
+    // Phase 24 — référentiel des codes clients S2M (lecture seule UI,
+    // autocomplétion à la création client). Idempotent ON CONFLICT.
+    await seedPhase1ClientsRef(seedClient);
+    // Phase 24 — catalogue produits + articles (référentiels SADMIN
+    // préservés par purge-demo). Les liaisons licence↔articles + volume
+    // history restent côté seed démo (phase6-catalogue.seed).
+    await seedPhase6CatalogueBootstrap(seedClient);
 
     log.info("Seed completed successfully");
   } finally {

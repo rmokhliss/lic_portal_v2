@@ -1,20 +1,29 @@
 // ==============================================================================
-// LIC v2 — Seed démo Phase 6 — catalogue produits/articles + liaisons + history
-//
-// ⚠️  DEV / DÉMO UNIQUEMENT — NE PAS LANCER SUR LA BD UTILISÉE PAR LES TESTS
-// ⚠️  NE PAS LANCER EN CI (R-29).
+// LIC v2 — Seed catalogue produits/articles + liaisons + history
 //
 // Phase 17 D3/D4 — refonte catalogue v1 réelle. Crée :
 //   - 10 produits S2M (catalogue commercial v1 Excel feuille Catalogue)
 //   - 31 articles (1 à 9 par produit selon couverture fonctionnelle)
-//   - Liaisons : 100% des licences (au lieu de 20) reçoivent 1 produit + 3
-//     articles avec volumes autorisés/consommés réalistes
-//   - 1 snapshot volume_history mensuel × 3 mois × 1 article/licence
+//   - Liaisons : 100% des licences reçoivent 1 produit + 3 articles avec
+//     volumes autorisés/consommés réalistes (DÉMO)
+//   - 1 snapshot volume_history mensuel × 3 mois × 1 article/licence (DÉMO)
+//
+// Phase 24 — Split bootstrap / démo :
+//   - `seedPhase6CatalogueBootstrap(sql)` : produits + articles +
+//     overrides controle_volume. Référentiels SADMIN, idempotents, lancés
+//     au boot par seed-bootstrap.ts (préservés par purge-demo).
+//   - `seedPhase6Catalogue(sql)` : liaisons licence ↔ produits/articles +
+//     volume_history + backfill. DÉMO uniquement, appelé par seed.ts et
+//     reload-demo.ts. Garantit l'appel bootstrap en amont (idempotent).
 //
 // Pattern hexagonal — passe par REPOSITORIES + audit mode='SEED' pour les
 // liaisons (entité métier). Les produits/articles sont insérés sans audit
 // (référentiels paramétrables R-27).
-// Idempotent : early return si lic_produits_ref déjà peuplée.
+//
+// ⚠️  Le seed démo (seedPhase6Catalogue) — DEV / DÉMO UNIQUEMENT, NE PAS
+// LANCER SUR LA BD UTILISÉE PAR LES TESTS. NE PAS LANCER EN CI (R-29).
+// Idempotent : early return si lic_produits_ref déjà peuplée (bootstrap)
+// et si lic_licence_articles déjà peuplée (démo).
 // ==============================================================================
 
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -194,34 +203,6 @@ const PRODUIT_SEEDS: readonly ProduitSeed[] = [
 async function alreadySeeded(sql: postgres.Sql): Promise<boolean> {
   const rows = await sql<{ count: string }[]>`SELECT count(*)::text AS count FROM lic_produits_ref`;
   return Number(rows[0]?.count ?? "0") > 0;
-}
-
-async function seedProduitsAndArticles(
-  repos: Repos,
-): Promise<readonly { produitId: number; articleIds: readonly number[] }[]> {
-  log.info("Seeding produits + articles (catalogue SELECT-PX)");
-  const out: { produitId: number; articleIds: number[] }[] = [];
-
-  for (const p of PRODUIT_SEEDS) {
-    const produit = Produit.create({ code: p.code, nom: p.nom, description: p.description });
-    const persisted = await repos.produitRepo.save(produit);
-    const articleIds: number[] = [];
-    for (const a of p.articles) {
-      const article = Article.create({
-        produitId: persisted.id,
-        code: a.code,
-        nom: a.nom,
-        uniteVolume: a.uniteVolume,
-        ...(a.controleVolume !== undefined ? { controleVolume: a.controleVolume } : {}),
-      });
-      const savedA = await repos.articleRepo.save(article);
-      articleIds.push(savedA.id);
-    }
-    out.push({ produitId: persisted.id, articleIds });
-  }
-
-  log.info({ produits: out.length, articles: out.reduce((s, o) => s + o.articleIds.length, 0) });
-  return out;
 }
 
 async function loadAllLicenceIds(sql: postgres.Sql): Promise<readonly string[]> {
@@ -481,20 +462,87 @@ async function applyControleVolumeOverrides(sql: postgres.Sql): Promise<void> {
   `;
 }
 
-export async function seedPhase6Catalogue(sql: postgres.Sql): Promise<void> {
-  log.info("Phase 6.E — seed démo catalogue + liaisons + volume history");
+/**
+ * Phase 24 — Bootstrap catalogue : produits + articles + override
+ * controle_volume. Référentiels SADMIN (préservés par purge-demo).
+ * Idempotent : early return si `lic_produits_ref` déjà peuplée, mais
+ * applique toujours les overrides `controleVolume` en post.
+ */
+export async function seedPhase6CatalogueBootstrap(sql: postgres.Sql): Promise<void> {
+  log.info("Phase 24 — seed bootstrap catalogue (produits + articles)");
 
   if (await alreadySeeded(sql)) {
-    log.info("lic_produits_ref déjà peuplée — seed Phase 6 INSERT skip (idempotent)");
-    // Phase 19 R-13 — l'override controle_volume doit s'appliquer même si
-    // les articles sont déjà seedés (alignement BD démo existante).
+    log.info("lic_produits_ref déjà peuplée — bootstrap catalogue skip (idempotent)");
     await applyControleVolumeOverrides(sql);
-    // Phase 23 — backfill liaisons si l'INSERT initial a été interrompu
-    // (cas constaté : produits/articles seedés mais 1 seule licence avec
-    // articles sur 56). Idempotent : skip toute licence déjà équipée.
+    return;
+  }
+
+  const seedDb = drizzle(sql, { schema });
+  const produitRepo = new ProduitRepositoryPg(seedDb);
+  const articleRepo = new ArticleRepositoryPg(seedDb);
+
+  for (const p of PRODUIT_SEEDS) {
+    const produit = Produit.create({ code: p.code, nom: p.nom, description: p.description });
+    const persisted = await produitRepo.save(produit);
+    for (const a of p.articles) {
+      const article = Article.create({
+        produitId: persisted.id,
+        code: a.code,
+        nom: a.nom,
+        uniteVolume: a.uniteVolume,
+        ...(a.controleVolume !== undefined ? { controleVolume: a.controleVolume } : {}),
+      });
+      await articleRepo.save(article);
+    }
+  }
+  await applyControleVolumeOverrides(sql);
+
+  log.info(
+    {
+      produits: PRODUIT_SEEDS.length,
+      articles: PRODUIT_SEEDS.reduce((s, p) => s + p.articles.length, 0),
+    },
+    "Phase 24 bootstrap catalogue completed",
+  );
+}
+
+export async function seedPhase6Catalogue(sql: postgres.Sql): Promise<void> {
+  log.info("Phase 6.E — seed démo liaisons + volume history");
+
+  // Phase 24 — garantit que les produits/articles existent (bootstrap déjà
+  // appelé en amont en pratique, mais on rappelle ici en sécurité — idempotent).
+  await seedPhase6CatalogueBootstrap(sql);
+
+  // Recharge le catalogue depuis la BD (pour récupérer produitId/articleId
+  // déterministes même quand bootstrap a été exécuté lors d'un précédent run).
+  const catalogueRows = await sql<{ produit_id: number; article_id: number }[]>`
+    SELECT p.id AS produit_id, a.id AS article_id
+    FROM lic_produits_ref p
+    JOIN lic_articles_ref a ON a.produit_id = p.id
+    WHERE p.actif = true AND a.actif = true
+    ORDER BY p.id, a.id
+  `;
+  const cataloguMap = new Map<number, number[]>();
+  for (const r of catalogueRows) {
+    const list = cataloguMap.get(r.produit_id) ?? [];
+    list.push(r.article_id);
+    cataloguMap.set(r.produit_id, list);
+  }
+  const catalogue = Array.from(cataloguMap.entries()).map(([produitId, articleIds]) => ({
+    produitId,
+    articleIds,
+  }));
+
+  // Idempotence partie démo : si des liaisons existent déjà, skip l'INSERT
+  // mais applique backfill + nullify (alignement BD démo existante).
+  const liaisonCount = await sql<{ count: string }[]>`
+    SELECT count(*)::text AS count FROM lic_licence_articles
+  `;
+  const hasLiaisons = Number(liaisonCount[0]?.count ?? "0") > 0;
+
+  if (hasLiaisons) {
+    log.info("lic_licence_articles déjà peuplée — seed liaisons INSERT skip (idempotent)");
     await backfillMissingLiaisons(sql);
-    // Phase 23 — aligne les volumes sur controle_volume (les articles
-    // non-volumétriques voient leurs volumes mis à NULL).
     await nullifyNonVolumetricVolumes(sql);
     return;
   }
@@ -510,8 +558,6 @@ export async function seedPhase6Catalogue(sql: postgres.Sql): Promise<void> {
     volumeHistoryRepo: new VolumeHistoryRepositoryPg(seedDb),
   };
 
-  const catalogue = await seedProduitsAndArticles(repos);
-  await applyControleVolumeOverrides(sql);
   const licenceIds = await loadAllLicenceIds(sql);
   if (licenceIds.length === 0) {
     log.warn("Aucune licence seedée Phase 5 — Phase 6 liaisons skip");
@@ -519,8 +565,6 @@ export async function seedPhase6Catalogue(sql: postgres.Sql): Promise<void> {
   }
   const attachments = await seedLicenceLiaisons(repos, catalogue, licenceIds);
   await seedVolumeSnapshots(repos, attachments);
-  // Phase 23 — aligne les volumes sur controle_volume (les articles
-  // non-volumétriques voient leurs volumes mis à NULL).
   await nullifyNonVolumetricVolumes(sql);
 
   log.info({ licences: licenceIds.length }, "Phase 6.E seed completed");

@@ -62,3 +62,11 @@ export interface TeamMemberDTO {
   readonly actif: boolean;
   readonly dateCreation: string;
 }
+
+// Phase 24 — référentiel des codes clients S2M (lecture seule UI).
+export interface ClientRefDTO {
+  readonly codeClient: string;
+  readonly raisonSociale: string;
+  readonly actif: boolean;
+  readonly createdAt: string;
+}

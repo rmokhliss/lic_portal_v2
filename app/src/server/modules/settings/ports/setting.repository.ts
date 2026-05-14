@@ -47,4 +47,7 @@ export abstract class SettingRepository {
     updatedBy: string,
     tx?: DbOrTx,
   ): Promise<void>;
+
+  /** Phase 24 — suppression d'une clé (utilisé par delete-ca.usecase). */
+  abstract deleteByKey(key: string, tx?: DbOrTx): Promise<void>;
 }

@@ -43,7 +43,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import { ClientDialog, type RefItem } from "./ClientDialog";
+import { ClientDialog, type ClientRefItem, type RefItem } from "./ClientDialog";
 import { ClientStatusBadge } from "./ClientStatusBadge";
 import type { ClientDTO, ClientStatutClient } from "./clients-types";
 
@@ -75,6 +75,8 @@ export interface ClientsTableProps {
   readonly amList: readonly RefItem[];
   /** Phase 14 — DETTE-LIC-017 : types contact pour la section contacts à création. */
   readonly typesContactList?: readonly RefItem[];
+  /** Phase 24 — référentiel clients S2M pour l'autocomplete codeClient. */
+  readonly clientsRefList?: readonly ClientRefItem[];
 }
 
 type DialogState = { kind: "none" } | { kind: "create" } | { kind: "edit"; client: ClientDTO };
@@ -395,6 +397,7 @@ export function ClientsTable(props: ClientsTableProps) {
         salesList={props.salesList}
         amList={props.amList}
         typesContactList={props.typesContactList}
+        clientsRefList={props.clientsRefList}
       />
 
       {/* Phase 18 R-07 — Dialog lecture seule (Eye) — affiche les infos

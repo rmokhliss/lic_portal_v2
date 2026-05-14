@@ -27,6 +27,7 @@ export type ErrorCode =
   | "SPX-LIC-403"
   | "SPX-LIC-410"
   | "SPX-LIC-411"
+  | "SPX-LIC-412"
   | "SPX-LIC-420"
   | "SPX-LIC-421"
   | "SPX-LIC-422"
@@ -180,6 +181,13 @@ export const ERROR_CATALOGUE: Readonly<Record<ErrorCode, ErrorCodeEntry>> = {
     httpStatus: 400,
     defaultMessage: "CA S2M absente ou clé privée CA invalide",
     className: "ValidationError",
+  },
+  // Phase 24 — suppression CA bloquée par fichiers `.lic` déjà générés.
+  "SPX-LIC-412": {
+    code: "SPX-LIC-412",
+    httpStatus: 409,
+    defaultMessage: "Suppression CA bloquée — des fichiers .lic ont déjà été générés",
+    className: "ConflictError",
   },
   // Phase 3.A.2+ : certificats clients (420 utilisé en 3.D, 421/422 en 3.D/3.E).
   "SPX-LIC-420": {

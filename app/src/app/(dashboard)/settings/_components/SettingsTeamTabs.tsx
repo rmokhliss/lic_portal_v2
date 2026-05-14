@@ -15,6 +15,7 @@
 import { useState, useTransition } from "react";
 
 import type {
+  ClientRefDTO,
   DeviseDTO,
   LangueDTO,
   PaysDTO,
@@ -74,9 +75,19 @@ export interface SettingsTeamTabsProps {
   readonly langues: readonly LangueDTO[];
   readonly typesContact: readonly TypeContactDTO[];
   readonly teamMembers: readonly TeamMemberDTO[];
+  /** Phase 24 — référentiel des codes clients S2M (lecture seule UI). */
+  readonly clientsRef: readonly ClientRefDTO[];
 }
 
-const SUBTABS = ["regions", "pays", "devises", "langues", "types-contact", "team-members"] as const;
+const SUBTABS = [
+  "regions",
+  "pays",
+  "devises",
+  "langues",
+  "types-contact",
+  "team-members",
+  "clients",
+] as const;
 type SubTab = (typeof SUBTABS)[number];
 const SUBTAB_LABELS: Record<SubTab, string> = {
   regions: "Régions",
@@ -85,6 +96,7 @@ const SUBTAB_LABELS: Record<SubTab, string> = {
   langues: "Langues",
   "types-contact": "Types contact",
   "team-members": "Équipe",
+  clients: "Clients",
 };
 
 export function SettingsTeamTabs(props: SettingsTeamTabsProps) {
@@ -115,6 +127,9 @@ export function SettingsTeamTabs(props: SettingsTeamTabsProps) {
       </TabsContent>
       <TabsContent value="team-members" className="mt-6">
         <TeamMembersSection rows={props.teamMembers} />
+      </TabsContent>
+      <TabsContent value="clients" className="mt-6">
+        <ClientsRefSection rows={props.clientsRef} />
       </TabsContent>
     </Tabs>
   );
@@ -1034,4 +1049,110 @@ function strOpt(v: FormDataEntryValue | null): string | undefined {
   if (typeof v !== "string") return undefined;
   const s = v.trim();
   return s.length === 0 ? undefined : s;
+}
+
+// ============================================================================
+// Phase 24 — Clients (référentiel des codes clients S2M, lecture seule)
+// ============================================================================
+
+const CLIENTS_REF_PAGE_SIZE = 20;
+
+function ClientsRefSection({ rows }: { readonly rows: readonly ClientRefDTO[] }) {
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
+
+  const q = query.trim().toLowerCase();
+  const filtered =
+    q.length === 0
+      ? rows
+      : rows.filter(
+          (r) =>
+            r.codeClient.toLowerCase().includes(q) || r.raisonSociale.toLowerCase().includes(q),
+        );
+  const totalPages = Math.max(1, Math.ceil(filtered.length / CLIENTS_REF_PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const pageRows = filtered.slice(
+    safePage * CLIENTS_REF_PAGE_SIZE,
+    (safePage + 1) * CLIENTS_REF_PAGE_SIZE,
+  );
+
+  return (
+    <>
+      <SectionHeader title={`Clients S2M (${String(rows.length)})`}>
+        <Input
+          placeholder="Rechercher code ou raison sociale…"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(0);
+          }}
+          className="w-72"
+        />
+      </SectionHeader>
+      <p className="text-muted-foreground mb-3 text-xs">
+        Référentiel en lecture seule. Alimenté par le seed bootstrap — sert à l&apos;autocomplétion
+        à la création d&apos;un client (saisie libre toujours autorisée).
+      </p>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Code</TableHead>
+            <TableHead>Raison sociale</TableHead>
+            <TableHead>État</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {pageRows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={3} className="text-muted-foreground text-center text-sm">
+                {q.length === 0 ? "Aucun client référencé." : "Aucun résultat."}
+              </TableCell>
+            </TableRow>
+          ) : (
+            pageRows.map((r) => (
+              <TableRow key={r.codeClient}>
+                <TableCell className="font-mono text-xs">{r.codeClient}</TableCell>
+                <TableCell>{r.raisonSociale}</TableCell>
+                <TableCell>
+                  <ActifBadge actif={r.actif} />
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">
+            Page {String(safePage + 1)} / {String(totalPages)} — {String(filtered.length)} résultat
+            {filtered.length > 1 ? "s" : ""}
+          </span>
+          <div className="inline-flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={safePage === 0}
+              onClick={() => {
+                setPage((p) => Math.max(0, p - 1));
+              }}
+            >
+              Précédent
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={safePage >= totalPages - 1}
+              onClick={() => {
+                setPage((p) => Math.min(totalPages - 1, p + 1));
+              }}
+            >
+              Suivant
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }

@@ -136,4 +136,11 @@ export abstract class ClientRepository {
     clientId: string,
     tx?: DbTransaction,
   ): Promise<ClientCredentials | null>;
+
+  /** Phase 24 — bulk nullify des 3 colonnes PKI (`client_private_key_enc`,
+   *  `client_certificate_pem`, `client_certificate_expires_at`) sur tous les
+   *  clients. Utilisé par `delete-ca.usecase` : quand la CA S2M est supprimée,
+   *  tous les certificats clients qu'elle a signés deviennent caducs.
+   *  Retourne le nombre de lignes affectées. */
+  abstract nullifyAllCertificates(tx?: DbTransaction): Promise<number>;
 }

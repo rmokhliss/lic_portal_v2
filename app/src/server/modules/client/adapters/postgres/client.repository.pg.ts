@@ -342,4 +342,20 @@ export class ClientRepositoryPg extends ClientRepository {
     if (expiresAt === null || expiresAt === undefined) return null;
     return { privateKeyEnc, certificatePem, expiresAt };
   }
+
+  // Phase 24 — bulk nullify des 3 colonnes PKI sur tous les clients. Pas de
+  // filtre (intentionnel) : la suppression de la CA invalide tous les certs
+  // signés. Le backfill ultérieur regénère les certs sur la nouvelle CA.
+  async nullifyAllCertificates(tx?: DbTransaction): Promise<number> {
+    const conn = (tx ?? this.db) as DbInstance;
+    const result = await conn
+      .update(clients)
+      .set({
+        clientPrivateKeyEnc: null,
+        clientCertificatePem: null,
+        clientCertificateExpiresAt: null,
+      })
+      .returning({ id: clients.id });
+    return result.length;
+  }
 }

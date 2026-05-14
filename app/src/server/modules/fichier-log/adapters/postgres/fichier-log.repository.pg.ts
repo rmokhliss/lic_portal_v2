@@ -2,7 +2,7 @@
 // LIC v2 — Adapter Postgres FichierLogRepository (Phase 10.B)
 // ==============================================================================
 
-import { and, desc, eq, gte, lte, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, gte, lte, type SQL } from "drizzle-orm";
 import type { drizzle } from "drizzle-orm/postgres-js";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 
@@ -10,7 +10,7 @@ import { db as defaultDb } from "@/server/infrastructure/db/client";
 import type * as schema from "@/server/infrastructure/db/schema";
 import { InternalError } from "@/server/modules/error";
 
-import type { FichierLog, PersistedFichierLog } from "../../domain/fichier-log.entity";
+import type { FichierLog, FichierType, PersistedFichierLog } from "../../domain/fichier-log.entity";
 import {
   type DbTransaction,
   type FindAllFichiersFilters,
@@ -84,5 +84,14 @@ export class FichierLogRepositoryPg extends FichierLogRepository {
           .limit(limit)
       : query.orderBy(desc(fichiersLog.createdAt)).limit(limit));
     return rows.map(toEntity);
+  }
+
+  async countByType(type: FichierType, tx?: DbTransaction): Promise<number> {
+    const target = (tx as PgDatabase<never> | undefined) ?? this.db;
+    const rows = await target
+      .select({ value: count() })
+      .from(fichiersLog)
+      .where(eq(fichiersLog.type, type));
+    return rows[0]?.value ?? 0;
   }
 }

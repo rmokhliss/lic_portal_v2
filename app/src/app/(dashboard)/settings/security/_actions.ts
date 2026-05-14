@@ -10,9 +10,11 @@ import { z } from "zod";
 import { requireRole } from "@/server/infrastructure/auth";
 import { env } from "@/server/infrastructure/env";
 import {
+  deleteCAUseCase,
   generateCAUseCase,
   getCACertificateUseCase,
   getCAStatusUseCase,
+  importCAUseCase,
 } from "@/server/composition-root";
 import { runAction, type ActionResult } from "@/server/infrastructure/actions/result";
 
@@ -67,6 +69,61 @@ export async function generateCAAction(input: unknown): Promise<
 export async function downloadCACertAction(): Promise<string> {
   await requireRole(["SADMIN"]);
   return await getCACertificateUseCase.execute();
+}
+
+// =============================================================================
+// Phase 24 — Import CA (PEM)
+// =============================================================================
+
+const ImportCASchema = z.object({
+  privateKeyPem: z
+    .string()
+    .trim()
+    .min(1, "Clé privée PEM requise")
+    .regex(/-----BEGIN [A-Z ]*PRIVATE KEY-----/, "Format PEM clé privée invalide"),
+  certificatePem: z
+    .string()
+    .trim()
+    .min(1, "Certificat PEM requis")
+    .regex(/-----BEGIN CERTIFICATE-----/, "Format PEM certificat invalide"),
+});
+
+export async function importCAAction(input: unknown): Promise<
+  ActionResult<{
+    certificatePem: string;
+    expiresAt: string;
+    subjectCN: string;
+  }>
+> {
+  return runAction(async () => {
+    const user = await requireRole(["SADMIN"]);
+    const parsed = ImportCASchema.parse(input);
+    const result = await importCAUseCase.execute(
+      { ...parsed, appMasterKey: env.APP_MASTER_KEY },
+      user.id,
+    );
+    revalidatePath("/settings/security");
+    return {
+      certificatePem: result.certificatePem,
+      expiresAt: result.expiresAt.toISOString(),
+      subjectCN: result.subjectCN,
+    };
+  });
+}
+
+// =============================================================================
+// Phase 24 — Delete CA (avec garde-fou .lic)
+// =============================================================================
+
+export async function deleteCAAction(): Promise<
+  ActionResult<{ subjectCN: string; clientsAffected: number }>
+> {
+  return runAction(async () => {
+    const user = await requireRole(["SADMIN"]);
+    const result = await deleteCAUseCase.execute(user.id);
+    revalidatePath("/settings/security");
+    return { subjectCN: result.subjectCN, clientsAffected: result.clientsAffected };
+  });
 }
 
 // =============================================================================

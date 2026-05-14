@@ -34,4 +34,8 @@ export abstract class FichierLogRepository {
     filters?: FindAllFichiersFilters,
     tx?: DbTransaction,
   ): Promise<readonly PersistedFichierLog[]>;
+
+  /** Phase 24 — comptage par type, utilisé par `delete-ca.usecase` pour
+   *  bloquer la suppression de CA si des `.lic` ont été générés. */
+  abstract countByType(type: FichierType, tx?: DbTransaction): Promise<number>;
 }

@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 
 import { useTranslations } from "next-intl";
 
@@ -38,6 +38,12 @@ export interface RefItem {
   readonly label: string;
 }
 
+/** Phase 24 — item du référentiel `lic_clients_ref` pour l'autocomplete. */
+export interface ClientRefItem {
+  readonly codeClient: string;
+  readonly raisonSociale: string;
+}
+
 export interface ClientDialogProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
@@ -53,6 +59,9 @@ export interface ClientDialogProps {
   /** Phase 14 — DETTE-LIC-017 : types contact pour la section contacts à
    *  création. Si liste vide, la section affiche un message de configuration. */
   readonly typesContactList?: readonly RefItem[];
+  /** Phase 24 — référentiel `lic_clients_ref` pour l'autocomplete codeClient.
+   *  Vide ou omis = comportement legacy (saisie libre sans suggestions). */
+  readonly clientsRefList?: readonly ClientRefItem[];
 }
 
 /** Phase 14 — état local d'un contact en cours de saisie. */
@@ -78,12 +87,31 @@ export function ClientDialog({
   salesList,
   amList,
   typesContactList = [],
+  clientsRefList = [],
 }: ClientDialogProps) {
   const t = useTranslations("clients.dialog");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string>("");
   // Phase 14 — DETTE-LIC-017 : état local des contacts saisis à la création.
   const [contacts, setContacts] = useState<DraftContact[]>([]);
+  // Phase 24 — autocomplete codeClient : ref vers raisonSociale pour
+  // pré-remplir quand un code du référentiel est sélectionné/saisi exactement.
+  // `raisonSocialeRef` reste un input non-controlé (defaultValue) — on agit
+  // sur sa valeur impérativement via la ref pour ne pas perturber la saisie.
+  const raisonSocialeRef = useRef<HTMLInputElement>(null);
+  const clientsRefByCode = clientsRefList.reduce<Record<string, string>>((acc, c) => {
+    acc[c.codeClient.toUpperCase()] = c.raisonSociale;
+    return acc;
+  }, {});
+
+  const handleCodeClientChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const upper = e.target.value.toUpperCase();
+    const matched = clientsRefByCode[upper];
+    const raisonField = raisonSocialeRef.current;
+    if (matched !== undefined && raisonField !== null && raisonField.value.trim().length === 0) {
+      raisonField.value = matched;
+    }
+  };
 
   const onSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -233,18 +261,37 @@ export function ClientDialog({
                 pattern="^[A-Z0-9_-]+$"
                 maxLength={20}
                 className="font-mono uppercase"
+                // Phase 24 — datalist sur le référentiel lic_clients_ref.
+                // L'utilisateur peut sélectionner une suggestion (le navigateur
+                // remplit le champ) OU saisir librement un code inédit.
+                list={clientsRefList.length > 0 ? "clients-ref-codes" : undefined}
+                autoComplete="off"
+                onChange={handleCodeClientChange}
               />
+              {clientsRefList.length > 0 && (
+                <datalist id="clients-ref-codes">
+                  {clientsRefList.map((c) => (
+                    <option key={c.codeClient} value={c.codeClient}>
+                      {c.raisonSociale}
+                    </option>
+                  ))}
+                </datalist>
+              )}
               <p className="text-muted-foreground text-xs">{t("fields.codeClientHint")}</p>
             </div>
           )}
 
-          <Field
-            name="raisonSociale"
-            label={t("fields.raisonSociale")}
-            required
-            defaultValue={mode === "edit" ? client?.raisonSociale : ""}
-            maxLength={200}
-          />
+          <div className="space-y-1">
+            <Label htmlFor="raisonSociale">{t("fields.raisonSociale")}</Label>
+            <Input
+              id="raisonSociale"
+              name="raisonSociale"
+              ref={raisonSocialeRef}
+              required
+              defaultValue={mode === "edit" ? client?.raisonSociale : ""}
+              maxLength={200}
+            />
+          </div>
 
           {/* T-01 : <select> peuplés depuis les référentiels SADMIN au lieu
                des <Input> libres. Le SADMIN administre la liste autoritative

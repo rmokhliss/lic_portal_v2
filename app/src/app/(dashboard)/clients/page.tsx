@@ -14,6 +14,7 @@ import Link from "next/link";
 import { requireAuthPage } from "@/server/infrastructure/auth";
 import {
   getCAStatusUseCase,
+  listClientsRefUseCase,
   listClientsUseCase,
   listTypesContactUseCase,
 } from "@/server/composition-root";
@@ -87,6 +88,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     amAll,
     typesContactAll,
     regionsAll,
+    clientsRefResult,
   ] = await Promise.all([
     listClientsUseCase.execute({
       ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
@@ -112,6 +114,9 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     listTypesContactUseCase.execute({}).catch(() => [] as const),
     // Phase 21 R-29 + Phase 22 R-44 — régions cachées 60s.
     getCachedRegions(),
+    // Phase 24 — référentiel clients S2M (autocomplete codeClient à création).
+    // Lecture seule, volumétrie ≤ 200 — chargement complet sans pagination.
+    listClientsRefUseCase.execute({ actif: true, limit: 500 }),
   ]);
 
   const paysList = paysAll.filter((p) => p.actif).map((p) => ({ code: p.codePays, label: p.nom }));
@@ -138,6 +143,11 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   const typesContactList = typesContactAll
     .filter((t) => t.actif)
     .map((t) => ({ code: t.code, label: t.libelle }));
+  // Phase 24 — référentiel clients (code + raison sociale) pour l'autocomplete.
+  const clientsRefList = clientsRefResult.items.map((c) => ({
+    codeClient: c.codeClient,
+    raisonSociale: c.raisonSociale,
+  }));
 
   // Phase 3.H — bandeau alerte si CA absente : la création client est bloquée
   // (createClientUseCase throw SPX-LIC-411 sans CA). On désactive le bouton
@@ -187,6 +197,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         salesList={salesList}
         amList={amList}
         typesContactList={typesContactList}
+        clientsRefList={clientsRefList}
       />
     </div>
   );

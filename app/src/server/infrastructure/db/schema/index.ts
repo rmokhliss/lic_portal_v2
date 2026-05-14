@@ -29,6 +29,10 @@ export { clients, clientStatut } from "@/server/modules/client/adapters/postgres
 export { contactsClients } from "@/server/modules/contact/adapters/postgres/schema";
 export { entites } from "@/server/modules/entite/adapters/postgres/schema";
 
+// Phase 24 : référentiel des codes clients S2M (lecture seule UI, alimenté
+// par le seed bootstrap — autocomplétion à la création client).
+export { clientsRef } from "@/server/modules/clients-ref/adapters/postgres/schema";
+
 // Phase 5 étape 5.A : licences + renouvellements (PK uuidv7, version L4).
 export { licences, licenceStatus } from "@/server/modules/licence/adapters/postgres/schema";
 export {
