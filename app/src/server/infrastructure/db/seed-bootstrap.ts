@@ -55,8 +55,33 @@ const log = createChildLogger("db/seed");
 
 // Mot de passe par défaut pour les 5 comptes BO seedés. must_change_password
 // est posé à true → forcera le changement au premier login.
-const DEFAULT_PASSWORD = "ChangeMe-2026!";
+// Lecture depuis env.INITIAL_ADMIN_PASSWORD (validé Zod min 12 chars) — fallback
+// "ChangeMe-2026!" si non défini, avec warning explicite côté logs.
+const DEFAULT_PASSWORD = env.INITIAL_ADMIN_PASSWORD ?? "ChangeMe-2026!";
 const BCRYPT_COST = 10;
+
+async function seedSystemUser(sql: postgres.Sql): Promise<void> {
+  log.info("Seeding SYS-000 system user (nil UUID — FK target lic_settings.updated_by)");
+  // Recrée le compte SYSTEM (id = nil UUID RFC 9562) supprimé par un éventuel
+  // TRUNCATE CASCADE des tests/démos. seedSettings référence cet ID en FK
+  // (updated_by) → DOIT être appelé EN PREMIER dans runSeed.
+  //
+  // Valeurs alignées avec la migration 0000 (nom/prenom/email/role/actif).
+  // password_hash : bcrypt cost 10 d'un random 64 chars jeté (format valide,
+  // bcrypt.compare retourne false proprement). Compte exclu des UI (actif=false).
+  await sql`
+    INSERT INTO lic_users (
+      id, matricule, nom, prenom, email,
+      password_hash, role, actif, must_change_password
+    ) VALUES (
+      ${SYSTEM_USER_ID}::uuid,
+      'SYS-000', 'SYSTEM', 'Système', 'system@s2m.local',
+      '$2a$10$8oE0NRs/IzymGH5KL/XuguewPgWQCv4PeFYP9HpxgnxisQvhFE/0C',
+      'SADMIN', false, false
+    )
+    ON CONFLICT (id) DO NOTHING
+  `;
+}
 
 async function seedRegions(sql: postgres.Sql): Promise<void> {
   log.info("Seeding lic_regions_ref (Phase 24 — 7 régions sans liaison DM)");
@@ -275,6 +300,11 @@ async function seedTeamMembers(sql: postgres.Sql): Promise<void> {
 
 async function seedUsers(sql: postgres.Sql): Promise<void> {
   log.info("Seeding lic_users");
+  if (env.INITIAL_ADMIN_PASSWORD === undefined) {
+    log.warn(
+      "INITIAL_ADMIN_PASSWORD non défini — mot de passe par défaut utilisé (ChangeMe-2026!)",
+    );
+  }
   // Hash partagé par les 5 comptes (mot de passe identique).
   const passwordHash = await bcryptjs.hash(DEFAULT_PASSWORD, BCRYPT_COST);
 
@@ -323,6 +353,11 @@ async function seedUsers(sql: postgres.Sql): Promise<void> {
   ];
 
   for (const u of seeds) {
+    // ON CONFLICT (matricule) DO UPDATE : si le compte existe déjà avec un
+    // lockout actif (failed_login_count > 0 + last_failed_login_at), on remet
+    // à zéro pour que le seed soit ré-exécutable sans intervention manuelle.
+    // Ne touche pas password_hash / role / nom / etc. (intentionnel — préserve
+    // les modifs faites par un SADMIN sur l'environnement local).
     await sql`
       INSERT INTO lic_users (
         matricule, nom, prenom, email, password_hash,
@@ -331,7 +366,10 @@ async function seedUsers(sql: postgres.Sql): Promise<void> {
         ${u.matricule}, ${u.nom}, ${u.prenom}, ${u.email}, ${passwordHash},
         true, ${u.role}, true
       )
-      ON CONFLICT (matricule) DO NOTHING
+      ON CONFLICT (matricule) DO UPDATE SET
+        failed_login_count = 0,
+        last_failed_login_at = NULL,
+        actif = true
     `;
   }
 }
@@ -395,8 +433,10 @@ async function runSeed(): Promise<void> {
   const seedClient = postgres(env.DATABASE_URL, { max: 1 });
 
   try {
-    // Ordre strict : régions avant pays (FK), users avant settings (FK
-    // updated_by), bootstrap avant compléments (déjà inséré par migration 0003).
+    // Ordre strict : SYS-000 EN PREMIER (FK target updated_by côté lic_settings
+    // après TRUNCATE CASCADE), puis régions avant pays (FK), users avant settings
+    // (FK updated_by), bootstrap avant compléments (déjà inséré par migration 0003).
+    await seedSystemUser(seedClient);
     await seedRegions(seedClient);
     await seedPays(seedClient);
     await seedDevises(seedClient);
