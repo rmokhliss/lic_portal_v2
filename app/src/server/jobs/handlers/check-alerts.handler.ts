@@ -10,6 +10,11 @@
 // Crée une notification IN_APP par destinataire ciblé (Phase 8 = canal IN_APP
 // uniquement, EMAIL/SMS = Phase 3 SMTP). `metadata.alertConfigId` sert à
 // dédupliquer côté UI (1 seul Drawer item par config / licence / jour).
+//
+// Idempotence : avant chaque création, on vérifie qu'aucune notification du
+// même (userId, source, clientId, jour calendaire) n'existe déjà. Si oui :
+// skip. Cela évite les doublons lors d'un re-run manuel le même jour
+// (déclencheur MANUAL ou retry pg-boss).
 // ==============================================================================
 
 import { eq, sql } from "drizzle-orm";
@@ -22,6 +27,32 @@ import { users } from "@/server/modules/user/adapters/postgres/schema";
 import { track } from "../batch-tracker";
 
 const JOB_CODE = "check-alerts";
+
+interface NotifExistsRow extends Record<string, unknown> {
+  readonly exists: boolean;
+}
+
+// Idempotence : retourne true si une notification de même type (source) pour
+// le même client (via metadata.clientId) et le même user existe déjà aujourd'hui.
+// Bucket = jour calendaire UTC tronqué via DATE_TRUNC('day', ...).
+async function notificationAlreadySentToday(params: {
+  userId: string;
+  source: string;
+  clientId: string;
+}): Promise<boolean> {
+  const result = await db.execute<NotifExistsRow>(sql`
+    SELECT EXISTS (
+      SELECT 1 FROM lic_notifications
+      WHERE user_id = ${params.userId}::uuid
+        AND source = ${params.source}
+        AND metadata->>'clientId' = ${params.clientId}
+        AND created_at >= DATE_TRUNC('day', NOW())
+        AND created_at <  DATE_TRUNC('day', NOW()) + INTERVAL '1 day'
+    ) AS exists
+  `);
+  const rows = result as unknown as readonly NotifExistsRow[];
+  return rows[0]?.exists === true;
+}
 
 interface VolumeThresholdRow extends Record<string, unknown> {
   readonly licence_id: string;
@@ -77,6 +108,15 @@ export async function runCheckAlerts(declencheur: "SCHEDULED" | "MANUAL" = "SCHE
         const rows = result as unknown as readonly VolumeThresholdRow[];
         for (const row of rows) {
           for (const adminId of adminIds) {
+            // Idempotence : skip si une notif VOLUME_THRESHOLD existe déjà
+            // pour ce (user, client) aujourd'hui — évite les doublons sur
+            // re-run manuel le même jour.
+            const alreadySent = await notificationAlreadySentToday({
+              userId: adminId,
+              source: "VOLUME_THRESHOLD",
+              clientId: cfg.clientId,
+            });
+            if (alreadySent) continue;
             await createNotificationUseCase.execute({
               userId: adminId,
               title: `Volume ${row.licence_reference} / ${row.article_code} : ${String(row.pct)}%`,
@@ -86,6 +126,7 @@ export async function runCheckAlerts(declencheur: "SCHEDULED" | "MANUAL" = "SCHE
               source: "VOLUME_THRESHOLD",
               metadata: {
                 alertConfigId: cfg.id,
+                clientId: cfg.clientId,
                 licenceId: row.licence_id,
                 articleCode: row.article_code,
                 pct: row.pct,
@@ -113,6 +154,15 @@ export async function runCheckAlerts(declencheur: "SCHEDULED" | "MANUAL" = "SCHE
         const rows = result as unknown as readonly DateThresholdRow[];
         for (const row of rows) {
           for (const adminId of adminIds) {
+            // Idempotence : skip si une notif DATE_THRESHOLD existe déjà
+            // pour ce (user, client) aujourd'hui — évite les doublons sur
+            // re-run manuel le même jour.
+            const alreadySent = await notificationAlreadySentToday({
+              userId: adminId,
+              source: "DATE_THRESHOLD",
+              clientId: cfg.clientId,
+            });
+            if (alreadySent) continue;
             await createNotificationUseCase.execute({
               userId: adminId,
               title: `Licence ${row.licence_reference} expire dans ${String(row.jours_restants)} jours`,
@@ -122,6 +172,7 @@ export async function runCheckAlerts(declencheur: "SCHEDULED" | "MANUAL" = "SCHE
               source: "DATE_THRESHOLD",
               metadata: {
                 alertConfigId: cfg.id,
+                clientId: cfg.clientId,
                 licenceId: row.licence_id,
                 joursRestants: row.jours_restants,
               },
