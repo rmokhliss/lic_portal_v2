@@ -84,11 +84,11 @@ async function seedSystemUser(sql: postgres.Sql): Promise<void> {
 }
 
 async function seedRegions(sql: postgres.Sql): Promise<void> {
-  log.info("Seeding lic_regions_ref (Phase 24 — 7 régions sans liaison DM)");
-  // Phase 24 — 7 régions canoniques, indépendantes des DM/Sales (la relation
+  log.info("Seeding lic_regions_ref (Phase 24 — 8 régions sans liaison DM)");
+  // Phase 24 — 8 régions canoniques, indépendantes des DM/Sales (la relation
   // DM ↔ région a été retirée du modèle — un DM peut couvrir n'importe quelle
   // zone). `dm_responsable` reste NULL pour toutes — sera nullifié côté seed
-  // démo si déjà setté.
+  // démo si déjà setté. AMERIQUE ajoutée pour couvrir US/CA/BR (cf. seedPays).
   await sql`
     INSERT INTO lic_regions_ref (region_code, nom, dm_responsable) VALUES
       ('AFRIQUE_ANGLOPHONE',   'Afrique Anglophone',  NULL),
@@ -97,7 +97,8 @@ async function seedRegions(sql: postgres.Sql): Promise<void> {
       ('MOYEN_ORIENT',         'Moyen-Orient',        NULL),
       ('OCEANIE',              'Océanie',             NULL),
       ('ASIE',                 'Asie',                NULL),
-      ('EUROPE',               'Europe',              NULL)
+      ('EUROPE',               'Europe',              NULL),
+      ('AMERIQUE',             'Amérique',            NULL)
     ON CONFLICT (region_code) DO UPDATE
       SET nom = EXCLUDED.nom,
           dm_responsable = NULL
@@ -119,7 +120,7 @@ async function seedRegions(sql: postgres.Sql): Promise<void> {
     DELETE FROM lic_regions_ref
     WHERE region_code NOT IN (
       'AFRIQUE_ANGLOPHONE', 'AFRIQUE_FRANCOPHONE', 'NORD_AFRIQUE',
-      'MOYEN_ORIENT', 'OCEANIE', 'ASIE', 'EUROPE'
+      'MOYEN_ORIENT', 'OCEANIE', 'ASIE', 'EUROPE', 'AMERIQUE'
     )
     AND NOT EXISTS (
       SELECT 1 FROM lic_pays_ref p WHERE p.region_code = lic_regions_ref.region_code
@@ -131,55 +132,121 @@ async function seedRegions(sql: postgres.Sql): Promise<void> {
 }
 
 async function seedPays(sql: postgres.Sql): Promise<void> {
-  log.info("Seeding lic_pays_ref (Phase 17 D1 — 22 pays v1 Excel)");
-  // 22 pays extraits Excel v1 colonne PAYS, mappés sur les 7 régions D2.
-  // UPSERT (UPDATE region_code/nom) car les pays peuvent déjà exister depuis
-  // un seed antérieur avec un region_code obsolète (ex: SN était AFRIQUE_OUEST,
-  // bascule AFRIQUE_FRANCOPHONE).
+  log.info("Seeding lic_pays_ref (autonome — 72 pays périmètre S2M)");
+  // Seed autonome et exhaustif (Afrique + Maghreb + Moyen-Orient + Europe +
+  // Asie + Océanie + Amérique). Chaque pays est mappé sur sa région Phase 24
+  // (8 régions, cf. seedRegions). UPSERT (UPDATE region_code/nom) — les pays
+  // peuvent déjà exister depuis un seed antérieur avec un region_code obsolète.
   await sql`
     INSERT INTO lic_pays_ref (code_pays, nom, region_code) VALUES
-      -- NORD_AFRIQUE (5)
-      ('MA', 'Maroc',                        'NORD_AFRIQUE'),
-      ('DZ', 'Algérie',                      'NORD_AFRIQUE'),
-      ('TN', 'Tunisie',                      'NORD_AFRIQUE'),
-      ('LY', 'Libye',                        'NORD_AFRIQUE'),
-      ('SD', 'Soudan',                       'NORD_AFRIQUE'),
-      -- AFRIQUE_FRANCOPHONE (9)
-      ('SN', 'Sénégal',                      'AFRIQUE_FRANCOPHONE'),
-      ('CI', 'Côte d''Ivoire',               'AFRIQUE_FRANCOPHONE'),
-      ('MR', 'Mauritanie',                   'AFRIQUE_FRANCOPHONE'),
-      ('CM', 'Cameroun',                     'AFRIQUE_FRANCOPHONE'),
-      ('CG', 'Congo',                        'AFRIQUE_FRANCOPHONE'),
-      ('GQ', 'Guinée Équatoriale',           'AFRIQUE_FRANCOPHONE'),
-      ('NE', 'Niger',                        'AFRIQUE_FRANCOPHONE'),
-      ('TG', 'Togo',                         'AFRIQUE_FRANCOPHONE'),
-      ('BI', 'Burundi',                      'AFRIQUE_FRANCOPHONE'),
-      -- AFRIQUE_ANGLOPHONE (1)
-      ('ET', 'Éthiopie',                     'AFRIQUE_ANGLOPHONE'),
-      -- ASIE (1)
-      ('NP', 'Népal',                        'ASIE'),
-      -- MOYEN_ORIENT (4)
-      ('JO', 'Jordanie',                     'MOYEN_ORIENT'),
-      ('IQ', 'Iraq',                         'MOYEN_ORIENT'),
-      ('YE', 'Yémen',                        'MOYEN_ORIENT'),
-      ('AE', 'Dubaï (Émirats arabes unis)',  'MOYEN_ORIENT'),
-      -- EUROPE (1)
-      ('FR', 'France',                       'EUROPE'),
-      -- OCEANIE (1) — Phase 24 : AUSTRALIE renommé OCEANIE.
-      ('AU', 'Australie',                    'OCEANIE')
+      -- NORD_AFRIQUE (6)
+      ('MA', 'Maroc',                              'NORD_AFRIQUE'),
+      ('DZ', 'Algérie',                            'NORD_AFRIQUE'),
+      ('TN', 'Tunisie',                            'NORD_AFRIQUE'),
+      ('LY', 'Libye',                              'NORD_AFRIQUE'),
+      ('SD', 'Soudan',                             'NORD_AFRIQUE'),
+      ('EG', 'Égypte',                             'NORD_AFRIQUE'),
+      -- AFRIQUE_FRANCOPHONE (18)
+      ('SN', 'Sénégal',                            'AFRIQUE_FRANCOPHONE'),
+      ('CI', 'Côte d''Ivoire',                     'AFRIQUE_FRANCOPHONE'),
+      ('MR', 'Mauritanie',                         'AFRIQUE_FRANCOPHONE'),
+      ('CM', 'Cameroun',                           'AFRIQUE_FRANCOPHONE'),
+      ('CG', 'Congo',                              'AFRIQUE_FRANCOPHONE'),
+      ('CD', 'République démocratique du Congo',   'AFRIQUE_FRANCOPHONE'),
+      ('GQ', 'Guinée Équatoriale',                 'AFRIQUE_FRANCOPHONE'),
+      ('NE', 'Niger',                              'AFRIQUE_FRANCOPHONE'),
+      ('TG', 'Togo',                               'AFRIQUE_FRANCOPHONE'),
+      ('BI', 'Burundi',                            'AFRIQUE_FRANCOPHONE'),
+      ('ML', 'Mali',                               'AFRIQUE_FRANCOPHONE'),
+      ('BF', 'Burkina Faso',                       'AFRIQUE_FRANCOPHONE'),
+      ('BJ', 'Bénin',                              'AFRIQUE_FRANCOPHONE'),
+      ('GA', 'Gabon',                              'AFRIQUE_FRANCOPHONE'),
+      ('TD', 'Tchad',                              'AFRIQUE_FRANCOPHONE'),
+      ('MG', 'Madagascar',                         'AFRIQUE_FRANCOPHONE'),
+      ('RW', 'Rwanda',                             'AFRIQUE_FRANCOPHONE'),
+      ('DJ', 'Djibouti',                           'AFRIQUE_FRANCOPHONE'),
+      -- AFRIQUE_ANGLOPHONE (10)
+      ('ET', 'Éthiopie',                           'AFRIQUE_ANGLOPHONE'),
+      ('KE', 'Kenya',                              'AFRIQUE_ANGLOPHONE'),
+      ('NG', 'Nigeria',                            'AFRIQUE_ANGLOPHONE'),
+      ('GH', 'Ghana',                              'AFRIQUE_ANGLOPHONE'),
+      ('ZA', 'Afrique du Sud',                     'AFRIQUE_ANGLOPHONE'),
+      ('UG', 'Ouganda',                            'AFRIQUE_ANGLOPHONE'),
+      ('TZ', 'Tanzanie',                           'AFRIQUE_ANGLOPHONE'),
+      ('ZM', 'Zambie',                             'AFRIQUE_ANGLOPHONE'),
+      ('ZW', 'Zimbabwe',                           'AFRIQUE_ANGLOPHONE'),
+      ('MU', 'Maurice',                            'AFRIQUE_ANGLOPHONE'),
+      -- MOYEN_ORIENT (12)
+      ('JO', 'Jordanie',                           'MOYEN_ORIENT'),
+      ('IQ', 'Iraq',                               'MOYEN_ORIENT'),
+      ('YE', 'Yémen',                              'MOYEN_ORIENT'),
+      ('AE', 'Émirats arabes unis',                'MOYEN_ORIENT'),
+      ('SA', 'Arabie saoudite',                    'MOYEN_ORIENT'),
+      ('QA', 'Qatar',                              'MOYEN_ORIENT'),
+      ('KW', 'Koweït',                             'MOYEN_ORIENT'),
+      ('BH', 'Bahreïn',                            'MOYEN_ORIENT'),
+      ('OM', 'Oman',                               'MOYEN_ORIENT'),
+      ('LB', 'Liban',                              'MOYEN_ORIENT'),
+      ('SY', 'Syrie',                              'MOYEN_ORIENT'),
+      ('PS', 'Palestine',                          'MOYEN_ORIENT'),
+      -- ASIE (11)
+      ('NP', 'Népal',                              'ASIE'),
+      ('IN', 'Inde',                               'ASIE'),
+      ('CN', 'Chine',                              'ASIE'),
+      ('JP', 'Japon',                              'ASIE'),
+      ('KR', 'Corée du Sud',                       'ASIE'),
+      ('SG', 'Singapour',                          'ASIE'),
+      ('MY', 'Malaisie',                           'ASIE'),
+      ('TH', 'Thaïlande',                          'ASIE'),
+      ('ID', 'Indonésie',                          'ASIE'),
+      ('PK', 'Pakistan',                           'ASIE'),
+      ('BD', 'Bangladesh',                         'ASIE'),
+      -- EUROPE (10)
+      ('FR', 'France',                             'EUROPE'),
+      ('ES', 'Espagne',                            'EUROPE'),
+      ('IT', 'Italie',                             'EUROPE'),
+      ('DE', 'Allemagne',                          'EUROPE'),
+      ('GB', 'Royaume-Uni',                        'EUROPE'),
+      ('BE', 'Belgique',                           'EUROPE'),
+      ('NL', 'Pays-Bas',                           'EUROPE'),
+      ('CH', 'Suisse',                             'EUROPE'),
+      ('PT', 'Portugal',                           'EUROPE'),
+      ('LU', 'Luxembourg',                         'EUROPE'),
+      -- OCEANIE (2)
+      ('AU', 'Australie',                          'OCEANIE'),
+      ('NZ', 'Nouvelle-Zélande',                   'OCEANIE'),
+      -- AMERIQUE (3)
+      ('US', 'États-Unis',                         'AMERIQUE'),
+      ('CA', 'Canada',                             'AMERIQUE'),
+      ('BR', 'Brésil',                             'AMERIQUE')
     ON CONFLICT (code_pays) DO UPDATE
     SET region_code = EXCLUDED.region_code,
         nom = EXCLUDED.nom
   `;
 
-  // Cleanup pays legacy hors v1 — FK-safe (skip si client/entité référence
-  // encore le pays). Premier passage post-migration : peut échouer si données
-  // démo n'ont pas été purgées via /settings/demo Phase 17 F2.
+  // Cleanup pays legacy hors liste exhaustive Phase 24 — FK-safe (skip si
+  // client/entité référence encore le pays). Premier passage post-migration :
+  // peut échouer si données démo n'ont pas été purgées via /settings/demo.
   await sql`
     DELETE FROM lic_pays_ref
     WHERE code_pays NOT IN (
-      'MA','DZ','TN','LY','SD','SN','CI','MR','CM','CG','GQ','NE','TG','BI',
-      'ET','NP','JO','IQ','YE','AE','FR','AU'
+      -- NORD_AFRIQUE
+      'MA','DZ','TN','LY','SD','EG',
+      -- AFRIQUE_FRANCOPHONE
+      'SN','CI','MR','CM','CG','CD','GQ','NE','TG','BI',
+      'ML','BF','BJ','GA','TD','MG','RW','DJ',
+      -- AFRIQUE_ANGLOPHONE
+      'ET','KE','NG','GH','ZA','UG','TZ','ZM','ZW','MU',
+      -- MOYEN_ORIENT
+      'JO','IQ','YE','AE','SA','QA','KW','BH','OM','LB','SY','PS',
+      -- ASIE
+      'NP','IN','CN','JP','KR','SG','MY','TH','ID','PK','BD',
+      -- EUROPE
+      'FR','ES','IT','DE','GB','BE','NL','CH','PT','LU',
+      -- OCEANIE
+      'AU','NZ',
+      -- AMERIQUE
+      'US','CA','BR'
     )
     AND NOT EXISTS (SELECT 1 FROM lic_clients c WHERE c.code_pays = lic_pays_ref.code_pays)
     AND NOT EXISTS (SELECT 1 FROM lic_entites e WHERE e.code_pays = lic_pays_ref.code_pays)
@@ -187,44 +254,85 @@ async function seedPays(sql: postgres.Sql): Promise<void> {
 }
 
 async function seedDevises(sql: postgres.Sql): Promise<void> {
-  log.info("Seeding lic_devises_ref");
-  // Bootstrap (MAD/EUR/USD/XOF/XAF) déjà inséré par migration 0003. Compléments.
+  log.info("Seeding lic_devises_ref (autonome — 32 devises ISO 4217 périmètre S2M)");
+  // Seed autonome et exhaustif. Couvre toutes les devises utiles pour le
+  // périmètre S2M : Afrique + Maghreb + Moyen-Orient + Europe + Asie +
+  // Océanie + Amérique. Ne dépend plus du bootstrap migration 0003 (qui
+  // restera idempotent grâce à ON CONFLICT DO NOTHING).
   await sql`
     INSERT INTO lic_devises_ref (code_devise, nom, symbole) VALUES
-      ('TND', 'Dinar tunisien',     'DT'),
-      ('DZD', 'Dinar algérien',     'DA'),
-      ('EGP', 'Livre égyptienne',   'E£'),
-      ('GHS', 'Cedi ghanéen',       'GH₵'),
-      ('NGN', 'Naira nigérian',     '₦'),
-      ('KES', 'Shilling kényan',    'KSh'),
-      ('ETB', 'Birr éthiopien',     'Br'),
-      ('ZAR', 'Rand sud-africain',  'R'),
-      ('MUR', 'Roupie mauricienne', '₨'),
-      ('MGA', 'Ariary malgache',    'Ar')
+      -- Devises principales
+      ('MAD', 'Dirham marocain',       'DH'),
+      ('EUR', 'Euro',                  '€'),
+      ('USD', 'Dollar américain',      '$'),
+      ('GBP', 'Livre sterling',        '£'),
+      ('CHF', 'Franc suisse',          'CHF'),
+      -- Afrique francophone (zones CFA)
+      ('XOF', 'Franc CFA BCEAO',       'CFA'),
+      ('XAF', 'Franc CFA BEAC',        'FCFA'),
+      -- Maghreb + Afrique du Nord
+      ('TND', 'Dinar tunisien',        'DT'),
+      ('DZD', 'Dinar algérien',        'DA'),
+      ('LYD', 'Dinar libyen',          'LD'),
+      ('EGP', 'Livre égyptienne',      'E£'),
+      ('SDG', 'Livre soudanaise',      'SDG'),
+      ('MRU', 'Ouguiya mauritanienne', 'UM'),
+      -- Afrique anglophone / Océan Indien
+      ('GHS', 'Cedi ghanéen',          'GH₵'),
+      ('NGN', 'Naira nigérian',        '₦'),
+      ('KES', 'Shilling kényan',       'KSh'),
+      ('ETB', 'Birr éthiopien',        'Br'),
+      ('ZAR', 'Rand sud-africain',     'R'),
+      ('MUR', 'Roupie mauricienne',    '₨'),
+      ('MGA', 'Ariary malgache',       'Ar'),
+      -- Moyen-Orient
+      ('AED', 'Dirham émirati',        'AED'),
+      ('SAR', 'Riyal saoudien',        'SAR'),
+      ('QAR', 'Riyal qatari',          'QAR'),
+      ('JOD', 'Dinar jordanien',       'JD'),
+      ('IQD', 'Dinar irakien',         'IQD'),
+      ('YER', 'Riyal yéménite',        'YER'),
+      -- Asie / Océanie / Amérique
+      ('NPR', 'Roupie népalaise',      'NPR'),
+      ('AUD', 'Dollar australien',     'A$'),
+      ('CAD', 'Dollar canadien',       'C$'),
+      ('CNY', 'Yuan chinois',          '¥'),
+      ('JPY', 'Yen japonais',          '¥'),
+      ('INR', 'Roupie indienne',       '₹')
     ON CONFLICT (code_devise) DO NOTHING
   `;
 }
 
 async function seedLangues(sql: postgres.Sql): Promise<void> {
-  log.info("Seeding lic_langues_ref");
-  // Bootstrap (fr, en) déjà inséré par migration 0003. Compléments.
+  log.info("Seeding lic_langues_ref (autonome — 7 langues utiles)");
+  // Seed autonome et exhaustif. Ne dépend plus du bootstrap migration 0003.
   await sql`
     INSERT INTO lic_langues_ref (code_langue, nom) VALUES
+      ('fr', 'Français'),
+      ('en', 'English'),
       ('ar', 'العربية'),
       ('pt', 'Português'),
-      ('es', 'Español')
+      ('es', 'Español'),
+      ('de', 'Deutsch'),
+      ('it', 'Italiano')
     ON CONFLICT (code_langue) DO NOTHING
   `;
 }
 
 async function seedTypesContact(sql: postgres.Sql): Promise<void> {
-  log.info("Seeding lic_types_contact_ref");
-  // Bootstrap (ACHAT, FACTURATION, TECHNIQUE) déjà inséré par migration 0003.
+  log.info("Seeding lic_types_contact_ref (autonome — 9 types métier S2M)");
+  // Seed autonome et exhaustif. Ne dépend plus du bootstrap migration 0003.
   await sql`
     INSERT INTO lic_types_contact_ref (code, libelle) VALUES
-      ('JURIDIQUE',    'Juridique'),
+      ('ACHAT',        'Achat'),
+      ('FACTURATION',  'Facturation'),
+      ('TECHNIQUE',    'Technique'),
       ('TECHNIQUE_F2', 'Technique F2 (intégration)'),
-      ('DIRECTION',    'Direction')
+      ('JURIDIQUE',    'Juridique'),
+      ('DIRECTION',    'Direction'),
+      ('COMMERCIAL',   'Commercial'),
+      ('SUPPORT',      'Support'),
+      ('RH',           'Ressources humaines')
     ON CONFLICT (code) DO NOTHING
   `;
 }
