@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isAppError, type ErrorCode } from "@/shared/constants/error-codes";
+import { isAppError, type ErrorCode } from "@s2m-lic/shared/constants/error-codes";
 
 import { AppError } from "../app-error";
 import {

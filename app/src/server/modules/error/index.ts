@@ -22,10 +22,10 @@ export {
 
 // Re-export depuis shared/ pour ergonomie : un seul import côté serveur
 // donne accès à la fois aux classes et aux artefacts du catalogue.
-export { ERROR_CATALOGUE, isAppError } from "@/shared/constants/error-codes";
+export { ERROR_CATALOGUE, isAppError } from "@s2m-lic/shared/constants/error-codes";
 export type {
   AppErrorShape,
   ErrorClassName,
   ErrorCode,
   ErrorCodeEntry,
-} from "@/shared/constants/error-codes";
+} from "@s2m-lic/shared/constants/error-codes";

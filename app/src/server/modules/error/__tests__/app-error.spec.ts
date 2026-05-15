@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { isAppError } from "@/shared/constants/error-codes";
+import { isAppError } from "@s2m-lic/shared/constants/error-codes";
 
 import { NotFoundError, UnauthorizedError } from "../errors";
 

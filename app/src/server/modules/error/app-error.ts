@@ -14,7 +14,7 @@ import {
   ERROR_CATALOGUE,
   type AppErrorShape,
   type ErrorCode,
-} from "@/shared/constants/error-codes";
+} from "@s2m-lic/shared/constants/error-codes";
 
 export interface AppErrorOptions {
   readonly code: ErrorCode;

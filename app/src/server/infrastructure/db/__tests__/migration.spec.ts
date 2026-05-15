@@ -20,7 +20,7 @@ import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { env } from "@/server/infrastructure/env";
-import { SYSTEM_USER_ID } from "@/shared/constants/system-user";
+import { SYSTEM_USER_ID } from "@s2m-lic/shared/constants/system-user";
 
 let sql: postgres.Sql;
 
