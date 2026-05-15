@@ -83,7 +83,7 @@ const NOTIF_SEEDS: readonly NotifSeed[] = [
   },
   {
     title: "Renouvellement validé — BNI Côte d'Ivoire",
-    body: "Renouvellement validé par Karim ZAOUI (DM Afrique Francophone).",
+    body: "Renouvellement validé par Hakim HASNI (DM).",
     priority: "INFO",
     source: "RENOUVELLEMENT_VALIDATED",
     read: true,

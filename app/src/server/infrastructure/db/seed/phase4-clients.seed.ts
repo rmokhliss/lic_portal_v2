@@ -21,10 +21,12 @@
 //
 // Idempotent : early return si lic_clients déjà peuplée.
 //
-// Préparation pays/devises : les 55 clients utilisent des codes ISO non
-// couverts par le seed Phase 2.B (LY, SD, MR, NP, JO, IQ, YE, AE, FR, AU,
-// LYD, SDG, MRU, NPR, JOD, IQD, YER, AED, AUD). On les insère ici en amont
-// avec ON CONFLICT DO NOTHING (idempotent à 100%).
+// Préparation pays : les 55 clients utilisent des codes ISO couverts par
+// seedPays() dans seed.ts (Phase 24 — 22 pays v1).
+// Préparation devises : les clients utilisent UNIQUEMENT le référentiel
+// Phase 24 (15 devises seedées par seedDevises dans seed.ts). Les clients
+// historiquement en devises locales hors référentiel (LYD/SDG/MRU/NPR/JOD/
+// IQD/YER/AED/AUD) ont été rebasculés sur USD.
 // ==============================================================================
 
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -76,7 +78,7 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeLangue: "fr",
     codeDevise: "MAD",
     salesResponsable: "Mounir BOUSNIN",
-    accountManager: "Hakim HOUSSNI",
+    accountManager: "Hakim HASNI",
   },
   {
     codeClient: "CASHPLUS",
@@ -86,7 +88,7 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeLangue: "fr",
     codeDevise: "MAD",
     salesResponsable: "Youssef BERRADA",
-    accountManager: "Houssam ELISMAILI",
+    accountManager: "Houssam EL ISMAILI",
   },
   {
     codeClient: "DASHY",
@@ -106,7 +108,7 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeLangue: "fr",
     codeDevise: "MAD",
     salesResponsable: "Issam CHAYBI",
-    accountManager: "Ghassan FAHMI",
+    accountManager: "Ghassane FAHMI",
   },
   {
     codeClient: "CMI",
@@ -126,7 +128,7 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeLangue: "fr",
     codeDevise: "MAD",
     salesResponsable: "Youssef BERRADA",
-    accountManager: "Omar HANDI",
+    accountManager: "Omar HANDIR",
   },
   {
     codeClient: "BMCI",
@@ -136,7 +138,7 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeLangue: "fr",
     codeDevise: "MAD",
     salesResponsable: "Ahmed KHALIL",
-    accountManager: "Nourddine BENASSEF",
+    accountManager: "Noureddine BEN NASSEF",
   },
   {
     codeClient: "ATTIJARI_TN",
@@ -146,7 +148,7 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeLangue: "fr",
     codeDevise: "TND",
     salesResponsable: "Issam CHAYBI",
-    accountManager: "Hakim HOUSSNI",
+    accountManager: "Hakim HASNI",
   },
   {
     codeClient: "SKYTELECOM",
@@ -156,7 +158,7 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeLangue: "fr",
     codeDevise: "TND",
     salesResponsable: "Mounir BOUSNIN",
-    accountManager: "Houssam ELISMAILI",
+    accountManager: "Houssam EL ISMAILI",
   },
   {
     codeClient: "LAPOSTE_TN",
@@ -176,7 +178,7 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeLangue: "fr",
     codeDevise: "TND",
     salesResponsable: "Ahmed KHALIL",
-    accountManager: "Ghassan FAHMI",
+    accountManager: "Ghassane FAHMI",
   },
   {
     codeClient: "TADAWUL",
@@ -184,7 +186,7 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "LY",
     v1Region: "NORD_AFRIQUE",
     codeLangue: "en",
-    codeDevise: "LYD",
+    codeDevise: "USD",
     salesResponsable: "Issam CHAYBI",
     accountManager: "Jamal MOUJAHID",
   },
@@ -194,9 +196,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "LY",
     v1Region: "NORD_AFRIQUE",
     codeLangue: "en",
-    codeDevise: "LYD",
+    codeDevise: "USD",
     salesResponsable: "Mounir BOUSNIN",
-    accountManager: "Omar HANDI",
+    accountManager: "Omar HANDIR",
   },
   {
     codeClient: "ALYAKIN",
@@ -204,9 +206,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "LY",
     v1Region: "NORD_AFRIQUE",
     codeLangue: "en",
-    codeDevise: "LYD",
+    codeDevise: "USD",
     salesResponsable: "Youssef BERRADA",
-    accountManager: "Nourddine BENASSEF",
+    accountManager: "Noureddine BEN NASSEF",
   },
   {
     codeClient: "ABCI",
@@ -214,9 +216,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "LY",
     v1Region: "NORD_AFRIQUE",
     codeLangue: "en",
-    codeDevise: "LYD",
+    codeDevise: "USD",
     salesResponsable: "Ahmed KHALIL",
-    accountManager: "Hakim HOUSSNI",
+    accountManager: "Hakim HASNI",
   },
   {
     codeClient: "ALBARAKA",
@@ -224,9 +226,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "SD",
     v1Region: "NORD_AFRIQUE",
     codeLangue: "en",
-    codeDevise: "SDG",
+    codeDevise: "USD",
     salesResponsable: "Issam CHAYBI",
-    accountManager: "Houssam ELISMAILI",
+    accountManager: "Houssam EL ISMAILI",
   },
   {
     codeClient: "BNP_DZ",
@@ -246,15 +248,15 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeLangue: "en",
     codeDevise: "DZD",
     salesResponsable: "Youssef BERRADA",
-    accountManager: "Ghassan FAHMI",
+    accountManager: "Ghassane FAHMI",
   },
   {
     codeClient: "CHINGUITTY",
     raisonSociale: "Banque Chinguitty",
     codePays: "MR",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
-    codeDevise: "MRU",
+    codeDevise: "USD",
     salesResponsable: "Ahmed KHALIL",
     accountManager: "Jamal MOUJAHID",
   },
@@ -262,49 +264,49 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeClient: "GIMTEL",
     raisonSociale: "GimTel",
     codePays: "MR",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
-    codeDevise: "MRU",
+    codeDevise: "USD",
     salesResponsable: "Issam CHAYBI",
-    accountManager: "Omar HANDI",
+    accountManager: "Omar HANDIR",
   },
   {
     codeClient: "BAMIS",
     raisonSociale: "BAMIS",
     codePays: "MR",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
-    codeDevise: "MRU",
+    codeDevise: "USD",
     salesResponsable: "Mounir BOUSNIN",
-    accountManager: "Nourddine BENASSEF",
+    accountManager: "Noureddine BEN NASSEF",
   },
   {
     codeClient: "BMCIM",
     raisonSociale: "BMCI Mauritanie",
     codePays: "MR",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
-    codeDevise: "MRU",
+    codeDevise: "USD",
     salesResponsable: "Youssef BERRADA",
-    accountManager: "Hakim HOUSSNI",
+    accountManager: "Hakim HASNI",
   },
   {
     codeClient: "BEA",
     raisonSociale: "BEA",
     codePays: "MR",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
-    codeDevise: "MRU",
+    codeDevise: "USD",
     salesResponsable: "Ahmed KHALIL",
-    accountManager: "Houssam ELISMAILI",
+    accountManager: "Houssam EL ISMAILI",
   },
   {
     codeClient: "BPM",
     raisonSociale: "BPM",
     codePays: "MR",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
-    codeDevise: "MRU",
+    codeDevise: "USD",
     salesResponsable: "Issam CHAYBI",
     accountManager: "Mounir BOUDERBA",
   },
@@ -312,19 +314,19 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeClient: "GBM",
     raisonSociale: "GBM",
     codePays: "MR",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
-    codeDevise: "MRU",
+    codeDevise: "USD",
     salesResponsable: "Mounir BOUSNIN",
-    accountManager: "Ghassan FAHMI",
+    accountManager: "Ghassane FAHMI",
   },
   {
     codeClient: "NBM",
     raisonSociale: "NBM",
     codePays: "MR",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
-    codeDevise: "MRU",
+    codeDevise: "USD",
     salesResponsable: "Youssef BERRADA",
     accountManager: "Jamal MOUJAHID",
   },
@@ -335,37 +337,37 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeClient: "BICICI",
     raisonSociale: "BICICI",
     codePays: "CI",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
     codeDevise: "XOF",
     salesResponsable: "Youssef BERRADA",
-    accountManager: "Houssam ELISMAILI",
+    accountManager: "Houssam EL ISMAILI",
   },
   {
     codeClient: "BNI_CI",
     raisonSociale: "BNI Côte d'Ivoire",
     codePays: "CI",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
     codeDevise: "XOF",
     salesResponsable: "Issam CHAYBI",
-    accountManager: "Nourddine BENASSEF",
+    accountManager: "Noureddine BEN NASSEF",
   },
   {
     codeClient: "NSIA",
     raisonSociale: "NSIA",
     codePays: "CI",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
     codeDevise: "XOF",
     salesResponsable: "Mounir BOUSNIN",
-    accountManager: "Hakim HOUSSNI",
+    accountManager: "Hakim HASNI",
   },
   {
     codeClient: "GIE",
     raisonSociale: "GIE Cameroun",
     codePays: "CM",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
     codeDevise: "XAF",
     salesResponsable: "Ahmed KHALIL",
@@ -375,17 +377,17 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeClient: "AFB",
     raisonSociale: "AFB",
     codePays: "CM",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
     codeDevise: "XAF",
     salesResponsable: "Issam CHAYBI",
-    accountManager: "Ghassan FAHMI",
+    accountManager: "Ghassane FAHMI",
   },
   {
     codeClient: "BTCI",
     raisonSociale: "BTCI",
     codePays: "TG",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
     codeDevise: "XOF",
     salesResponsable: "Mounir BOUSNIN",
@@ -395,47 +397,47 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeClient: "SONIBANK",
     raisonSociale: "SONIBANK",
     codePays: "NE",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
     codeDevise: "XOF",
     salesResponsable: "Youssef BERRADA",
-    accountManager: "Omar HANDI",
+    accountManager: "Omar HANDIR",
   },
   {
     codeClient: "RAWBANK",
     raisonSociale: "Rawbank",
     codePays: "CG",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
     codeDevise: "XAF",
     salesResponsable: "Ahmed KHALIL",
-    accountManager: "Nourddine BENASSEF",
+    accountManager: "Noureddine BEN NASSEF",
   },
   {
     codeClient: "BAO",
     raisonSociale: "BAO",
     codePays: "GQ",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
     codeDevise: "XAF",
     salesResponsable: "Issam CHAYBI",
-    accountManager: "Hakim HOUSSNI",
+    accountManager: "Hakim HASNI",
   },
   {
     codeClient: "BCAB",
     raisonSociale: "BCAB",
     codePays: "BI",
-    v1Region: "AFRIQUE_FR",
+    v1Region: "AFRIQUE_FRANCOPHONE",
     codeLangue: "fr",
     codeDevise: "USD",
     salesResponsable: "Mounir BOUSNIN",
-    accountManager: "Houssam ELISMAILI",
+    accountManager: "Houssam EL ISMAILI",
   },
   {
     codeClient: "ABAY",
     raisonSociale: "Abay Bank",
     codePays: "ET",
-    v1Region: "AFRIQUE_EN",
+    v1Region: "AFRIQUE_ANGLOPHONE",
     codeLangue: "en",
     codeDevise: "ETB",
     salesResponsable: "Youssef BERRADA",
@@ -445,11 +447,11 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeClient: "PSS",
     raisonSociale: "PSS",
     codePays: "ET",
-    v1Region: "AFRIQUE_EN",
+    v1Region: "AFRIQUE_ANGLOPHONE",
     codeLangue: "en",
     codeDevise: "ETB",
     salesResponsable: "Ahmed KHALIL",
-    accountManager: "Ghassan FAHMI",
+    accountManager: "Ghassane FAHMI",
   },
   // Phase 24 — AWASH retiré du portefeuille S2M.
   {
@@ -458,9 +460,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "NP",
     v1Region: "ASIE",
     codeLangue: "en",
-    codeDevise: "NPR",
+    codeDevise: "USD",
     salesResponsable: "Mounir BOUSNIN",
-    accountManager: "Omar HANDI",
+    accountManager: "Omar HANDIR",
   },
   {
     codeClient: "HBL",
@@ -468,9 +470,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "NP",
     v1Region: "ASIE",
     codeLangue: "en",
-    codeDevise: "NPR",
+    codeDevise: "USD",
     salesResponsable: "Youssef BERRADA",
-    accountManager: "Nourddine BENASSEF",
+    accountManager: "Noureddine BEN NASSEF",
   },
   {
     codeClient: "NIC",
@@ -478,9 +480,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "NP",
     v1Region: "ASIE",
     codeLangue: "en",
-    codeDevise: "NPR",
+    codeDevise: "USD",
     salesResponsable: "Ahmed KHALIL",
-    accountManager: "Hakim HOUSSNI",
+    accountManager: "Hakim HASNI",
   },
   {
     codeClient: "NI",
@@ -488,9 +490,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "JO",
     v1Region: "MOYEN_ORIENT",
     codeLangue: "en",
-    codeDevise: "JOD",
+    codeDevise: "USD",
     salesResponsable: "Issam CHAYBI",
-    accountManager: "Houssam ELISMAILI",
+    accountManager: "Houssam EL ISMAILI",
   },
   {
     codeClient: "CAB",
@@ -498,7 +500,7 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "JO",
     v1Region: "MOYEN_ORIENT",
     codeLangue: "en",
-    codeDevise: "JOD",
+    codeDevise: "USD",
     salesResponsable: "Mounir BOUSNIN",
     accountManager: "Mounir BOUDERBA",
   },
@@ -508,9 +510,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "JO",
     v1Region: "MOYEN_ORIENT",
     codeLangue: "en",
-    codeDevise: "JOD",
+    codeDevise: "USD",
     salesResponsable: "Youssef BERRADA",
-    accountManager: "Ghassan FAHMI",
+    accountManager: "Ghassane FAHMI",
   },
   {
     codeClient: "MEPS",
@@ -518,7 +520,7 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "JO",
     v1Region: "MOYEN_ORIENT",
     codeLangue: "en",
-    codeDevise: "JOD",
+    codeDevise: "USD",
     salesResponsable: "Ahmed KHALIL",
     accountManager: "Jamal MOUJAHID",
   },
@@ -528,9 +530,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "IQ",
     v1Region: "MOYEN_ORIENT",
     codeLangue: "en",
-    codeDevise: "IQD",
+    codeDevise: "USD",
     salesResponsable: "Issam CHAYBI",
-    accountManager: "Omar HANDI",
+    accountManager: "Omar HANDIR",
   },
   {
     codeClient: "EGATE",
@@ -538,9 +540,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "IQ",
     v1Region: "MOYEN_ORIENT",
     codeLangue: "en",
-    codeDevise: "IQD",
+    codeDevise: "USD",
     salesResponsable: "Mounir BOUSNIN",
-    accountManager: "Nourddine BENASSEF",
+    accountManager: "Noureddine BEN NASSEF",
   },
   {
     codeClient: "JIB",
@@ -548,9 +550,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "IQ",
     v1Region: "MOYEN_ORIENT",
     codeLangue: "en",
-    codeDevise: "IQD",
+    codeDevise: "USD",
     salesResponsable: "Youssef BERRADA",
-    accountManager: "Hakim HOUSSNI",
+    accountManager: "Hakim HASNI",
   },
   {
     codeClient: "IBY",
@@ -558,9 +560,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "YE",
     v1Region: "MOYEN_ORIENT",
     codeLangue: "en",
-    codeDevise: "YER",
+    codeDevise: "USD",
     salesResponsable: "Ahmed KHALIL",
-    accountManager: "Houssam ELISMAILI",
+    accountManager: "Houssam EL ISMAILI",
   },
   {
     codeClient: "POSTE_YE",
@@ -568,7 +570,7 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "YE",
     v1Region: "MOYEN_ORIENT",
     codeLangue: "en",
-    codeDevise: "YER",
+    codeDevise: "USD",
     salesResponsable: "Issam CHAYBI",
     accountManager: "Mounir BOUDERBA",
   },
@@ -578,9 +580,9 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codePays: "AE",
     v1Region: "MOYEN_ORIENT",
     codeLangue: "en",
-    codeDevise: "AED",
+    codeDevise: "USD",
     salesResponsable: "Mounir BOUSNIN",
-    accountManager: "Ghassan FAHMI",
+    accountManager: "Ghassane FAHMI",
   },
   {
     codeClient: "NBL",
@@ -596,34 +598,23 @@ const CLIENT_SEEDS: readonly ClientSeed[] = [
     codeClient: "HUMM",
     raisonSociale: "Hummgroup",
     codePays: "AU",
-    v1Region: "AUSTRALIE",
+    v1Region: "OCEANIE",
     codeLangue: "en",
-    codeDevise: "AUD",
+    codeDevise: "USD",
     salesResponsable: "Ahmed KHALIL",
-    accountManager: "Omar HANDI",
+    accountManager: "Omar HANDIR",
   },
 ];
 
 // Phase 17 D1 — `ensurePaysExtensions` retiré : les 22 pays v1 sont désormais
 // insérés par `seedPays()` dans `seed.ts` (avec UPSERT region_code aligné v1).
 // La fonction faisait double-emploi et insérait des region_codes obsolètes.
-
-/** Compléments devises (codes ISO non couverts par seed.ts Phase 2.B). */
-async function ensureDevisesExtensions(sql: postgres.Sql): Promise<void> {
-  await sql`
-    INSERT INTO lic_devises_ref (code_devise, nom, symbole) VALUES
-      ('LYD', 'Dinar libyen',      'LD'),
-      ('SDG', 'Livre soudanaise',  'SDG'),
-      ('MRU', 'Ouguiya',           'UM'),
-      ('NPR', 'Roupie népalaise',  'Rs'),
-      ('JOD', 'Dinar jordanien',   'JD'),
-      ('IQD', 'Dinar irakien',     'ID'),
-      ('YER', 'Rial yéménite',     'YR'),
-      ('AED', 'Dirham EAU',        'AED'),
-      ('AUD', 'Dollar australien', 'A$')
-    ON CONFLICT (code_devise) DO NOTHING
-  `;
-}
+//
+// Phase 24 — `ensureDevisesExtensions` retiré : les clients démo n'utilisent
+// plus que les devises du référentiel Phase 24 (MAD, EUR, USD, XOF, XAF, TND,
+// DZD, EGP, GHS, NGN, KES, ETB, ZAR, MUR, MGA — seedDevises dans seed.ts).
+// Les clients précédemment en LYD/SDG/MRU/NPR/JOD/IQD/YER/AED/AUD ont été
+// rebasculés sur USD (fallback international cohérent avec le référentiel).
 
 interface ExtraEntiteSeed {
   readonly codeClient: string;
@@ -833,10 +824,10 @@ export async function seedPhase4Clients(sql: postgres.Sql): Promise<void> {
     contactRepo: new ContactRepositoryPg(seedDb),
   };
 
-  // Phase 17 D1 — pays insérés par seedPays() (seed.ts) en amont. Devises
-  // complémentaires (LYD, SDG, MRU, NPR, JOD, IQD, YER, AED, AUD) restent
-  // ici tant que seed.ts seedDevises ne les couvre pas.
-  await ensureDevisesExtensions(sql);
+  // Phase 17 D1 — pays insérés par seedPays() (seed.ts) en amont.
+  // Phase 24 — devises complémentaires retirées (les clients démo n'utilisent
+  // que les devises du référentiel Phase 24 — cf. commentaire ensureDevises…
+  // ci-dessus).
 
   // 1. Clients + Sièges via repository (atomicité par client)
   const codeToId = await seedClients(repos);
