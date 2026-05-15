@@ -7,9 +7,9 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"],
-      "@/shared/*": ["../shared/src/*"],
-      "@s2m-lic/shared": ["../shared/src/index.ts"],
-      "@s2m-lic/shared/*": ["../shared/src/*"]
+      "@/shared/*": ["./shared/src/*"],
+      "@s2m-lic/shared": ["./shared/src/index.ts"],
+      "@s2m-lic/shared/*": ["./shared/src/*"]
     }
   },
   "include": [
